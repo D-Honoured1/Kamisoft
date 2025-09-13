@@ -7,8 +7,8 @@ on:
     branches: [main]
 
 env:
-  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  VERCEL_ORG_ID: ${{ secrets.prj_PYLZ1wlRx8hpRxSwGWmuWtQFMA4e }}
+  ## VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
 jobs:
   deploy:
@@ -35,8 +35,8 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.https://rbacoifqxtxtlezljdzc.supabase.co }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJiYWNvaWZxeHR4dGxlemxqZHpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NjkwMTMsImV4cCI6MjA3MzM0NTAxM30.Ouh7OLCBROVZW5J3_HEgjWWSUzSYM-KtGMrJ36-cN1I}}
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
