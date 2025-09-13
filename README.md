@@ -1,36 +1,113 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Kamisoft Enterprises
+
+A comprehensive technology services platform built with Next.js, Supabase, and modern web technologies.
+
+## Features
+
+- **Public Website**: Professional company website with services, portfolio, and contact information
+- **Client Intake System**: Interactive service request form with chat-style interface
+- **Payment Processing**: Integrated payment system with Stripe and Paystack support
+- **Admin Dashboard**: Complete management system for requests, clients, and portfolio
+- **Authentication**: Secure admin authentication with Supabase Auth
+- **Responsive Design**: Mobile-first design with dark/light theme support
+
+## Tech Stack
+
+- **Frontend**: Next.js 14, React 19, TypeScript
+- **Styling**: Tailwind CSS v4, Radix UI components
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: Supabase Auth
+- **Payments**: Stripe, Paystack
+- **Deployment**: Vercel
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
+- Node.js 18+ 
+- npm or yarn
+- Supabase account
+- Stripe account (for payments)
+
+### Installation
+
+1. Clone the repository:
+\`\`\`bash
+git clone https://github.com/your-username/kamisoft-enterprises.git
+cd kamisoft-enterprises
+\`\`\`
+
+2. Install dependencies:
+\`\`\`bash
+npm install
+\`\`\`
+
+3. Set up environment variables:
+\`\`\`bash
+cp .env.example .env.local
+\`\`\`
+Fill in your Supabase, Stripe, and other configuration values.
+
+4. Set up the database:
+\`\`\`bash
+# Run the SQL scripts in order:
+# 1. scripts/001_create_core_tables.sql
+# 2. scripts/002_enable_rls_and_policies.sql  
+# 3. scripts/003_seed_initial_data.sql
+\`\`\`
+
+5. Start the development server:
+\`\`\`bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+\`\`\`
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit `http://localhost:3000` to see the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deployment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Vercel Deployment
 
-## Learn More
+1. Connect your GitHub repository to Vercel
+2. Set up environment variables in Vercel dashboard
+3. Deploy automatically on push to main branch
 
-To learn more about Next.js, take a look at the following resources:
+### Manual Deployment
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+\`\`\`bash
+npm run build
+npm start
+\`\`\`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project Structure
 
-## Deploy on Vercel
+\`\`\`
+├── app/                    # Next.js app directory
+│   ├── admin/             # Admin dashboard pages
+│   ├── api/               # API routes
+│   ├── (public pages)/    # Public website pages
+├── components/            # Reusable components
+├── lib/                   # Utilities and configurations
+│   ├── supabase/         # Supabase client setup
+│   ├── types/            # TypeScript type definitions
+├── scripts/              # Database scripts
+└── public/               # Static assets
+\`\`\`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Environment Variables
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See `.env.example` for all required environment variables.
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## License
+
+This project is proprietary software owned by Kamisoft Enterprises.
+
+## Support
+
+For support, email support@kamisoft.com or visit our website.
