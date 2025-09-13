@@ -15,7 +15,8 @@
 
 # production
 /build
-.github
+.github/workflows/deploy.yml
+
 
 # misc
 .DS_Store
