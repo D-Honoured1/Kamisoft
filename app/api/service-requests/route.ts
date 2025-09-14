@@ -1,13 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
 import type { ServiceRequestForm } from "@/lib/types/database"
-
-export const runtime = "nodejs";
-
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    // USE createRouteHandlerClient FOR API ROUTES
+    const cookieStore = cookies()
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    
     const body: ServiceRequestForm = await request.json()
 
     // Validate required fields
@@ -77,9 +78,6 @@ export async function POST(request: NextRequest) {
       console.error("Error creating service request:", requestError)
       return NextResponse.json({ error: "Failed to create service request" }, { status: 500 })
     }
-
-    // TODO: Send notification email to admin
-    // TODO: Send confirmation email to client with payment link
 
     return NextResponse.json({
       success: true,
