@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Shield, LogIn, User } from "lucide-react"
-import { createBrowserClient } from "@/lib/supabase/client" // Import Supabase client
+import { createClient } from "@/lib/supabase/client" // Changed import
 import { useEffect, useState } from "react"
 
 const navigation = [
@@ -20,7 +20,7 @@ const navigation = [
 
 export function Navigation() {
   const pathname = usePathname()
-  const supabase = createBrowserClient()
+  const supabase = createClient() // Changed to use createClient()
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 

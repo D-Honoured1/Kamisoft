@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { LayoutDashboard, Users, FileText, CreditCard, Briefcase, Settings, LogOut, Menu, X } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { createBrowserClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 
 const navigation = [
