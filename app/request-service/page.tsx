@@ -564,8 +564,8 @@ export default function RequestServicePage() {
         {currentStep !== "success" && (
           <div className="text-center mt-6 text-sm text-muted-foreground">
             Need help? Contact us at{" "}
-            <a href="mailto:hello@kamisoft.com" className="text-primary hover:underline">
-              hello@kamisoft.com
+            <a href="mailto:hello@kamisoftenterprises.online" className="text-primary hover:underline">
+              hello@kamisoftenterprises.online
             </a>
           </div>
         )}

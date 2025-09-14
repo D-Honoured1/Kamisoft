@@ -5,14 +5,20 @@ import type { ServiceRequestForm } from "@/lib/types/database"
 
 export async function POST(request: NextRequest) {
   try {
-    // USE createRouteHandlerClient FOR API ROUTES
+    // Log the incoming request
+    console.log("API Request received")
+    
     const cookieStore = cookies()
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
     
     const body: ServiceRequestForm = await request.json()
+    
+    // Log the received data
+    console.log("Request data:", body)
 
     // Validate required fields
     if (!body.name || !body.email || !body.service_category || !body.title || !body.description) {
+      console.log("Missing required fields")
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
@@ -20,13 +26,22 @@ export async function POST(request: NextRequest) {
     let clientId: string
 
     // Check if client already exists
-    const { data: existingClient } = await supabase.from("clients").select("id").eq("email", body.email).single()
+    const { data: existingClient, error: clientCheckError } = await supabase
+      .from("clients")
+      .select("id")
+      .eq("email", body.email)
+      .single()
+
+    if (clientCheckError) {
+      console.error("Error checking client:", clientCheckError)
+    }
 
     if (existingClient) {
       clientId = existingClient.id
+      console.log("Existing client found:", clientId)
 
       // Update client information if provided
-      await supabase
+      const { error: updateError } = await supabase
         .from("clients")
         .update({
           name: body.name,
@@ -34,7 +49,12 @@ export async function POST(request: NextRequest) {
           company: body.company || null,
         })
         .eq("id", clientId)
+
+      if (updateError) {
+        console.error("Error updating client:", updateError)
+      }
     } else {
+      console.log("Creating new client")
       // Create new client
       const { data: newClient, error: clientError } = await supabase
         .from("clients")
@@ -53,9 +73,11 @@ export async function POST(request: NextRequest) {
       }
 
       clientId = newClient.id
+      console.log("New client created:", clientId)
     }
 
     const estimatedCost = calculateEstimatedCost(body.service_category, body.request_type)
+    console.log("Estimated cost:", estimatedCost)
 
     // Create the service request
     const { data: serviceRequest, error: requestError } = await supabase
@@ -79,6 +101,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to create service request" }, { status: 500 })
     }
 
+    console.log("Service request created:", serviceRequest.id)
+
     return NextResponse.json({
       success: true,
       requestId: serviceRequest.id,
@@ -87,7 +111,7 @@ export async function POST(request: NextRequest) {
       message: "Service request submitted successfully",
     })
   } catch (error) {
-    console.error("Error processing service request:", error)
+    console.error("Unexpected error processing service request:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
