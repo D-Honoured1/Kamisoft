@@ -4,7 +4,9 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Shield } from "lucide-react"
+import { Shield, LogIn, User } from "lucide-react"
+import { createBrowserClient } from "@/lib/supabase/client" // Import Supabase client
+import { useEffect, useState } from "react"
 
 const navigation = [
   { name: "Home", href: "/" },
@@ -18,6 +20,34 @@ const navigation = [
 
 export function Navigation() {
   const pathname = usePathname()
+  const supabase = createBrowserClient()
+  const [user, setUser] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // Check current user session
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      setUser(session?.user || null)
+      setLoading(false)
+    }
+
+    getSession()
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user || null)
+        setLoading(false)
+      }
+    )
+
+    return () => subscription.unsubscribe()
+  }, [supabase.auth])
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -43,6 +73,34 @@ export function Navigation() {
 
         <div className="flex items-center space-x-4">
           <ThemeToggle />
+          
+          {/* Authentication Buttons */}
+          {!loading && (
+            <>
+              {user ? (
+                <div className="flex items-center space-x-2">
+                  <Button variant="outline" asChild>
+                    <Link href="/admin">
+                      <User className="mr-2 h-4 w-4" />
+                      Dashboard
+                    </Link>
+                  </Button>
+                  <Button variant="outline" onClick={handleSignOut}>
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Sign Out
+                  </Button>
+                </div>
+              ) : (
+                <Button asChild>
+                  <Link href="/admin/login">
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Login
+                  </Link>
+                </Button>
+              )}
+            </>
+          )}
+          
           <Button asChild>
             <Link href="/request-service">Hire Us</Link>
           </Button>
