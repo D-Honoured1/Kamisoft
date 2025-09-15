@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -20,18 +20,6 @@ export default function AdminLogin() {
   const [error, setError] = useState("")
   const [formData, setFormData] = useState({ email: "", password: "" })
 
-  // If already logged in, middleware will handle redirect.
-  // But we can also check client-side for smoother UX
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession()
-      if (data.session) {
-        router.replace("/admin")
-      }
-    }
-    checkSession()
-  }, [supabase, router])
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
@@ -45,9 +33,8 @@ export default function AdminLogin() {
 
       if (error) throw error
 
-      // Refresh RSC so middleware + UI are in sync
-      router.refresh()
-      // Middleware will now redirect to /admin
+      // ✅ Let middleware redirect after login
+      router.push("/admin")
     } catch (err: any) {
       console.error("Login error:", err)
       setError(err.message || "An error occurred during login")
@@ -66,7 +53,9 @@ export default function AdminLogin() {
             </div>
           </div>
           <h1 className="text-2xl font-bold text-foreground">Admin Login</h1>
-          <p className="text-muted-foreground mt-2">Sign in to access the Kamisoft admin dashboard</p>
+          <p className="text-muted-foreground mt-2">
+            Sign in to access the Kamisoft admin dashboard
+          </p>
         </div>
 
         <Card>
@@ -88,7 +77,9 @@ export default function AdminLogin() {
                   id="email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
                   placeholder="admin@kamisoft.com"
                   required
                   disabled={isLoading}
@@ -102,7 +93,9 @@ export default function AdminLogin() {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, password: e.target.value })
+                    }
                     placeholder="Enter your password"
                     required
                     disabled={isLoading}
@@ -115,7 +108,11 @@ export default function AdminLogin() {
                     onClick={() => setShowPassword(!showPassword)}
                     disabled={isLoading}
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
               </div>
@@ -134,7 +131,7 @@ export default function AdminLogin() {
 
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
-                Don't have an account?{" "}
+                Don&apos;t have an account?{" "}
                 <Link href="/admin/signup" className="text-primary hover:underline">
                   Create one here
                 </Link>
@@ -144,7 +141,10 @@ export default function AdminLogin() {
         </Card>
 
         <div className="mt-6 text-center">
-          <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
+          <Link
+            href="/"
+            className="text-sm text-muted-foreground hover:text-foreground"
+          >
             ← Back to main site
           </Link>
         </div>
