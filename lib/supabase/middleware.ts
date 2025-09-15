@@ -1,64 +1,32 @@
-import { createServerClient } from "@supabase/ssr"
-import { NextResponse, type NextRequest } from "next/server"
+import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
+import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs"
 
-export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({ request })
-
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    console.error("Supabase env vars are missing")
-    return response
-  }
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        getAll: () => request.cookies.getAll(),
-        setAll: (cookiesToSet) => {
-          response = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
+export async function middleware(req: NextRequest) {
+  const res = NextResponse.next()
+  const supabase = createMiddlewareClient({ req, res })
 
   const {
-    data: { session },
-    error,
-  } = await supabase.auth.getSession()
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  if (error) {
-    console.error("Error fetching session:", error)
-    return response
+  const isAdminRoute = req.nextUrl.pathname.startsWith("/admin")
+
+  if (isAdminRoute) {
+    if (!user) {
+      return NextResponse.redirect(new URL("/admin/login", req.url))
+    }
+
+    // 🔒 Only allow role = "admin"
+    const role = user?.app_metadata?.role
+    if (role !== "admin") {
+      return NextResponse.redirect(new URL("/", req.url)) // kick non-admins out
+    }
   }
 
-  const path = request.nextUrl.pathname
-
-  // 🚫 Block unauthenticated access to /admin/*
-  if (
-    path.startsWith("/admin") &&
-    !path.startsWith("/admin/login") &&
-    !path.startsWith("/admin/signup") &&
-    !session
-  ) {
-    const url = request.nextUrl.clone()
-    url.pathname = "/admin/login"
-    return NextResponse.redirect(url)
-  }
-
-  // 🔄 Prevent logged-in users from hitting /login or /signup
-  if (session && (path.startsWith("/admin/login") || path.startsWith("/admin/signup"))) {
-    const url = request.nextUrl.clone()
-    url.pathname = "/admin"
-    return NextResponse.redirect(url)
-  }
-
-  return response
+  return res
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/admin/login", "/admin/signup", "/auth/callback"],
+  matcher: ["/admin/:path*"],
 }
