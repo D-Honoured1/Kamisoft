@@ -13,79 +13,47 @@ import Link from "next/link"
 
 export default function AdminLogin() {
   const router = useRouter()
+  const supabase = createClient()
+
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
-  const [supabase, setSupabase] = useState<any>(null)
-  const [isMounted, setIsMounted] = useState(false)
+  const [formData, setFormData] = useState({ email: "", password: "" })
 
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  })
-
+  // If already logged in, middleware will handle redirect.
+  // But we can also check client-side for smoother UX
   useEffect(() => {
-    setIsMounted(true)
-    // Initialize Supabase client only on client side
-    setSupabase(createClient())
-  }, [])
-
-  // Check if user is already logged in
-  useEffect(() => {
-    const checkUser = async () => {
-      if (!supabase || !isMounted) return
-      
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (session) {
-          router.push("/admin")
-        }
-      } catch (err) {
-        console.error("Error checking session:", err)
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession()
+      if (data.session) {
+        router.replace("/admin")
       }
     }
-    
-    checkUser()
-  }, [supabase, isMounted, router])
+    checkSession()
+  }, [supabase, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!supabase) return
-    
     setIsLoading(true)
     setError("")
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
       })
 
-      if (error) {
-        throw error
-      }
+      if (error) throw error
 
-      if (data.user) {
-        // Use window.location to ensure a full page reload and proper middleware execution
-        window.location.href = "/admin"
-      }
-    } catch (error: any) {
-      console.error("Login error:", error)
-      setError(error.message || "An error occurred during login")
+      // Refresh RSC so middleware + UI are in sync
+      router.refresh()
+      // Middleware will now redirect to /admin
+    } catch (err: any) {
+      console.error("Login error:", err)
+      setError(err.message || "An error occurred during login")
     } finally {
       setIsLoading(false)
     }
-  }
-
-  if (!isMounted) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="w-full max-w-md text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p>Loading...</p>
-        </div>
-      </div>
-    )
   }
 
   return (
