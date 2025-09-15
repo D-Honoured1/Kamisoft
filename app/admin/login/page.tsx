@@ -1,7 +1,6 @@
-// app/admin/login/page.tsx
+// app/admin/login/page.tsx - FIXED VERSION
 "use client"
 
-import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Eye, EyeOff, Shield } from "lucide-react"
+import { Eye, EyeOff, Shield, Loader2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 
@@ -19,6 +18,7 @@ export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [supabase, setSupabase] = useState<any>(null)
+  const [isMounted, setIsMounted] = useState(false)
 
   const [formData, setFormData] = useState({
     email: "",
@@ -26,9 +26,28 @@ export default function AdminLogin() {
   })
 
   useEffect(() => {
-    // Initialize Supabase client
+    setIsMounted(true)
+    // Initialize Supabase client only on client side
     setSupabase(createClient())
   }, [])
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkUser = async () => {
+      if (!supabase || !isMounted) return
+      
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          router.push("/admin")
+        }
+      } catch (err) {
+        console.error("Error checking session:", err)
+      }
+    }
+    
+    checkUser()
+  }, [supabase, isMounted, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -43,21 +62,31 @@ export default function AdminLogin() {
         password: formData.password,
       })
 
-      if (error) throw error
+      if (error) {
+        throw error
+      }
 
       if (data.user) {
-        // Use window.location instead of router to force a full page reload
+        // Use window.location to ensure a full page reload and proper middleware execution
         window.location.href = "/admin"
       }
     } catch (error: any) {
+      console.error("Login error:", error)
       setError(error.message || "An error occurred during login")
     } finally {
       setIsLoading(false)
     }
   }
 
-  if (!supabase) {
-    return <div>Loading...</div>
+  if (!isMounted) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-md text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p>Loading...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -125,7 +154,14 @@ export default function AdminLogin() {
               </div>
 
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Signing in..." : "Sign In"}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  "Sign In"
+                )}
               </Button>
             </form>
 
