@@ -1,8 +1,8 @@
+// app/admin/login/page.tsx
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -15,18 +15,25 @@ import Link from "next/link"
 
 export default function AdminLogin() {
   const router = useRouter()
-  const supabase = createClient()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
+  const [supabase, setSupabase] = useState<any>(null)
 
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   })
 
+  useEffect(() => {
+    // Initialize Supabase client
+    setSupabase(createClient())
+  }, [])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!supabase) return
+    
     setIsLoading(true)
     setError("")
 
@@ -39,14 +46,18 @@ export default function AdminLogin() {
       if (error) throw error
 
       if (data.user) {
-        router.push("/admin")
-        router.refresh()
+        // Use window.location instead of router to force a full page reload
+        window.location.href = "/admin"
       }
     } catch (error: any) {
       setError(error.message || "An error occurred during login")
     } finally {
       setIsLoading(false)
     }
+  }
+
+  if (!supabase) {
+    return <div>Loading...</div>
   }
 
   return (
@@ -84,6 +95,7 @@ export default function AdminLogin() {
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="admin@kamisoft.com"
                   required
+                  disabled={isLoading}
                 />
               </div>
 
@@ -97,6 +109,7 @@ export default function AdminLogin() {
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     placeholder="Enter your password"
                     required
+                    disabled={isLoading}
                   />
                   <Button
                     type="button"
@@ -104,6 +117,7 @@ export default function AdminLogin() {
                     size="sm"
                     className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                     onClick={() => setShowPassword(!showPassword)}
+                    disabled={isLoading}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>

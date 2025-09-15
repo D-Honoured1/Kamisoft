@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
 
     if (clientCheckError) {
       console.error("Error checking client:", clientCheckError)
+      // If there's an error checking, proceed to create a new client
     }
 
     if (existingClient) {
@@ -47,11 +48,13 @@ export async function POST(request: NextRequest) {
           name: body.name,
           phone: body.phone || null,
           company: body.company || null,
+          updated_at: new Date().toISOString(),
         })
         .eq("id", clientId)
 
       if (updateError) {
         console.error("Error updating client:", updateError)
+        return NextResponse.json({ error: "Failed to update client record" }, { status: 500 })
       }
     } else {
       console.log("Creating new client")
@@ -63,6 +66,8 @@ export async function POST(request: NextRequest) {
           email: body.email,
           phone: body.phone || null,
           company: body.company || null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         })
         .select("id")
         .single()
@@ -92,6 +97,8 @@ export async function POST(request: NextRequest) {
         site_address: body.site_address || null,
         status: "pending",
         estimated_cost: estimatedCost,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .select("id")
       .single()

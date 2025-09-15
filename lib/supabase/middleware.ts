@@ -35,12 +35,14 @@ export async function middleware(request: NextRequest) {
 
   // Get the user session
   const { data: { session } } = await supabase.auth.getSession()
+  
+  const pathname = request.nextUrl.pathname
 
   // Protect admin routes (except login/signup)
   if (
-    request.nextUrl.pathname.startsWith('/admin') &&
-    !request.nextUrl.pathname.startsWith('/admin/login') &&
-    !request.nextUrl.pathname.startsWith('/admin/signup') &&
+    pathname.startsWith('/admin') &&
+    !pathname.startsWith('/admin/login') &&
+    !pathname.startsWith('/admin/signup') &&
     !session
   ) {
     const url = request.nextUrl.clone()
@@ -51,8 +53,8 @@ export async function middleware(request: NextRequest) {
   // Redirect authenticated users away from auth pages
   if (
     session &&
-    (request.nextUrl.pathname.startsWith('/admin/login') || 
-     request.nextUrl.pathname.startsWith('/admin/signup'))
+    (pathname.startsWith('/admin/login') || 
+     pathname.startsWith('/admin/signup'))
   ) {
     const url = request.nextUrl.clone()
     url.pathname = '/admin'
