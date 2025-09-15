@@ -1,5 +1,5 @@
-// app/admin/login/page.tsx
 "use client"
+
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,16 +10,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Eye, EyeOff, Shield, Loader2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
-import { SupabaseClient } from "@supabase/supabase-js" // Add type import
 
 export default function AdminLogin() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
-  const [supabase, setSupabase] = useState<SupabaseClient | null>(null) // Use proper type
+  const [supabase, setSupabase] = useState<any>(null)
   const [isMounted, setIsMounted] = useState(false)
-  const [initError, setInitError] = useState("") // Add initError state
 
   const [formData, setFormData] = useState({
     email: "",
@@ -28,18 +26,15 @@ export default function AdminLogin() {
 
   useEffect(() => {
     setIsMounted(true)
-    try {
-      const client = createClient()
-      setSupabase(client)
-    } catch (err: any) {
-      console.error("Supabase init error:", err)
-      setInitError("Failed to initialize authentication client. Please check your configuration or contact support.")
-    }
+    // Initialize Supabase client only on client side
+    setSupabase(createClient())
   }, [])
 
+  // Check if user is already logged in
   useEffect(() => {
     const checkUser = async () => {
       if (!supabase || !isMounted) return
+      
       try {
         const { data: { session } } = await supabase.auth.getSession()
         if (session) {
@@ -47,27 +42,31 @@ export default function AdminLogin() {
         }
       } catch (err) {
         console.error("Error checking session:", err)
-        setError("Failed to check session. Please try again.")
       }
     }
+    
     checkUser()
   }, [supabase, isMounted, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!supabase) {
-      setError("Authentication client not initialized")
-      return
-    }
+    if (!supabase) return
+    
     setIsLoading(true)
     setError("")
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
       })
-      if (error) throw error
+
+      if (error) {
+        throw error
+      }
+
       if (data.user) {
+        // Use window.location to ensure a full page reload and proper middleware execution
         window.location.href = "/admin"
       }
     } catch (error: any) {
@@ -84,11 +83,6 @@ export default function AdminLogin() {
         <div className="w-full max-w-md text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
           <p>Loading...</p>
-          {initError && (
-            <Alert variant="destructive">
-              <AlertDescription>{initError}</AlertDescription>
-            </Alert>
-          )}
         </div>
       </div>
     )
@@ -106,6 +100,7 @@ export default function AdminLogin() {
           <h1 className="text-2xl font-bold text-foreground">Admin Login</h1>
           <p className="text-muted-foreground mt-2">Sign in to access the Kamisoft admin dashboard</p>
         </div>
+
         <Card>
           <CardHeader>
             <CardTitle>Welcome Back</CardTitle>
@@ -118,6 +113,7 @@ export default function AdminLogin() {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
+
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -130,6 +126,7 @@ export default function AdminLogin() {
                   disabled={isLoading}
                 />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
@@ -154,6 +151,7 @@ export default function AdminLogin() {
                   </Button>
                 </div>
               </div>
+
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? (
                   <>
@@ -165,6 +163,7 @@ export default function AdminLogin() {
                 )}
               </Button>
             </form>
+
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
                 Don't have an account?{" "}
@@ -175,6 +174,7 @@ export default function AdminLogin() {
             </div>
           </CardContent>
         </Card>
+
         <div className="mt-6 text-center">
           <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
             ← Back to main site
