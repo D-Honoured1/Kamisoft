@@ -1,19 +1,31 @@
-import { createServerClient } from "@/lib/supabase/server"
-import { type NextRequest, NextResponse } from "next/server"
+// app/auth/callback/route.ts
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
+import { NextResponse } from 'next/server'
 
-export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url)
-  const code = searchParams.get("code")
-  const next = searchParams.get("next") ?? "/admin"
+export async function GET(request: Request) {
+  const requestUrl = new URL(request.url)
+  const code = requestUrl.searchParams.get('code')
+  const next = requestUrl.searchParams.get('next') ?? '/admin'
 
   if (code) {
-    const supabase = createServerClient()
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-    if (!error) {
-      return NextResponse.redirect(`${origin}${next}`)
+    const cookieStore = cookies()
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    
+    try {
+      const { error } = await supabase.auth.exchangeCodeForSession(code)
+      if (!error) {
+        return NextResponse.redirect(`${requestUrl.origin}${next}`)
+      } else {
+        console.error('Auth callback error:', error)
+        return NextResponse.redirect(`${requestUrl.origin}/admin/auth/auth-code-error`)
+      }
+    } catch (error) {
+      console.error('Unexpected error in auth callback:', error)
+      return NextResponse.redirect(`${requestUrl.origin}/admin/auth/auth-code-error`)
     }
   }
 
-  // Return the user to an error page with instructions
-  return NextResponse.redirect(`${origin}/admin/auth/auth-code-error`)
+  // Return the user to an error page if no code is provided
+  return NextResponse.redirect(`${requestUrl.origin}/admin/auth/auth-code-error`)
 }
