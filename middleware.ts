@@ -10,7 +10,7 @@ export async function middleware(request: NextRequest) {
     return res
   }
 
-  // Allow access to login and auth callback pages only
+  // Allow access to login and auth callback pages
   if (url.pathname.startsWith("/admin/login") || url.pathname.startsWith("/admin/auth")) {
     try {
       const {
@@ -35,28 +35,13 @@ export async function middleware(request: NextRequest) {
     // Redirect unauthenticated users to login
     if (!user || error) {
       url.pathname = "/admin/login"
-      const response = NextResponse.redirect(url)
-      response.headers.set("Cache-Control", "no-cache, no-store, must-revalidate")
-      response.headers.set("Pragma", "no-cache")
-      response.headers.set("Expires", "0")
-      return response
+      return NextResponse.redirect(url)
     }
 
-    const response = NextResponse.next()
-    response.headers.set("Cache-Control", "no-cache, no-store, must-revalidate")
-    response.headers.set("Pragma", "no-cache")
-    response.headers.set("Expires", "0")
-    response.headers.set("X-Frame-Options", "DENY")
-    response.headers.set("X-Content-Type-Options", "nosniff")
-
-    return response
+    return NextResponse.next()
   } catch {
     url.pathname = "/admin/login"
-    const response = NextResponse.redirect(url)
-    response.headers.set("Cache-Control", "no-cache, no-store, must-revalidate")
-    response.headers.set("Pragma", "no-cache")
-    response.headers.set("Expires", "0")
-    return response
+    return NextResponse.redirect(url)
   }
 }
 

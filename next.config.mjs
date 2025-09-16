@@ -1,3 +1,4 @@
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
@@ -31,15 +32,6 @@ const nextConfig = {
             value: 'camera=(), microphone=(), geolocation=()',
           },
         ],
-      },
-    ]
-  },
-  async redirects() {
-    return [
-      {
-        source: '/admin',
-        destination: '/admin/dashboard',
-        permanent: false,
       },
     ]
   },
