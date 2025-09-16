@@ -1,12 +1,12 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Shield, LogIn, User } from "lucide-react"
-import { createClient } from "@/lib/supabase/client" // Changed import
-import { useEffect, useState } from "react"
+import { Shield, Menu, X } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 const navigation = [
   { name: "Home", href: "/" },
@@ -19,35 +19,8 @@ const navigation = [
 ]
 
 export function Navigation() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const pathname = usePathname()
-  const supabase = createClient() // Changed to use createClient()
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    // Check current user session
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setUser(session?.user || null)
-      setLoading(false)
-    }
-
-    getSession()
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user || null)
-        setLoading(false)
-      }
-    )
-
-    return () => subscription.unsubscribe()
-  }, [supabase.auth])
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut()
-  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -73,39 +46,48 @@ export function Navigation() {
 
         <div className="flex items-center space-x-4">
           <ThemeToggle />
-          
-          {/* Authentication Buttons */}
-          {!loading && (
-            <>
-              {user ? (
-                <div className="flex items-center space-x-2">
-                  <Button variant="outline" asChild>
-                    <Link href="/admin">
-                      <User className="mr-2 h-4 w-4" />
-                      Dashboard
-                    </Link>
-                  </Button>
-                  <Button variant="outline" onClick={handleSignOut}>
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Sign Out
-                  </Button>
-                </div>
-              ) : (
-                <Button asChild>
-                  <Link href="/admin/login">
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Login
-                  </Link>
-                </Button>
-              )}
-            </>
-          )}
-          
-          <Button asChild>
+          <Button asChild className="hidden md:inline-flex">
             <Link href="/request-service">Hire Us</Link>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="md:hidden"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
         </div>
       </div>
+
+      {isMobileMenuOpen && (
+        <div className="md:hidden border-t border-border bg-background/95 backdrop-blur">
+          <div className="container py-4">
+            <nav className="space-y-2">
+              {navigation.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={cn(
+                    "block px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                    pathname === item.href
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                  )}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {item.name}
+                </Link>
+              ))}
+              <Button asChild className="w-full mt-4">
+                <Link href="/request-service" onClick={() => setIsMobileMenuOpen(false)}>
+                  Hire Us
+                </Link>
+              </Button>
+            </nav>
+          </div>
+        </div>
+      )}
     </header>
   )
 }

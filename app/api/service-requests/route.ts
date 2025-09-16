@@ -1,24 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createClient } from "@/lib/supabase/server"
 import type { ServiceRequestForm } from "@/lib/types/database"
 
 export async function POST(request: NextRequest) {
   try {
-    // Log the incoming request
-    console.log("API Request received")
-    
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
-    
+    const supabase = await createClient()
     const body: ServiceRequestForm = await request.json()
-    
-    // Log the received data
-    console.log("Request data:", body)
 
     // Validate required fields
     if (!body.name || !body.email || !body.service_category || !body.title || !body.description) {
-      console.log("Missing required fields")
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
@@ -26,38 +16,21 @@ export async function POST(request: NextRequest) {
     let clientId: string
 
     // Check if client already exists
-    const { data: existingClient, error: clientCheckError } = await supabase
-      .from("clients")
-      .select("id")
-      .eq("email", body.email)
-      .single()
-
-    if (clientCheckError) {
-      console.error("Error checking client:", clientCheckError)
-      // If there's an error checking, proceed to create a new client
-    }
+    const { data: existingClient } = await supabase.from("clients").select("id").eq("email", body.email).single()
 
     if (existingClient) {
       clientId = existingClient.id
-      console.log("Existing client found:", clientId)
 
       // Update client information if provided
-      const { error: updateError } = await supabase
+      await supabase
         .from("clients")
         .update({
           name: body.name,
           phone: body.phone || null,
           company: body.company || null,
-          updated_at: new Date().toISOString(),
         })
         .eq("id", clientId)
-
-      if (updateError) {
-        console.error("Error updating client:", updateError)
-        return NextResponse.json({ error: "Failed to update client record" }, { status: 500 })
-      }
     } else {
-      console.log("Creating new client")
       // Create new client
       const { data: newClient, error: clientError } = await supabase
         .from("clients")
@@ -66,8 +39,6 @@ export async function POST(request: NextRequest) {
           email: body.email,
           phone: body.phone || null,
           company: body.company || null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
         })
         .select("id")
         .single()
@@ -78,11 +49,9 @@ export async function POST(request: NextRequest) {
       }
 
       clientId = newClient.id
-      console.log("New client created:", clientId)
     }
 
     const estimatedCost = calculateEstimatedCost(body.service_category, body.request_type)
-    console.log("Estimated cost:", estimatedCost)
 
     // Create the service request
     const { data: serviceRequest, error: requestError } = await supabase
@@ -97,8 +66,6 @@ export async function POST(request: NextRequest) {
         site_address: body.site_address || null,
         status: "pending",
         estimated_cost: estimatedCost,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       })
       .select("id")
       .single()
@@ -108,7 +75,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to create service request" }, { status: 500 })
     }
 
-    console.log("Service request created:", serviceRequest.id)
+    // TODO: Send notification email to admin
+    // TODO: Send confirmation email to client with payment link
 
     return NextResponse.json({
       success: true,
@@ -118,7 +86,7 @@ export async function POST(request: NextRequest) {
       message: "Service request submitted successfully",
     })
   } catch (error) {
-    console.error("Unexpected error processing service request:", error)
+    console.error("Error processing service request:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

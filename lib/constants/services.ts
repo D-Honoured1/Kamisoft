@@ -1,3 +1,5 @@
+// Service categories and descriptions for Kamisoft Enterprises
+
 import type { ServiceCategory } from "@/lib/types/database"
 
 export const SERVICE_CATEGORIES: Record<
@@ -117,7 +119,7 @@ export const COMPANY_INFO = {
   parentCompany: "Amor Group",
 
   contact: {
-    email: "hello@kamisoft.com",
+    email: "hello@kamisoftenterprises.online",
     phone: "+234 XXX XXX XXXX", // To be updated
     address: "Lagos, Nigeria",
   },

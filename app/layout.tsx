@@ -42,6 +42,7 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
+  generator: "v0.app",
 }
 
 export default function RootLayout({
@@ -50,8 +51,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${GeistSans.variable} ${GeistMono.variable}`}>
+      <body className="font-sans antialiased">
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <Suspense fallback={null}>
             <div className="min-h-screen flex flex-col">

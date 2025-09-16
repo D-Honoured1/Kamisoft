@@ -1,3 +1,6 @@
+// Database types for Kamisoft Enterprises
+// Auto-generated from Supabase schema
+
 export type ServiceCategory =
   | "full_stack_development"
   | "mobile_app_development"
