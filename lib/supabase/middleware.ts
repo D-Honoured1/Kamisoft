@@ -1,51 +1,34 @@
-/* import { NextResponse, type NextRequest } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
+// lib/supabase/middleware.ts
+import { createServerClient } from "@supabase/ssr"
+import { NextResponse, type NextRequest } from "next/server"
 
-export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request })
+export async function updateSession(request: NextRequest) {
+  const response = NextResponse.next()
 
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name) {
+          return request.cookies.get(name)?.value
+        },
+        set(name, value, options) {
+          response.cookies.set({ name, value, ...options })
+        },
+        remove(name, options) {
+          response.cookies.set({ name, value: "", ...options })
+        },
+      },
+    }
+  )
+
+  // this prevents build crashes
   try {
-    // Use your wrapped Supabase client
-    const supabase = await createServerClient()
-
-    // Runtime-only check
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    // Protect admin routes
-    if (
-      request.nextUrl.pathname.startsWith("/admin") &&
-      !request.nextUrl.pathname.startsWith("/admin/login") &&
-      !request.nextUrl.pathname.startsWith("/admin/signup") &&
-      !request.nextUrl.pathname.startsWith("/admin/auth") &&
-      !user
-    ) {
-      const url = request.nextUrl.clone()
-      url.pathname = "/admin/login"
-      return NextResponse.redirect(url)
-    }
-
-    // Redirect authenticated users away from login/signup
-    if (
-      user &&
-      (request.nextUrl.pathname.startsWith("/admin/login") ||
-        request.nextUrl.pathname.startsWith("/admin/signup"))
-    ) {
-      const url = request.nextUrl.clone()
-      url.pathname = "/admin"
-      return NextResponse.redirect(url)
-    }
-  } catch (err) {
-    console.error("Middleware auth error:", err)
-    // Don't crash the build or runtime
-    return supabaseResponse
+    await supabase.auth.getUser()
+  } catch {
+    // ignore at build time
   }
 
-  return supabaseResponse
+  return response
 }
-
-export const config = {
-  matcher: ["/admin/:path*"],
-}
-*/
