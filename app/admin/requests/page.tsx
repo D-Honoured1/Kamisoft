@@ -1,5 +1,3 @@
-export const dynamic = "force-dynamic";
-
 import { createServerClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -19,20 +17,38 @@ export default async function ServiceRequestsManagement() {
     redirect("/admin/login")
   }
 
-  const { data: requests, error } = await supabase
-    .from("service_requests")
-    .select(`
-      *,
-      clients (
-        name,
-        email,
-        phone
-      )
-    `)
-    .order("created_at", { ascending: false })
+  let requests = null
+  let error = null
+
+  try {
+    const result = await supabase
+      .from("service_requests")
+      .select(`
+        *,
+        clients (
+          name,
+          email,
+          phone
+        )
+      `)
+      .order("created_at", { ascending: false })
+
+    requests = result.data
+    error = result.error
+  } catch (dbError) {
+    console.error("Database connection error:", dbError)
+    error = dbError
+  }
 
   if (error) {
     console.error("Error fetching service requests:", error)
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+          <p className="text-destructive">Unable to load service requests. Please try again later.</p>
+        </div>
+      </div>
+    )
   }
 
   const getStatusColor = (status: string) => {
