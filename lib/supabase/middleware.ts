@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from "next/server"
+/* import { NextResponse, type NextRequest } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 
 export async function middleware(request: NextRequest) {
@@ -48,3 +48,4 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: ["/admin/:path*"],
 }
+*/
