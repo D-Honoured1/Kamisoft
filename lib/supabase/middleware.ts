@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server"
-import { createServerClient } from "@/lib/server"
+import { createServerClient } from "@/lib/supabase/server"
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
