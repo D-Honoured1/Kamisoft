@@ -5,11 +5,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { AdminNavigation } from "@/components/admin-navigation"
 
-export default async function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = createServerClient()
 
   const {
@@ -17,6 +13,7 @@ export default async function AdminLayout({
   } = await supabase.auth.getUser()
 
   if (!user) {
+    // redirect to login page
     redirect("/admin/login")
   }
 
