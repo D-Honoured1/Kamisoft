@@ -1,34 +1,35 @@
 // lib/supabase/middleware.ts
 import { createServerClient } from "@supabase/ssr"
-import { NextResponse, type NextRequest } from "next/server"
+import type { NextRequest } from "next/server"
+import { NextResponse } from "next/server"
 
-export async function updateSession(request: NextRequest) {
-  const response = NextResponse.next()
+/**
+ * Create a Supabase server client tied to the middleware request/response.
+ * Returns both the supabase client and a NextResponse to return from middleware.
+ */
+export function createSupabaseMiddlewareClient(request: NextRequest) {
+  const res = NextResponse.next()
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name) {
-          return request.cookies.get(name)?.value
-        },
-        set(name, value, options) {
-          response.cookies.set({ name, value, ...options })
-        },
-        remove(name, options) {
-          response.cookies.set({ name, value: "", ...options })
+        getAll: () => request.cookies.getAll(),
+        setAll: (cookiesToSet) => {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              // mirror cookies into the response so browser and server stay in sync
+              res.cookies.set(name, value, options)
+            })
+          } catch (err) {
+            // ignore safely
+            console.warn("createSupabaseMiddlewareClient setAll error", err)
+          }
         },
       },
     }
   )
 
-  // this prevents build crashes
-  try {
-    await supabase.auth.getUser()
-  } catch {
-    // ignore at build time
-  }
-
-  return response
+  return { supabase, res }
 }
