@@ -1,15 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
+import { createSupabaseMiddlewareClient } from "@/lib/supabase/middleware"
 
 export async function middleware(request: NextRequest) {
   const url = request.nextUrl.clone()
+  const { supabase, res } = createSupabaseMiddlewareClient(request)
 
   // Only protect /admin routes
   if (!url.pathname.startsWith("/admin")) {
-    return NextResponse.next()
+    return res
   }
-
-  const supabase = await createServerClient()
 
   try {
     const {
@@ -28,9 +27,8 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url)
     }
 
-    return NextResponse.next()
-  } catch (err) {
-    // In case of any Supabase errors, force redirect to login
+    return res
+  } catch {
     url.pathname = "/admin/login"
     return NextResponse.redirect(url)
   }
