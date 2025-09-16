@@ -1,12 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Shield, Menu, X } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { createBrowserClient } from "@/lib/supabase/client"
+import type { User } from "@supabase/supabase-js"
 
 const navigation = [
   { name: "Home", href: "/" },
@@ -20,7 +22,31 @@ const navigation = [
 
 export function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
   const pathname = usePathname()
+  const supabase = createBrowserClient()
+
+  useEffect(() => {
+    const getUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      setUser(user)
+      setLoading(false)
+    }
+
+    getUser()
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null)
+      setLoading(false)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [supabase.auth])
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -46,6 +72,16 @@ export function Navigation() {
 
         <div className="flex items-center space-x-4">
           <ThemeToggle />
+          {!loading && !user && (
+            <Button variant="outline" size="sm" asChild className="hidden md:inline-flex bg-transparent">
+              <Link href="/admin/login">Admin</Link>
+            </Button>
+          )}
+          {!loading && user && (
+            <Button variant="outline" size="sm" asChild className="hidden md:inline-flex bg-transparent">
+              <Link href="/admin">Dashboard</Link>
+            </Button>
+          )}
           <Button asChild className="hidden md:inline-flex">
             <Link href="/request-service">Hire Us</Link>
           </Button>
@@ -84,6 +120,20 @@ export function Navigation() {
                   Hire Us
                 </Link>
               </Button>
+              {!loading && !user && (
+                <Button variant="outline" asChild className="w-full mt-2 bg-transparent">
+                  <Link href="/admin/login" onClick={() => setIsMobileMenuOpen(false)}>
+                    Admin Login
+                  </Link>
+                </Button>
+              )}
+              {!loading && user && (
+                <Button variant="outline" asChild className="w-full mt-2 bg-transparent">
+                  <Link href="/admin" onClick={() => setIsMobileMenuOpen(false)}>
+                    Dashboard
+                  </Link>
+                </Button>
+              )}
             </nav>
           </div>
         </div>

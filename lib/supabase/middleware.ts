@@ -1,35 +1,64 @@
-// lib/supabase/middleware.ts
 import { createServerClient } from "@supabase/ssr"
-import type { NextRequest } from "next/server"
-import { NextResponse } from "next/server"
+import { NextResponse, type NextRequest } from "next/server"
 
-/**
- * Create a Supabase server client tied to the middleware request/response.
- * Returns both the supabase client and a NextResponse to return from middleware.
- */
 export function createSupabaseMiddlewareClient(request: NextRequest) {
-  const res = NextResponse.next()
+  let supabaseResponse = NextResponse.next({
+    request,
+  })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll: () => request.cookies.getAll(),
-        setAll: (cookiesToSet) => {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              // mirror cookies into the response so browser and server stay in sync
-              res.cookies.set(name, value, options)
-            })
-          } catch (err) {
-            // ignore safely
-            console.warn("createSupabaseMiddlewareClient setAll error", err)
-          }
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({
+            request,
+          })
+          cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options))
         },
       },
-    }
+    },
   )
 
-  return { supabase, res }
+  return { supabase, res: supabaseResponse }
+}
+
+export async function updateSession(request: NextRequest) {
+  const { supabase, res: supabaseResponse } = createSupabaseMiddlewareClient(request)
+
+  // Do not run code between createServerClient and
+  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
+  // issues with users being randomly logged out.
+
+  // IMPORTANT: If you remove getUser() and you use server-side rendering
+  // with the Supabase client, your users may be randomly logged out.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  // Protect admin routes - redirect to admin login if not authenticated
+  if (
+    request.nextUrl.pathname.startsWith("/admin") &&
+    !request.nextUrl.pathname.startsWith("/admin/login") &&
+    !request.nextUrl.pathname.startsWith("/admin/auth") &&
+    !user
+  ) {
+    const url = request.nextUrl.clone()
+    url.pathname = "/admin/login"
+    return NextResponse.redirect(url)
+  }
+
+  // Redirect authenticated users away from login page to admin dashboard
+  if (user && request.nextUrl.pathname.startsWith("/admin/login")) {
+    const url = request.nextUrl.clone()
+    url.pathname = "/admin"
+    return NextResponse.redirect(url)
+  }
+
+  return supabaseResponse
 }

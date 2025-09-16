@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic"
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -27,6 +27,18 @@ export default function AdminLogin() {
     password: "",
   })
 
+  useEffect(() => {
+    const checkUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (user) {
+        router.push("/admin")
+      }
+    }
+    checkUser()
+  }, [supabase.auth, router])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
@@ -41,8 +53,7 @@ export default function AdminLogin() {
       if (error) throw error
 
       if (data.user) {
-        router.push("/admin")
-        router.refresh()
+        window.location.href = "/admin"
       }
     } catch (error: any) {
       setError(error.message || "An error occurred during login")
@@ -116,15 +127,6 @@ export default function AdminLogin() {
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
-
-            <div className="mt-6 text-center">
-              <p className="text-sm text-muted-foreground">
-                Don't have an account?{" "}
-                <Link href="/admin/signup" className="text-primary hover:underline">
-                  Create one here
-                </Link>
-              </p>
-            </div>
           </CardContent>
         </Card>
 
