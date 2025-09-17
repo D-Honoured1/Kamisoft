@@ -1,5 +1,6 @@
 import { createServerClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
+//import { AdminNavigation } from "@/components/admin-navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -15,9 +16,9 @@ export default async function AdminDashboard() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) {
+  /*if (!user) {
     redirect("/admin/login")
-  }
+  }*/
 
   // Fetch dashboard statistics
   let stats = [
