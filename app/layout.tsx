@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://kamisoft.com",
+    url: "https://kamisoftenterprises.online",
     title: "Kamisoft Enterprises - From Code to Connectivity",
     description: "Technology company offering bespoke solutions across fintech, gaming, and enterprise software.",
     siteName: "Kamisoft Enterprises",
