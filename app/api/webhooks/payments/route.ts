@@ -1,9 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createServerClient } from "@/lib/supabase/server" // Changed from createClient to createServerClient
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const supabase = createServerClient() // Removed await since it's not async
     const body = await request.json()
 
     // Determine webhook source based on headers or payload structure
@@ -87,7 +87,7 @@ async function handlePaystackWebhook(body: any, signature: string) {
 
 async function generateInvoice(paymentId: string) {
   try {
-    const supabase = await createClient()
+    const supabase = createServerClient() // Removed await
 
     // Get payment and service request details
     const { data: payment, error: paymentError } = await supabase
