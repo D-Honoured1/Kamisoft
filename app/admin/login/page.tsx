@@ -57,8 +57,8 @@ export default function AdminLogin() {
         throw new Error(data.error || "Login failed")
       }
 
-      // Success → redirect to admin dashboard
-      router.push("/admin")
+      // Success - force page refresh to update auth state, then redirect
+      window.location.href = "/admin"
     } catch (error: any) {
       setError(error.message || "An error occurred during login")
     } finally {
