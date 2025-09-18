@@ -18,14 +18,22 @@ export default function AdminLogin() {
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
+  const [mounted, setMounted] = useState(false)
 
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   })
 
+  // Ensure component is mounted before checking auth
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   // Check if user is already logged in
   useEffect(() => {
+    if (!mounted) return
+    
     const checkAuth = () => {
       const token = document.cookie
         .split('; ')
@@ -33,11 +41,15 @@ export default function AdminLogin() {
         ?.split('=')[1];
       
       if (token) {
-        router.push("/admin")
+        // Use replace instead of push to prevent back button issues
+        router.replace("/admin")
       }
     }
-    checkAuth()
-  }, [router])
+    
+    // Small delay to ensure cookie is set
+    const timeoutId = setTimeout(checkAuth, 100)
+    return () => clearTimeout(timeoutId)
+  }, [router, mounted])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -47,7 +59,10 @@ export default function AdminLogin() {
     try {
       const res = await fetch("/api/admin/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache"
+        },
         body: JSON.stringify(formData),
       })
 
@@ -57,13 +72,23 @@ export default function AdminLogin() {
         throw new Error(data.error || "Login failed")
       }
 
-      // Success - force page refresh to update auth state, then redirect
-      window.location.href = "/admin"
+      // Wait a moment for the cookie to be set, then redirect
+      setTimeout(() => {
+        window.location.replace("/admin")
+      }, 100)
+      
     } catch (error: any) {
       setError(error.message || "An error occurred during login")
-    } finally {
       setIsLoading(false)
     }
+  }
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
   }
 
   return (
@@ -96,11 +121,14 @@ export default function AdminLogin() {
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
+                  name="email"
                   type="email"
+                  autoComplete="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="admin@kamisoft.com"
                   required
+                  disabled={isLoading}
                 />
               </div>
 
@@ -109,11 +137,14 @@ export default function AdminLogin() {
                 <div className="relative">
                   <Input
                     id="password"
+                    name="password"
                     type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     placeholder="Enter your password"
                     required
+                    disabled={isLoading}
                   />
                   <Button
                     type="button"
@@ -121,6 +152,7 @@ export default function AdminLogin() {
                     size="sm"
                     className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                     onClick={() => setShowPassword(!showPassword)}
+                    disabled={isLoading}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
@@ -128,7 +160,14 @@ export default function AdminLogin() {
               </div>
 
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Signing in..." : "Sign In"}
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Signing in...
+                  </div>
+                ) : (
+                  "Sign In"
+                )}
               </Button>
             </form>
           </CardContent>
