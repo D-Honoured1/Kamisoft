@@ -3,7 +3,6 @@ import { NextResponse } from "next/server"
 import jwt from "jsonwebtoken"
 import { serialize } from "cookie"
 import { createServerClient } from "@/lib/supabase/server"
-import { verifyPassword } from "@/lib/auth/password"
 
 export async function POST(req: Request) {
   try {
@@ -12,6 +11,8 @@ export async function POST(req: Request) {
     if (!email || !password) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 })
     }
+
+    console.log("Login attempt for:", email)
     
     // Connect to Supabase to verify admin credentials
     const supabase = createServerClient()
@@ -24,25 +25,38 @@ export async function POST(req: Request) {
       .eq("is_active", true)
       .single()
 
-    if (error || !adminUser) {
+    console.log("Database query result:", { adminUser, error })
+
+    if (error) {
+      console.error("Database error:", error)
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
     }
 
-    // Verify password (if using hashed passwords)
-    // const isValidPassword = verifyPassword(password, adminUser.password)
-    
-    // For now, using plain text comparison (change this in production!)
+    if (!adminUser) {
+      console.log("No admin user found for email:", email)
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
+    }
+
+    // For now, using plain text password comparison
+    // In production, you should hash passwords and use bcrypt.compare()
     const isValidPassword = password === adminUser.password
 
     if (!isValidPassword) {
+      console.log("Invalid password for user:", email)
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
     }
 
+    console.log("Authentication successful for:", email)
+
     // Update last login
-    await supabase
+    const { error: updateError } = await supabase
       .from("admin_users")
       .update({ last_login: new Date().toISOString() })
       .eq("id", adminUser.id)
+
+    if (updateError) {
+      console.error("Error updating last login:", updateError)
+    }
 
     // Create JWT token
     const token = jwt.sign(
@@ -52,7 +66,7 @@ export async function POST(req: Request) {
         id: adminUser.id,
         name: adminUser.name
       }, 
-      process.env.JWT_SECRET!, 
+      process.env.JWT_SECRET || "fallback-secret", 
       { expiresIn: "24h" }
     )
 
@@ -81,6 +95,9 @@ export async function POST(req: Request) {
     return response
   } catch (error) {
     console.error("Login error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ 
+      error: "Internal server error", 
+      details: process.env.NODE_ENV === "development" ? error.message : undefined 
+    }, { status: 500 })
   }
 }
