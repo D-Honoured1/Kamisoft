@@ -1,12 +1,17 @@
 // app/api/admin/login/route.ts
 import { NextResponse } from "next/server"
 import jwt from "jsonwebtoken"
+<<<<<<< HEAD
 import { serialize } from "cookie"
 import { createServerClient } from "@/lib/supabase/server"
+=======
+import cookie from "cookie"
+>>>>>>> parent of f155a2e (claude 2)
 
 export async function POST(req: Request) {
   try {
     const { email, password } = await req.json()
+<<<<<<< HEAD
     
     console.log("Login attempt for email:", email)
     
@@ -119,12 +124,41 @@ export async function POST(req: Request) {
         sameSite: "strict",
         path: "/",
         maxAge: 60 * 60 * 24, // 24 hours
-      })
-    )
+=======
 
+    // Replace this with your real admin validation
+    if (
+      email === process.env.ADMIN_EMAIL &&
+      password === process.env.ADMIN_PASSWORD
+    ) {
+      const token = jwt.sign({ role: "admin", email }, process.env.JWT_SECRET!, {
+        expiresIn: "24h",
+>>>>>>> parent of f155a2e (claude 2)
+      })
+
+<<<<<<< HEAD
     console.log("Login successful for:", email)
     return response
 
+=======
+      const response = NextResponse.json({ success: true, message: "Login successful" })
+
+      response.headers.set(
+        "Set-Cookie",
+        cookie.serialize("admin_token", token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+          path: "/",
+          maxAge: 60 * 60 * 24, // 24 hours
+        })
+      )
+
+      return response
+    }
+
+    return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
+>>>>>>> parent of f155a2e (claude 2)
   } catch (error) {
     console.error("Login error:", error)
     return NextResponse.json({ 

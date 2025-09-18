@@ -1,13 +1,13 @@
-// app/admin/logout/route.ts
+// app/app/admin/logout/route.ts
 import { NextResponse } from "next/server"
-import { serialize } from "cookie"
+import cookie from "cookie"
 
 export async function POST() {
   const response = NextResponse.json({ success: true })
 
   response.headers.set(
     "Set-Cookie",
-    serialize("admin_token", "", {
+    cookie.serialize("admin_token", "", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
