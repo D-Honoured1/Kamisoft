@@ -41,27 +41,31 @@ export default function AdminLogin() {
   }, [supabase.auth, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
+  e.preventDefault()
+  setIsLoading(true)
+  setError("")
 
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      })
+  try {
+    const res = await fetch("/app/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formData),
+    })
 
-      if (error) throw error
-
-      if (data.user) {
-        window.location.href = "/admin"
-      }
-    } catch (error: any) {
-      setError(error.message || "An error occurred during login")
-    } finally {
-      setIsLoading(false)
+    if (!res.ok) {
+      const data = await res.json()
+      throw new Error(data.error || "Login failed")
     }
+
+    // Success → redirect to admin dashboard
+    router.push("/admin")
+  } catch (error: any) {
+    setError(error.message || "An error occurred during login")
+  } finally {
+    setIsLoading(false)
   }
+}
+
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
