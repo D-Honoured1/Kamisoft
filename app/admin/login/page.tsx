@@ -3,7 +3,6 @@
 export const dynamic = "force-dynamic"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,13 +11,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Eye, EyeOff, Shield } from "lucide-react"
-//import { createBrowserClient } from "@/lib/supabase/client"
-import { createBrowserSupabaseClient } from "@supabase/auth-helpers-nextjs"
 import Link from "next/link"
 
 export default function AdminLogin() {
   const router = useRouter()
-  const supabase = createBrowserSupabaseClient()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
@@ -28,44 +24,47 @@ export default function AdminLogin() {
     password: "",
   })
 
+  // Check if user is already logged in
   useEffect(() => {
-    const checkUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (user) {
+    const checkAuth = () => {
+      const token = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('admin_token='))
+        ?.split('=')[1];
+      
+      if (token) {
         router.push("/admin")
       }
     }
-    checkUser()
-  }, [supabase.auth, router])
+    checkAuth()
+  }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault()
-  setIsLoading(true)
-  setError("")
+    e.preventDefault()
+    setIsLoading(true)
+    setError("")
 
-  try {
-    const res = await fetch("/app/admin/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
-    })
+    try {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      })
 
-    if (!res.ok) {
       const data = await res.json()
-      throw new Error(data.error || "Login failed")
+
+      if (!res.ok) {
+        throw new Error(data.error || "Login failed")
+      }
+
+      // Success → redirect to admin dashboard
+      router.push("/admin")
+    } catch (error: any) {
+      setError(error.message || "An error occurred during login")
+    } finally {
+      setIsLoading(false)
     }
-
-    // Success → redirect to admin dashboard
-    router.push("/admin")
-  } catch (error: any) {
-    setError(error.message || "An error occurred during login")
-  } finally {
-    setIsLoading(false)
   }
-}
-
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">

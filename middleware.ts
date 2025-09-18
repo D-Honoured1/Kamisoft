@@ -1,54 +1,43 @@
 // middleware.ts
 import { NextResponse, type NextRequest } from "next/server"
-import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs"
 import jwt from "jsonwebtoken"
 
 export async function middleware(request: NextRequest) {
-  const res = NextResponse.next()
-  const supabase = createMiddlewareClient({ req: request, res })
   const url = request.nextUrl.clone()
 
   // Only protect /admin routes
   if (!url.pathname.startsWith("/admin")) {
-    return res
+    return NextResponse.next()
   }
 
   // Allow login & auth pages
   if (url.pathname.startsWith("/admin/login") || url.pathname.startsWith("/admin/auth")) {
     // If already logged in, redirect to /admin
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
     const jwtToken = request.cookies.get("admin_token")?.value
     const jwtValid = checkJWT(jwtToken)
 
-    if ((user || jwtValid) && url.pathname.startsWith("/admin/login")) {
+    if (jwtValid && url.pathname.startsWith("/admin/login")) {
       url.pathname = "/admin"
       return NextResponse.redirect(url)
     }
 
-    return res
+    return NextResponse.next()
   }
 
   // Protect all other /admin routes
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
   const jwtToken = request.cookies.get("admin_token")?.value
   const jwtValid = checkJWT(jwtToken)
 
-  if (!user && !jwtValid) {
+  if (!jwtValid) {
     url.pathname = "/admin/login"
     return NextResponse.redirect(url)
   }
 
-  return res
+  return NextResponse.next()
 }
 
-// Helper function
-function checkJWT(token?: string) {
+// Helper function to check JWT
+function checkJWT(token?: string): boolean {
   if (!token) return false
   try {
     jwt.verify(token, process.env.JWT_SECRET!)
