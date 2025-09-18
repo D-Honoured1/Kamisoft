@@ -1,4 +1,6 @@
 // app/api/admin/debug-db/route.ts
+export const dynamic = "force-dynamic"; // Add this line to fix the static rendering issue
+
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 
@@ -21,19 +23,12 @@ export async function GET() {
     const supabase = createServerClient()
     console.log("2. Supabase client created")
     
-    // Check if admin_users table exists
-    const { data: tables, error: tablesError } = await supabase
-      .rpc('get_table_list')
-      .select('*')
-    
-    console.log("3. Table check result:", { tablesError: tablesError?.message })
-    
     // Try to get all admin users
     const { data: allUsers, error: allUsersError } = await supabase
       .from("admin_users")
       .select("id, email, name, role, is_active, created_at")
     
-    console.log("4. All users query:", { 
+    console.log("3. All users query:", { 
       error: allUsersError?.message, 
       userCount: allUsers?.length,
       users: allUsers 
@@ -45,9 +40,9 @@ export async function GET() {
       .from("admin_users")
       .select("*")
       .eq("email", targetEmail)
-      .single()
+      .maybeSingle() // Use maybeSingle instead of single to avoid error when no rows
     
-    console.log("5. Specific user query:", { 
+    console.log("4. Specific user query:", { 
       error: specificError?.message, 
       user: specificUser ? { 
         id: specificUser.id, 
@@ -57,55 +52,6 @@ export async function GET() {
       } : null 
     })
     
-    // Test with different email formats
-    const emailVariations = [
-      targetEmail,
-      targetEmail.toLowerCase(),
-      targetEmail.trim(),
-      targetEmail.toLowerCase().trim()
-    ]
-    
-    const emailTests = []
-    for (const emailVar of emailVariations) {
-      const { data, error } = await supabase
-        .from("admin_users")
-        .select("id, email")
-        .eq("email", emailVar)
-        .single()
-      
-      emailTests.push({
-        email: emailVar,
-        found: !!data,
-        error: error?.code
-      })
-    }
-    
-    console.log("6. Email variation tests:", emailTests)
-    
-    // Try to create the admin user if it doesn't exist
-    let insertResult = null
-    if (!specificUser) {
-      console.log("7. Attempting to create admin user...")
-      const { data: insertData, error: insertError } = await supabase
-        .from("admin_users")
-        .insert({
-          email: targetEmail,
-          password: "Kami_Unrivalled",
-          name: "Daniel Austen",
-          role: "super_admin",
-          is_active: true
-        })
-        .select()
-      
-      insertResult = {
-        success: !insertError,
-        error: insertError?.message,
-        data: insertData
-      }
-      
-      console.log("7. Insert result:", insertResult)
-    }
-    
     console.log("=== DATABASE DEBUG END ===")
     
     return NextResponse.json({
@@ -114,6 +60,7 @@ export async function GET() {
       database: {
         allUsers,
         allUsersError: allUsersError?.message,
+        userCount: allUsers?.length || 0,
         specificUser: specificUser ? {
           id: specificUser.id,
           email: specificUser.email,
@@ -122,8 +69,7 @@ export async function GET() {
           hasPassword: !!specificUser.password
         } : null,
         specificError: specificError?.message,
-        emailTests,
-        insertResult
+        needsSetup: !specificUser && allUsers?.length === 0
       }
     })
     
