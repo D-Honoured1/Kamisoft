@@ -24,7 +24,7 @@ export function AdminNavigation() {
   const pathname = usePathname()
   const router = useRouter()
 
-  // Check authentication status on mount
+  // Check authentication status on mount and periodically
   useEffect(() => {
     const checkAuth = () => {
       const token = document.cookie
@@ -37,27 +37,53 @@ export function AdminNavigation() {
     }
     
     checkAuth()
+    
+    // Check every 2 seconds for auth changes
+    const interval = setInterval(checkAuth, 2000)
+    
+    return () => clearInterval(interval)
   }, [])
 
   const handleSignOut = async () => {
     try {
+      setLoading(true)
+      
+      // Call the logout API
       await fetch("/admin/logout", {
         method: "POST",
       })
       
-      // Clear authentication state
+      // Clear client-side state
       setIsAuthenticated(false)
       
-      // Redirect to login
-      router.push("/admin/login")
+      // Trigger storage event for other tabs
+      localStorage.setItem('admin_logout', Date.now().toString())
+      localStorage.removeItem('admin_logout')
+      
+      // Force reload to clear any cached state and redirect
+      window.location.href = "/admin/login"
     } catch (error) {
       console.error("Logout error:", error)
+      // Fallback: clear cookie manually and redirect
+      document.cookie = "admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+      window.location.href = "/admin/login"
     }
   }
 
   // Don't render anything while checking auth
   if (loading) {
-    return null
+    return (
+      <nav className="bg-card border-b border-border">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-muted rounded-lg animate-pulse"></div>
+              <div className="ml-3 w-32 h-6 bg-muted rounded animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+      </nav>
+    )
   }
 
   // Don't show navigation on login page
@@ -107,10 +133,19 @@ export function AdminNavigation() {
           {/* Right side actions */}
           <div className="hidden md:flex items-center space-x-4">
             <ThemeToggle />
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/" target="_blank">View Site</Link>
+            </Button>
             {isAuthenticated && (
-              <Button variant="outline" size="sm" onClick={handleSignOut}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleSignOut}
+                disabled={loading}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
                 <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
+                {loading ? "Signing out..." : "Sign Out"}
               </Button>
             )}
           </div>
@@ -150,14 +185,18 @@ export function AdminNavigation() {
                   </Link>
                 )
               })}
+              <Button variant="outline" size="sm" className="w-full justify-start mt-4" asChild>
+                <Link href="/" target="_blank">View Site</Link>
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full justify-start mt-4 bg-transparent"
+                className="w-full justify-start mt-2 text-red-600 hover:text-red-700 hover:bg-red-50"
                 onClick={handleSignOut}
+                disabled={loading}
               >
                 <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
+                {loading ? "Signing out..." : "Sign Out"}
               </Button>
             </div>
           </div>

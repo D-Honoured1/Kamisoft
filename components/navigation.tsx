@@ -35,21 +35,24 @@ export function Navigation() {
       setLoading(false)
     }
     
+    // Initial check
     checkAuth()
 
-    // Listen for auth changes (when user logs in/out)
-    const handleStorageChange = () => {
-      checkAuth()
+    // Set up an interval to periodically check auth state
+    const interval = setInterval(checkAuth, 2000) // Check every 2 seconds
+    
+    // Listen for storage events (logout from another tab)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'admin_logout') {
+        setIsAuthenticated(false)
+      }
     }
     
     window.addEventListener('storage', handleStorageChange)
     
-    // Also check periodically in case of same-tab changes
-    const interval = setInterval(checkAuth, 1000)
-    
     return () => {
-      window.removeEventListener('storage', handleStorageChange)
       clearInterval(interval)
+      window.removeEventListener('storage', handleStorageChange)
     }
   }, [])
 

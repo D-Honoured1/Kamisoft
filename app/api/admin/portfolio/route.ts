@@ -1,0 +1,124 @@
+// app/api/admin/portfolio/route.ts
+export const dynamic = "force-dynamic"
+
+import { NextResponse } from "next/server"
+import { createServerClient } from "@/lib/supabase/server"
+import { getAdminUser } from "@/lib/auth/server-auth"
+
+export async function POST(req: Request) {
+  try {
+    // Check authentication
+    const adminUser = await getAdminUser()
+    if (!adminUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const body = await req.json()
+    const {
+      title,
+      description,
+      service_category,
+      client_name,
+      project_url,
+      github_url,
+      featured_image_url,
+      technologies,
+      completion_date,
+      is_featured,
+      is_published,
+    } = body
+
+    // Validate required fields
+    if (!title || !description || !service_category) {
+      return NextResponse.json(
+        { error: "Title, description, and service category are required" },
+        { status: 400 }
+      )
+    }
+
+    const supabase = createServerClient()
+
+    // Insert the new portfolio project
+    const { data: project, error } = await supabase
+      .from("portfolio_projects")
+      .insert({
+        title,
+        description,
+        service_category,
+        client_name: client_name || null,
+        project_url: project_url || null,
+        github_url: github_url || null,
+        featured_image_url: featured_image_url || null,
+        technologies: technologies || [],
+        completion_date: completion_date || null,
+        is_featured: is_featured || false,
+        is_published: is_published !== undefined ? is_published : true,
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error("Database error:", error)
+      return NextResponse.json(
+        { error: "Failed to create portfolio project", details: error.message },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Portfolio project created successfully",
+      project,
+    })
+  } catch (error) {
+    console.error("Portfolio creation error:", error)
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    // Check authentication
+    const adminUser = await getAdminUser()
+    if (!adminUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(req.url)
+    const projectId = searchParams.get("id")
+
+    if (!projectId) {
+      return NextResponse.json({ error: "Project ID is required" }, { status: 400 })
+    }
+
+    const supabase = createServerClient()
+
+    // Delete the portfolio project
+    const { error } = await supabase
+      .from("portfolio_projects")
+      .delete()
+      .eq("id", projectId)
+
+    if (error) {
+      console.error("Database error:", error)
+      return NextResponse.json(
+        { error: "Failed to delete portfolio project", details: error.message },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Portfolio project deleted successfully",
+    })
+  } catch (error) {
+    console.error("Portfolio deletion error:", error)
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    )
+  }
+}

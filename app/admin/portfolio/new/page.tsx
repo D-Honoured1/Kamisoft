@@ -1,7 +1,7 @@
+// app/admin/portfolio/new/page.tsx
 "use client"
-export const dynamic = "force-dynamic";
 
-import type React from "react"
+export const dynamic = "force-dynamic"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -11,205 +11,194 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { X, Plus } from "lucide-react"
-import { createBrowserClient } from "@/lib/supabase/client"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { ArrowLeft, Plus, X } from "lucide-react"
+import Link from "next/link"
+
+const SERVICE_CATEGORIES = [
+  { value: "full_stack_development", label: "Full-Stack Development" },
+  { value: "mobile_app_development", label: "Mobile App Development" },
+  { value: "blockchain_solutions", label: "Blockchain Solutions" },
+  { value: "fintech_platforms", label: "Fintech Platforms" },
+  { value: "networking_ccna", label: "Networking & CCNA" },
+  { value: "consultancy", label: "Consultancy Services" },
+  { value: "cloud_devops", label: "Cloud & DevOps" },
+  { value: "ai_automation", label: "AI & Automation" },
+]
 
 export default function NewPortfolioProject() {
   const router = useRouter()
-  const supabase = createBrowserClient()
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
   const [technologies, setTechnologies] = useState<string[]>([])
-  const [newTech, setNewTech] = useState("")
+  const [newTechnology, setNewTechnology] = useState("")
 
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    client: "",
-    status: "completed",
-    image_url: "",
-    live_url: "",
+    service_category: "",
+    client_name: "",
+    project_url: "",
     github_url: "",
-    category: "",
-    duration: "",
-    team_size: 1,
+    featured_image_url: "",
+    completion_date: "",
+    is_featured: false,
+    is_published: true,
   })
 
   const addTechnology = () => {
-    if (newTech.trim() && !technologies.includes(newTech.trim())) {
-      setTechnologies([...technologies, newTech.trim()])
-      setNewTech("")
+    if (newTechnology.trim() && !technologies.includes(newTechnology.trim())) {
+      setTechnologies([...technologies, newTechnology.trim()])
+      setNewTechnology("")
     }
   }
 
   const removeTechnology = (tech: string) => {
-    setTechnologies(technologies.filter((t) => t !== tech))
+    setTechnologies(technologies.filter(t => t !== tech))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError("")
 
     try {
-      const { error } = await supabase.from("portfolio_projects").insert({
-        ...formData,
-        technologies,
-        team_size: Number(formData.team_size),
+      const res = await fetch("/api/admin/portfolio", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          technologies,
+          completion_date: formData.completion_date || null,
+        }),
       })
 
-      if (error) throw error
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || "Failed to create project")
+      }
 
       router.push("/admin/portfolio")
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating project:", error)
-      alert("Error creating project. Please try again.")
+      setError(error.message || "An error occurred while creating the project")
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-2xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">Add New Project</h1>
-          <p className="text-muted-foreground mt-2">Create a new portfolio project entry</p>
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="flex items-center gap-4 mb-8">
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/admin/portfolio">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Portfolio
+          </Link>
+        </Button>
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Add New Portfolio Project</h1>
+          <p className="text-muted-foreground mt-1">Create a new portfolio project to showcase your work</p>
         </div>
+      </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Project Details</CardTitle>
-            <CardDescription>Fill in the information about your project</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Project Title *</Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="client">Client</Label>
-                  <Input
-                    id="client"
-                    value={formData.client}
-                    onChange={(e) => setFormData({ ...formData, client: e.target.value })}
-                  />
-                </div>
-              </div>
+      <Card className="border-2 shadow-lg">
+        <CardHeader className="border-b bg-muted/50">
+          <CardTitle>Project Details</CardTitle>
+          <CardDescription>Fill in the information about your new portfolio project</CardDescription>
+        </CardHeader>
+        
+        <CardContent className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <Alert variant="destructive" className="border-2">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="description">Description *</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={4}
+                <Label htmlFor="title">Project Title *</Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="Enter project title"
                   required
+                  className="border-2"
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value) => setFormData({ ...formData, status: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
-                      <SelectItem value="planning">Planning</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
-                  <Input
-                    id="category"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    placeholder="e.g., Web Development, Mobile App"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="service_category">Service Category *</Label>
+                <Select
+                  value={formData.service_category}
+                  onValueChange={(value) => setFormData({ ...formData, service_category: value })}
+                  required
+                >
+                  <SelectTrigger className="border-2">
+                    <SelectValue placeholder="Select a service category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SERVICE_CATEGORIES.map((category) => (
+                      <SelectItem key={category.value} value={category.value}>
+                        {category.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+            </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="duration">Duration</Label>
-                  <Input
-                    id="duration"
-                    value={formData.duration}
-                    onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                    placeholder="e.g., 3 months, 6 weeks"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="team_size">Team Size</Label>
-                  <Input
-                    id="team_size"
-                    type="number"
-                    min="1"
-                    value={formData.team_size}
-                    onChange={(e) => setFormData({ ...formData, team_size: Number(e.target.value) })}
-                  />
-                </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Project Description *</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Describe the project, its features, and what makes it special"
+                rows={4}
+                required
+                className="border-2"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="client_name">Client Name</Label>
+                <Input
+                  id="client_name"
+                  value={formData.client_name}
+                  onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
+                  placeholder="Enter client name (optional)"
+                  className="border-2"
+                />
               </div>
 
               <div className="space-y-2">
-                <Label>Technologies</Label>
-                <div className="flex gap-2 mb-2">
-                  <Input
-                    value={newTech}
-                    onChange={(e) => setNewTech(e.target.value)}
-                    placeholder="Add technology"
-                    onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addTechnology())}
-                  />
-                  <Button type="button" onClick={addTechnology} size="sm">
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {technologies.map((tech) => (
-                    <Badge key={tech} variant="secondary" className="flex items-center gap-1">
-                      {tech}
-                      <button type="button" onClick={() => removeTechnology(tech)} className="ml-1">
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
+                <Label htmlFor="completion_date">Completion Date</Label>
+                <Input
+                  id="completion_date"
+                  type="date"
+                  value={formData.completion_date}
+                  onChange={(e) => setFormData({ ...formData, completion_date: e.target.value })}
+                  className="border-2"
+                />
               </div>
+            </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="image_url">Image URL</Label>
-                  <Input
-                    id="image_url"
-                    type="url"
-                    value={formData.image_url}
-                    onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                    placeholder="https://example.com/image.jpg"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="live_url">Live URL</Label>
-                  <Input
-                    id="live_url"
-                    type="url"
-                    value={formData.live_url}
-                    onChange={(e) => setFormData({ ...formData, live_url: e.target.value })}
-                    placeholder="https://project-demo.com"
-                  />
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="project_url">Project URL</Label>
+                <Input
+                  id="project_url"
+                  type="url"
+                  value={formData.project_url}
+                  onChange={(e) => setFormData({ ...formData, project_url: e.target.value })}
+                  placeholder="https://example.com"
+                  className="border-2"
+                />
               </div>
 
               <div className="space-y-2">
@@ -219,22 +208,94 @@ export default function NewPortfolioProject() {
                   type="url"
                   value={formData.github_url}
                   onChange={(e) => setFormData({ ...formData, github_url: e.target.value })}
-                  placeholder="https://github.com/username/project"
+                  placeholder="https://github.com/username/repo"
+                  className="border-2"
                 />
               </div>
+            </div>
 
-              <div className="flex gap-4 pt-4">
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? "Creating..." : "Create Project"}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => router.back()}>
-                  Cancel
+            <div className="space-y-2">
+              <Label htmlFor="featured_image_url">Featured Image URL</Label>
+              <Input
+                id="featured_image_url"
+                type="url"
+                value={formData.featured_image_url}
+                onChange={(e) => setFormData({ ...formData, featured_image_url: e.target.value })}
+                placeholder="https://example.com/image.jpg"
+                className="border-2"
+              />
+            </div>
+
+            <div className="space-y-4">
+              <Label>Technologies Used</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={newTechnology}
+                  onChange={(e) => setNewTechnology(e.target.value)}
+                  placeholder="Add a technology (e.g., React, Node.js)"
+                  onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addTechnology())}
+                  className="border-2"
+                />
+                <Button type="button" onClick={addTechnology} variant="outline" className="border-2">
+                  <Plus className="h-4 w-4" />
                 </Button>
               </div>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+              
+              {technologies.length > 0 && (
+                <div className="flex flex-wrap gap-2 p-3 border-2 border-dashed rounded-md">
+                  {technologies.map((tech, index) => (
+                    <div key={index} className="flex items-center gap-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-sm border">
+                      <span>{tech}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeTechnology(tech)}
+                        className="hover:text-red-600"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4 p-4 border-2 border-dashed rounded-lg">
+              <Label>Project Settings</Label>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="is_featured"
+                  checked={formData.is_featured}
+                  onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked as boolean })}
+                />
+                <Label htmlFor="is_featured" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Feature this project (will be highlighted on the portfolio page)
+                </Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="is_published"
+                  checked={formData.is_published}
+                  onCheckedChange={(checked) => setFormData({ ...formData, is_published: checked as boolean })}
+                />
+                <Label htmlFor="is_published" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Publish this project (make it visible on the public portfolio)
+                </Label>
+              </div>
+            </div>
+
+            <div className="flex gap-4 pt-6 border-t-2">
+              <Button type="submit" disabled={isLoading} className="flex-1">
+                {isLoading ? "Creating Project..." : "Create Project"}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => router.back()} className="border-2">
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
 }

@@ -1,574 +1,389 @@
+// app/request-service/page.tsx
 "use client"
 
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, MessageCircle, Send, ArrowRight, ArrowLeft } from "lucide-react"
-import { format } from "date-fns"
-import { cn } from "@/lib/utils"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { CheckCircle, Briefcase, Mail, Phone, Building, Calendar } from "lucide-react"
 import { SERVICE_CATEGORIES } from "@/lib/constants/services"
-import type { ServiceRequestForm } from "@/lib/types/database"
-
-type Step = "welcome" | "contact" | "service" | "details" | "type" | "onsite" | "review" | "success"
 
 export default function RequestServicePage() {
-  const [currentStep, setCurrentStep] = useState<Step>("welcome")
-  const [formData, setFormData] = useState<ServiceRequestForm>({
+  const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitted, setIsSubmitted] = useState(false)
+  const [error, setError] = useState("")
+
+  const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
     company: "",
-    service_category: "full_stack_development",
+    service_category: "",
     request_type: "digital",
     title: "",
     description: "",
     preferred_date: "",
     site_address: "",
   })
-  const [selectedDate, setSelectedDate] = useState<Date>()
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleInputChange = (field: keyof ServiceRequestForm, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-  }
-
-  const handleNext = () => {
-    const stepOrder: Step[] = ["welcome", "contact", "service", "details", "type", "onsite", "review", "success"]
-    const currentIndex = stepOrder.indexOf(currentStep)
-
-    if (currentStep === "type" && formData.request_type === "digital") {
-      setCurrentStep("review") // Skip onsite step for digital requests
-    } else if (currentIndex < stepOrder.length - 1) {
-      setCurrentStep(stepOrder[currentIndex + 1])
-    }
-  }
-
-  const handleBack = () => {
-    const stepOrder: Step[] = ["welcome", "contact", "service", "details", "type", "onsite", "review"]
-    const currentIndex = stepOrder.indexOf(currentStep)
-
-    if (currentStep === "review" && formData.request_type === "digital") {
-      setCurrentStep("type") // Skip onsite step for digital requests
-    } else if (currentIndex > 0) {
-      setCurrentStep(stepOrder[currentIndex - 1])
-    }
-  }
-
-  const handleSubmit = async () => {
-    setIsSubmitting(true)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError("")
 
     try {
-      const requestData = {
-        ...formData,
-        preferred_date: selectedDate ? format(selectedDate, "yyyy-MM-dd") : undefined,
-      }
-
-      const response = await fetch("/api/service-requests", {
+      const res = await fetch("/api/service-request", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestData),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       })
 
-      if (!response.ok) {
-        throw new Error("Failed to submit request")
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to submit request")
       }
 
-      const result = await response.json()
-      console.log("Service request submitted:", result)
-
-      setCurrentStep("success")
-    } catch (error) {
-      console.error("Error submitting request:", error)
-      // TODO: Show error message to user
+      setIsSubmitted(true)
+      // Reset form
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        company: "",
+        service_category: "",
+        request_type: "digital",
+        title: "",
+        description: "",
+        preferred_date: "",
+        site_address: "",
+      })
+    } catch (error: any) {
+      setError(error.message || "An error occurred while submitting your request")
     } finally {
-      setIsSubmitting(false)
+      setIsLoading(false)
     }
   }
 
-  // ... existing code for renderStep function and other methods ...
-
-  const renderStep = () => {
-    switch (currentStep) {
-      case "welcome":
-        return (
-          <div className="text-center space-y-6">
-            <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-              <MessageCircle className="h-8 w-8 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold mb-2">Welcome to Kamisoft</h2>
+  if (isSubmitted) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="container max-w-2xl mx-auto">
+          <Card className="text-center border-2 border-green-200 shadow-lg">
+            <CardHeader className="pb-4">
+              <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                <CheckCircle className="h-8 w-8 text-green-600" />
+              </div>
+              <CardTitle className="text-2xl text-green-600">Request Submitted Successfully!</CardTitle>
+              <CardDescription className="text-lg mt-2">
+                Thank you for choosing Kamisoft Enterprises
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <p className="text-muted-foreground">
-                Let's discuss your project requirements. This will only take a few minutes.
+                We've received your service request and our team will review it shortly. 
+                You can expect to hear from us within 24 hours.
               </p>
-            </div>
-            <Button onClick={handleNext} size="lg">
-              Get Started <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-        )
-
-      case "contact":
-        return (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold mb-2">Tell us about yourself</h2>
-              <p className="text-muted-foreground">We'll use this information to get in touch with you.</p>
-            </div>
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name *</Label>
-                  <Input
-                    id="name"
-                    placeholder="John Doe"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange("name", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="john@example.com"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange("email", e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    placeholder="+234 XXX XXX XXXX"
-                    value={formData.phone}
-                    onChange={(e) => handleInputChange("phone", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="company">Company</Label>
-                  <Input
-                    id="company"
-                    placeholder="Your Company Name"
-                    value={formData.company}
-                    onChange={(e) => handleInputChange("company", e.target.value)}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={handleBack}>
-                <ArrowLeft className="mr-2 h-4 w-4" /> Back
-              </Button>
-              <Button onClick={handleNext} disabled={!formData.name || !formData.email} className="flex-1">
-                Continue <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )
-
-      case "service":
-        return (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold mb-2">What service do you need?</h2>
-              <p className="text-muted-foreground">Select the service that best matches your project.</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {Object.entries(SERVICE_CATEGORIES).map(([key, service]) => (
-                <Card
-                  key={key}
-                  className={cn(
-                    "cursor-pointer transition-all hover:shadow-md border-2",
-                    formData.service_category === key ? "border-primary bg-primary/5" : "border-border",
-                  )}
-                  onClick={() => handleInputChange("service_category", key as any)}
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="text-2xl">{service.icon}</div>
-                      <div>
-                        <CardTitle className="text-base">{service.label}</CardTitle>
-                        <CardDescription className="text-sm">{service.description}</CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Card>
-              ))}
-            </div>
-
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={handleBack}>
-                <ArrowLeft className="mr-2 h-4 w-4" /> Back
-              </Button>
-              <Button onClick={handleNext} className="flex-1">
-                Continue <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )
-
-      case "details":
-        return (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold mb-2">Project Details</h2>
-              <p className="text-muted-foreground">Tell us more about your project requirements.</p>
-            </div>
-
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Project Title *</Label>
-                <Input
-                  id="title"
-                  placeholder="e.g., E-commerce Website Development"
-                  value={formData.title}
-                  onChange={(e) => handleInputChange("title", e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">Project Description *</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Describe your project requirements, goals, timeline, and any specific features you need..."
-                  rows={6}
-                  value={formData.description}
-                  onChange={(e) => handleInputChange("description", e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={handleBack}>
-                <ArrowLeft className="mr-2 h-4 w-4" /> Back
-              </Button>
-              <Button onClick={handleNext} disabled={!formData.title || !formData.description} className="flex-1">
-                Continue <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )
-
-      case "type":
-        return (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold mb-2">Service Type</h2>
-              <p className="text-muted-foreground">How would you like us to deliver this service?</p>
-            </div>
-
-            <RadioGroup
-              value={formData.request_type}
-              onValueChange={(value) => handleInputChange("request_type", value as any)}
-              className="space-y-4"
-            >
-              <Card
-                className={cn(
-                  "p-4 cursor-pointer transition-all hover:shadow-md border-2",
-                  formData.request_type === "digital" ? "border-primary bg-primary/5" : "border-border",
-                )}
-              >
-                <div className="flex items-center space-x-3">
-                  <RadioGroupItem value="digital" id="digital" />
-                  <div className="flex-1">
-                    <Label htmlFor="digital" className="text-base font-medium cursor-pointer">
-                      Digital Service
-                    </Label>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Remote development and delivery. Perfect for web apps, mobile apps, and software solutions.
-                    </p>
-                  </div>
-                </div>
-              </Card>
-
-              <Card
-                className={cn(
-                  "p-4 cursor-pointer transition-all hover:shadow-md border-2",
-                  formData.request_type === "on_site" ? "border-primary bg-primary/5" : "border-border",
-                )}
-              >
-                <div className="flex items-center space-x-3">
-                  <RadioGroupItem value="on_site" id="on_site" />
-                  <div className="flex-1">
-                    <Label htmlFor="on_site" className="text-base font-medium cursor-pointer">
-                      On-Site Service
-                    </Label>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Our team visits your location. Ideal for networking, consultancy, and system installations.
-                    </p>
-                  </div>
-                </div>
-              </Card>
-            </RadioGroup>
-
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={handleBack}>
-                <ArrowLeft className="mr-2 h-4 w-4" /> Back
-              </Button>
-              <Button onClick={handleNext} className="flex-1">
-                Continue <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )
-
-      case "onsite":
-        return (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold mb-2">On-Site Details</h2>
-              <p className="text-muted-foreground">Additional information for your on-site service request.</p>
-            </div>
-
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="site_address">Site Address *</Label>
-                <Textarea
-                  id="site_address"
-                  placeholder="Enter the complete address where our team should visit..."
-                  rows={3}
-                  value={formData.site_address}
-                  onChange={(e) => handleInputChange("site_address", e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Preferred Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !selectedDate && "text-muted-foreground",
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={setSelectedDate}
-                      disabled={(date) => date < new Date()}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={handleBack}>
-                <ArrowLeft className="mr-2 h-4 w-4" /> Back
-              </Button>
-              <Button onClick={handleNext} disabled={!formData.site_address} className="flex-1">
-                Continue <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )
-
-      case "review":
-        return (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold mb-2">Review Your Request</h2>
-              <p className="text-muted-foreground">Please review your information before submitting.</p>
-            </div>
-
-            <div className="space-y-4">
-              <Card className="border-0 bg-muted/50">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Contact Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Name:</span>
-                    <span>{formData.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Email:</span>
-                    <span>{formData.email}</span>
-                  </div>
-                  {formData.phone && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Phone:</span>
-                      <span>{formData.phone}</span>
-                    </div>
-                  )}
-                  {formData.company && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Company:</span>
-                      <span>{formData.company}</span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card className="border-0 bg-muted/50">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Project Details</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Service:</span>
-                    <span>
-                      {SERVICE_CATEGORIES[formData.service_category as keyof typeof SERVICE_CATEGORIES]?.label}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Type:</span>
-                    <Badge variant={formData.request_type === "digital" ? "default" : "secondary"}>
-                      {formData.request_type === "digital" ? "Digital" : "On-Site"}
-                    </Badge>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-muted-foreground">Title:</span>
-                    <p>{formData.title}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-muted-foreground">Description:</span>
-                    <p className="text-xs leading-relaxed">{formData.description}</p>
-                  </div>
-                  {formData.request_type === "on_site" && (
-                    <>
-                      {formData.site_address && (
-                        <div className="space-y-1">
-                          <span className="text-muted-foreground">Address:</span>
-                          <p className="text-xs">{formData.site_address}</p>
-                        </div>
-                      )}
-                      {selectedDate && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Preferred Date:</span>
-                          <span>{format(selectedDate, "PPP")}</span>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={handleBack}>
-                <ArrowLeft className="mr-2 h-4 w-4" /> Back
-              </Button>
-              <Button onClick={handleSubmit} disabled={isSubmitting} className="flex-1">
-                {isSubmitting ? (
-                  "Submitting..."
-                ) : (
-                  <>
-                    Submit Request <Send className="ml-2 h-4 w-4" />
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        )
-
-      case "success":
-        return (
-          <div className="text-center space-y-6">
-            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-              <Send className="h-8 w-8 text-green-600" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold mb-2">Request Submitted Successfully!</h2>
-              <p className="text-muted-foreground mb-4">
-                Thank you for choosing Kamisoft Enterprises. We've received your service request and will get back to
-                you within 24 hours.
-              </p>
-              <div className="bg-muted/50 rounded-lg p-4 text-sm">
-                <p className="font-medium mb-2">What happens next?</p>
-                <ul className="text-left space-y-1 text-muted-foreground">
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <h4 className="font-medium text-foreground mb-2">What's Next?</h4>
+                <ul className="text-sm text-muted-foreground space-y-1 text-left">
                   <li>• Our team will review your requirements</li>
-                  <li>• We'll prepare a detailed proposal and quote</li>
-                  <li>• You'll receive an email with next steps</li>
+                  <li>• We'll contact you to discuss project details</li>
+                  <li>• You'll receive a detailed proposal and timeline</li>
                   <li>• We'll schedule a consultation call if needed</li>
                 </ul>
               </div>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button onClick={() => (window.location.href = "/")}>Back to Home</Button>
-              <Button variant="outline" onClick={() => (window.location.href = "/services")}>
-                View Services
-              </Button>
-            </div>
-          </div>
-        )
-
-      default:
-        return null
-    }
-  }
-
-  const getStepNumber = () => {
-    const steps = ["welcome", "contact", "service", "details", "type", "onsite", "review"]
-    let stepIndex = steps.indexOf(currentStep)
-    if (currentStep === "review" && formData.request_type === "digital") {
-      stepIndex = 5 // Adjust for skipped onsite step
-    }
-    return Math.max(0, stepIndex)
-  }
-
-  const getTotalSteps = () => {
-    return formData.request_type === "digital" ? 6 : 7
+              <div className="pt-4">
+                <Button 
+                  onClick={() => setIsSubmitted(false)}
+                  variant="outline"
+                  className="mr-4"
+                >
+                  Submit Another Request
+                </Button>
+                <Button asChild>
+                  <a href="/">Return to Homepage</a>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/50 py-12">
-      <div className="container max-w-2xl">
-        {/* Progress Bar */}
-        {currentStep !== "welcome" && currentStep !== "success" && (
-          <div className="mb-8">
-            <div className="flex justify-between text-sm text-muted-foreground mb-2">
-              <span>
-                Step {getStepNumber()} of {getTotalSteps()}
-              </span>
-              <span>{Math.round((getStepNumber() / getTotalSteps()) * 100)}% Complete</span>
-            </div>
-            <div className="w-full bg-muted rounded-full h-2">
-              <div
-                className="bg-primary h-2 rounded-full transition-all duration-300"
-                style={{ width: `${(getStepNumber() / getTotalSteps()) * 100}%` }}
-              />
+    <div className="min-h-screen bg-background py-12">
+      <div className="container max-w-4xl mx-auto px-4">
+        {/* Header Section */}
+        <div className="text-center mb-12">
+          <div className="flex items-center justify-center mb-6">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+              <Briefcase className="h-8 w-8 text-primary" />
             </div>
           </div>
-        )}
+          <h1 className="text-4xl font-bold text-foreground mb-4">Hire Us for Your Next Project</h1>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            Ready to transform your ideas into reality? Tell us about your project and we'll get back to you 
+            with a customized solution within 24 hours.
+          </p>
+        </div>
 
-        {/* Main Card */}
-        <Card className="border-0 shadow-lg bg-card/80 backdrop-blur">
-          <CardContent className="p-8">{renderStep()}</CardContent>
-        </Card>
+        {/* Centered Form Card */}
+        <div className="flex justify-center">
+          <Card className="w-full max-w-3xl border-2 shadow-lg">
+            <CardHeader className="border-b bg-muted/30">
+              <CardTitle className="text-2xl">Project Request Form</CardTitle>
+              <CardDescription>
+                Fill out the details below and our team will reach out to discuss your project
+              </CardDescription>
+            </CardHeader>
+            
+            <CardContent className="p-8">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {error && (
+                  <Alert variant="destructive" className="border-2">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
 
-        {/* Help Text */}
-        {currentStep !== "success" && (
-          <div className="text-center mt-6 text-sm text-muted-foreground">
-            Need help? Contact us at{" "}
-            <a href="mailto:hello@kamisoftenterprises.online" className="text-primary hover:underline">
-              hello@kamisoftenterprises.online
-            </a>
+                {/* Personal Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                    <Mail className="h-5 w-5" />
+                    Contact Information
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Full Name *</Label>
+                      <Input
+                        id="name"
+                        name="name"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        placeholder="John Doe"
+                        required
+                        className="border-2"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email Address *</Label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        placeholder="john@example.com"
+                        required
+                        className="border-2"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">
+                        <Phone className="h-4 w-4 inline mr-1" />
+                        Phone Number
+                      </Label>
+                      <Input
+                        id="phone"
+                        name="phone"
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        placeholder="+1 (555) 123-4567"
+                        className="border-2"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="company">
+                        <Building className="h-4 w-4 inline mr-1" />
+                        Company/Organization
+                      </Label>
+                      <Input
+                        id="company"
+                        name="company"
+                        value={formData.company}
+                        onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                        placeholder="Your Company Name"
+                        className="border-2"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Project Details */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                    <Briefcase className="h-5 w-5" />
+                    Project Details
+                  </h3>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="service_category">Service Category *</Label>
+                      <Select
+                        value={formData.service_category}
+                        onValueChange={(value) => setFormData({ ...formData, service_category: value })}
+                        required
+                      >
+                        <SelectTrigger className="border-2">
+                          <SelectValue placeholder="Select a service" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(SERVICE_CATEGORIES).map(([key, category]) => (
+                            <SelectItem key={key} value={key}>
+                              {category.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Request Type *</Label>
+                      <RadioGroup
+                        value={formData.request_type}
+                        onValueChange={(value) => setFormData({ ...formData, request_type: value })}
+                        className="flex gap-6 mt-2"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="digital" id="digital" />
+                          <Label htmlFor="digital">Digital/Remote</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="on_site" id="on_site" />
+                          <Label htmlFor="on_site">On-site</Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="title">Project Title *</Label>
+                    <Input
+                      id="title"
+                      name="title"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      placeholder="E.g., E-commerce Platform Development"
+                      required
+                      className="border-2"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Project Description *</Label>
+                    <Textarea
+                      id="description"
+                      name="description"
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      placeholder="Describe your project requirements, goals, and any specific features you need..."
+                      rows={5}
+                      required
+                      className="border-2"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="preferred_date">
+                        <Calendar className="h-4 w-4 inline mr-1" />
+                        Preferred Start Date
+                      </Label>
+                      <Input
+                        id="preferred_date"
+                        name="preferred_date"
+                        type="date"
+                        value={formData.preferred_date}
+                        onChange={(e) => setFormData({ ...formData, preferred_date: e.target.value })}
+                        className="border-2"
+                      />
+                    </div>
+
+                    {formData.request_type === "on_site" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="site_address">Site Address</Label>
+                        <Input
+                          id="site_address"
+                          name="site_address"
+                          value={formData.site_address}
+                          onChange={(e) => setFormData({ ...formData, site_address: e.target.value })}
+                          placeholder="Enter the project site address"
+                          className="border-2"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <div className="pt-6 border-t-2">
+                  <Button 
+                    type="submit" 
+                    disabled={isLoading} 
+                    className="w-full h-12 text-lg font-medium"
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        Submitting Request...
+                      </div>
+                    ) : (
+                      "Submit Project Request"
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Additional Information */}
+        <div className="text-center mt-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            <div className="p-6 bg-card rounded-lg border">
+              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="font-semibold text-foreground mb-2">Quick Response</h3>
+              <p className="text-sm text-muted-foreground">
+                Get a response within 24 hours with initial project assessment
+              </p>
+            </div>
+
+            <div className="p-6 bg-card rounded-lg border">
+              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Briefcase className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="font-semibold text-foreground mb-2">Expert Team</h3>
+              <p className="text-sm text-muted-foreground">
+                Work with experienced developers and project managers
+              </p>
+            </div>
+
+            <div className="p-6 bg-card rounded-lg border">
+              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Mail className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="font-semibold text-foreground mb-2">Free Consultation</h3>
+              <p className="text-sm text-muted-foreground">
+                No obligation consultation to discuss your project needs
+              </p>
+            </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   )

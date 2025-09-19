@@ -1,33 +1,56 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
-import type { ServiceRequestForm } from "@/lib/types/database"
+// app/api/service-request/route.ts
+export const dynamic = "force-dynamic"
 
-export async function POST(request: NextRequest) {
+import { NextResponse } from "next/server"
+import { createServerClient } from "@/lib/supabase/server"
+
+export async function POST(req: Request) {
   try {
-    const supabase = await createServerClient()
-    const body: ServiceRequestForm = await request.json()
+    const body = await req.json()
+    const {
+      name,
+      email,
+      phone,
+      company,
+      service_category,
+      request_type,
+      title,
+      description,
+      preferred_date,
+      site_address,
+    } = body
 
     // Validate required fields
-    if (!body.name || !body.email || !body.service_category || !body.title || !body.description) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    if (!name || !email || !service_category || !title || !description) {
+      return NextResponse.json(
+        { error: "Name, email, service category, title, and description are required" },
+        { status: 400 }
+      )
     }
+
+    const supabase = createServerClient()
 
     // First, create or get the client
     let clientId: string
-
+    
     // Check if client already exists
-    const { data: existingClient } = await supabase.from("clients").select("id").eq("email", body.email).single()
+    const { data: existingClient } = await supabase
+      .from("clients")
+      .select("id")
+      .eq("email", email.toLowerCase().trim())
+      .single()
 
     if (existingClient) {
       clientId = existingClient.id
-
+      
       // Update client information if provided
       await supabase
         .from("clients")
         .update({
-          name: body.name,
-          phone: body.phone || null,
-          company: body.company || null,
+          name,
+          phone: phone || null,
+          company: company || null,
+          updated_at: new Date().toISOString(),
         })
         .eq("id", clientId)
     } else {
@@ -35,81 +58,62 @@ export async function POST(request: NextRequest) {
       const { data: newClient, error: clientError } = await supabase
         .from("clients")
         .insert({
-          name: body.name,
-          email: body.email,
-          phone: body.phone || null,
-          company: body.company || null,
+          name,
+          email: email.toLowerCase().trim(),
+          phone: phone || null,
+          company: company || null,
         })
         .select("id")
         .single()
 
       if (clientError) {
         console.error("Error creating client:", clientError)
-        return NextResponse.json({ error: "Failed to create client record" }, { status: 500 })
+        return NextResponse.json(
+          { error: "Failed to create client record" },
+          { status: 500 }
+        )
       }
 
       clientId = newClient.id
     }
 
-    const estimatedCost = calculateEstimatedCost(body.service_category, body.request_type)
-
     // Create the service request
-    const { data: serviceRequest, error: requestError } = await supabase
+    const { data: request, error: requestError } = await supabase
       .from("service_requests")
       .insert({
         client_id: clientId,
-        service_category: body.service_category,
-        request_type: body.request_type,
-        title: body.title,
-        description: body.description,
-        preferred_date: body.preferred_date || null,
-        site_address: body.site_address || null,
+        service_type: service_category, // Using service_type to match your existing schema
+        request_type: request_type || "digital",
+        title,
+        description,
+        preferred_date: preferred_date || null,
+        site_address: request_type === "on_site" ? site_address : null,
         status: "pending",
-        estimated_cost: estimatedCost,
       })
-      .select("id")
+      .select()
       .single()
 
     if (requestError) {
       console.error("Error creating service request:", requestError)
-      return NextResponse.json({ error: "Failed to create service request" }, { status: 500 })
+      return NextResponse.json(
+        { error: "Failed to create service request" },
+        { status: 500 }
+      )
     }
 
-    // TODO: Send notification email to admin
-    // TODO: Send confirmation email to client with payment link
+    // Send notification email (optional - you can implement this later)
+    // await sendNotificationEmail(request, { name, email, phone, company })
 
     return NextResponse.json({
       success: true,
-      requestId: serviceRequest.id,
-      estimatedCost: estimatedCost,
-      paymentUrl: `/payment/${serviceRequest.id}`,
       message: "Service request submitted successfully",
+      request_id: request.id,
     })
   } catch (error) {
-    console.error("Error processing service request:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("Service request error:", error)
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    )
   }
-}
-
-function calculateEstimatedCost(serviceCategory: string, requestType: string): number {
-  // Base pricing for different service categories
-  const basePricing: Record<string, number> = {
-    full_stack_development: 2500,
-    mobile_app_development: 3000,
-    blockchain_solutions: 4000,
-    fintech_platforms: 5000,
-    networking_ccna: 1500,
-    consultancy: 1000,
-    cloud_devops: 2000,
-    ai_automation: 3500,
-  }
-
-  let cost = basePricing[serviceCategory] || 2000
-
-  // Add premium for on-site services
-  if (requestType === "on_site") {
-    cost += 500
-  }
-
-  return cost
 }
