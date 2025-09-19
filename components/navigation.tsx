@@ -1,4 +1,4 @@
-// components/navigation.tsx - UPDATED VERSION
+// components/navigation.tsx - FIXED VERSION
 "use client"
 
 import { useState, useEffect } from "react"
@@ -53,8 +53,8 @@ export function Navigation() {
     }
   }, [])
 
-  // Hide the main navigation completely when admin is logged in
-  if (isAuthenticated) {
+  // Don't show navigation on admin pages when authenticated
+  if (isAuthenticated && pathname.startsWith('/admin')) {
     return null
   }
 

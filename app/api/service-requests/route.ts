@@ -1,4 +1,4 @@
-// app/api/service-request/route.ts
+// app/api/service-request/route.ts (FIXED)
 export const dynamic = "force-dynamic"
 
 import { NextResponse } from "next/server"
@@ -89,7 +89,7 @@ export async function POST(req: Request) {
         title,
         description,
         preferred_date: preferred_date || null,
-        site_address: request_type === "on_site" ? site_address : null,
+        address: request_type === "on_site" ? site_address : null, // Changed from site_address to address
         status: "pending",
       })
       .select()
@@ -121,4 +121,16 @@ export async function POST(req: Request) {
       { status: 500 }
     )
   }
+}
+
+// Add the missing CORS handling and method support
+export async function OPTIONS(req: Request) {
+  return new Response(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+  })
 }

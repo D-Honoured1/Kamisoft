@@ -1,4 +1,4 @@
-// app/request-service/page.tsx
+// app/request-service/page.tsx - COMPLETE FIXED VERSION
 "use client"
 
 import { useState } from "react"
@@ -39,7 +39,8 @@ export default function RequestServicePage() {
     try {
       console.log("Submitting form data:", formData)
 
-      const res = await fetch("/api/service-request", {
+      // FIXED: Use the correct API endpoint (plural)
+      const res = await fetch("/api/service-requests", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -49,28 +50,16 @@ export default function RequestServicePage() {
       })
 
       console.log("Response status:", res.status)
-      console.log("Response headers:", Object.fromEntries(res.headers.entries()))
-
-      let data
-      try {
-        const responseText = await res.text()
-        console.log("Raw response:", responseText)
-        
-        if (!responseText) {
-          throw new Error("Empty response from server")
-        }
-        
-        data = JSON.parse(responseText)
-      } catch (parseError) {
-        console.error("JSON parse error:", parseError)
-        throw new Error(`Invalid response from server. Status: ${res.status}`)
-      }
-
+      
       if (!res.ok) {
-        throw new Error(data.error || `Server error: ${res.status} ${res.statusText}`)
+        const errorData = await res.text()
+        console.error("Server error response:", errorData)
+        throw new Error(`Server error: ${res.status} ${res.statusText}`)
       }
 
+      const data = await res.json()
       console.log("Success response:", data)
+      
       setIsSubmitted(true)
       
       // Reset form
@@ -88,21 +77,7 @@ export default function RequestServicePage() {
       })
     } catch (error: any) {
       console.error("Form submission error:", error)
-      let errorMessage = "An unexpected error occurred while submitting your request."
-      
-      if (error.message) {
-        if (error.message.includes("Failed to fetch")) {
-          errorMessage = "Network error. Please check your internet connection and try again."
-        } else if (error.message.includes("405")) {
-          errorMessage = "Service temporarily unavailable. Please try again in a few minutes."
-        } else if (error.message.includes("500")) {
-          errorMessage = "Server error. Our team has been notified. Please try again later."
-        } else {
-          errorMessage = error.message
-        }
-      }
-      
-      setError(errorMessage)
+      setError(error.message || "An unexpected error occurred while submitting your request.")
     } finally {
       setIsLoading(false)
     }

@@ -1,4 +1,4 @@
-// components/admin-navigation.tsx
+// components/admin-navigation.tsx - FIXED VERSION
 "use client"
 
 import { useState, useEffect } from "react"
@@ -84,16 +84,12 @@ export function AdminNavigation() {
       
       // Call logout API
       try {
-        const response = await fetch("/admin/logout", {
+        await fetch("/api/admin/logout", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
         })
-        
-        if (!response.ok) {
-          throw new Error('Logout API failed')
-        }
       } catch (apiError) {
         console.warn("Logout API failed, proceeding with manual cleanup:", apiError)
       }
@@ -125,7 +121,7 @@ export function AdminNavigation() {
       }
       
       // Force redirect
-      window.location.href = "/admin/login"
+      router.push("/admin/login")
       
     } catch (error) {
       console.error("Logout error:", error)
