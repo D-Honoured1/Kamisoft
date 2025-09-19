@@ -1,6 +1,8 @@
 // Update app/page.tsx to include payment buttons
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { Navigation } from "@/components/navigation"
+import { AdminNavigation } from "@/components/admin-navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { PaymentButton } from "@/components/payment-button"
