@@ -58,26 +58,26 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Contact Info */}
-          <div className="space-y-4">
+          {/* Contact Info - Centered on mobile */}
+          <div className="col-span-2 md:col-span-1 space-y-4 text-center md:text-left">
             <h3 className="text-sm font-semibold">Contact</h3>
             <div className="space-y-3 text-sm">
-              <div className="flex items-start space-x-2 text-muted-foreground">
+              <div className="flex items-start justify-center md:justify-start space-x-2 text-muted-foreground">
                 <Mail className="h-4 w-4 mt-0.5 flex-shrink-0" />
                 <span className="break-all">{COMPANY_INFO.contact.email}</span>
               </div>
-              <div className="flex items-center space-x-2 text-muted-foreground">
+              <div className="flex items-center justify-center md:justify-start space-x-2 text-muted-foreground">
                 <Phone className="h-4 w-4 flex-shrink-0" />
                 <span>{COMPANY_INFO.contact.phone}</span>
               </div>
-              <div className="flex items-start space-x-2 text-muted-foreground">
+              <div className="flex items-start justify-center md:justify-start space-x-2 text-muted-foreground">
                 <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
                 <span>{COMPANY_INFO.contact.address}</span>
               </div>
             </div>
 
             {/* Social Links */}
-            <div className="flex space-x-4 pt-2">
+            <div className="flex justify-center md:justify-start space-x-4 pt-2">
               <Link
                 href={COMPANY_INFO.social.linkedin}
                 className="text-muted-foreground hover:text-primary transition-colors"

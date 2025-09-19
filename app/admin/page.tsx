@@ -185,7 +185,7 @@ export default async function AdminDashboard() {
             <CardDescription>Common administrative tasks</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button asChild className="w-full justify-start">
+            <Button asChild variant="outline" className="w-full justify-start bg-transparent">
               <Link href="/admin/requests">
                 <FileText className="mr-2 h-4 w-4" />
                 Manage Requests

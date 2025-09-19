@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Shield, Menu, X, LogOut } from "lucide-react"
@@ -25,6 +25,7 @@ export function Navigation() {
   const [loading, setLoading] = useState(true)
   const [lastActivity, setLastActivity] = useState(Date.now())
   const pathname = usePathname()
+  const router = useRouter()
 
   const INACTIVITY_TIMEOUT = 30 * 60 * 1000 // 30 minutes
 
@@ -98,9 +99,16 @@ export function Navigation() {
       setLoading(true)
       
       // Call the logout API
-      await fetch("/admin/logout", {
+      const response = await fetch("/admin/logout", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
       })
+      
+      if (!response.ok) {
+        throw new Error('Logout request failed')
+      }
       
       // Clear client-side state
       setIsAuthenticated(false)
@@ -114,14 +122,22 @@ export function Navigation() {
         alert("You have been automatically logged out due to inactivity.")
       }
       
-      // Force reload to clear any cached state and redirect
-      window.location.href = "/admin/login"
+      // Redirect to login page
+      router.push("/admin/login")
     } catch (error) {
       console.error("Logout error:", error)
+      
       // Fallback: clear cookie manually and redirect
-      document.cookie = "admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+      document.cookie = "admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=" + window.location.hostname
+      document.cookie = "admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/"
+      
       localStorage.removeItem('lastActivity')
+      setIsAuthenticated(false)
+      
+      // Force page reload to clear any cached state
       window.location.href = "/admin/login"
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -164,7 +180,7 @@ export function Navigation() {
                 size="sm" 
                 onClick={() => handleSignOut()}
                 disabled={loading}
-                className="hidden md:inline-flex text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent"
+                className="hidden md:inline-flex text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 bg-transparent border-red-200 dark:border-red-800"
               >
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign Out
@@ -230,10 +246,10 @@ export function Navigation() {
                       handleSignOut()
                     }}
                     disabled={loading}
-                    className="w-full mt-2 text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent"
+                    className="w-full mt-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 bg-transparent border-red-200 dark:border-red-800"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
-                    Sign Out
+                    {loading ? "Signing Out..." : "Sign Out"}
                   </Button>
                 </>
               )}
