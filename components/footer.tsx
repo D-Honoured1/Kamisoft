@@ -11,7 +11,7 @@ export function Footer() {
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
               <Shield className="h-6 w-6 text-primary" />
-              <span className="text-lg font-bold">Kamisoft</span>
+              <span className="text-lg font-bold">Kamisoft Enterprises</span>
             </div>
             <p className="text-sm text-muted-foreground">{COMPANY_INFO.description}</p>
             <p className="text-sm text-muted-foreground">
