@@ -1,4 +1,4 @@
-// components/payment-button.tsx - New component for payment actions
+// components/payment-button.tsx - Simple Payment Button Component
 "use client"
 
 import { Button } from "@/components/ui/button"
