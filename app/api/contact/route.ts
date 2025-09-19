@@ -1,4 +1,4 @@
-// app/api/service-request/route.ts
+// app/api/contact/route.ts
 export const dynamic = "force-dynamic"
 
 import { NextResponse } from "next/server"
@@ -7,30 +7,19 @@ import { createServerClient } from "@/lib/supabase/server"
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const {
-      name,
-      email,
-      phone,
-      company,
-      service_category,
-      request_type,
-      title,
-      description,
-      preferred_date,
-      site_address,
-    } = body
+    const { name, email, phone, company, message, subject } = body
 
     // Validate required fields
-    if (!name || !email || !service_category || !title || !description) {
+    if (!name || !email || !message) {
       return NextResponse.json(
-        { error: "Name, email, service category, title, and description are required" },
+        { error: "Name, email, and message are required" },
         { status: 400 }
       )
     }
 
     const supabase = createServerClient()
 
-    // First, create or get the client
+    // First, create or update the client
     let clientId: string
     
     // Check if client already exists
@@ -77,37 +66,35 @@ export async function POST(req: Request) {
       clientId = newClient.id
     }
 
-    // Create the service request
+    // Create a service request for the contact inquiry
     const { data: request, error: requestError } = await supabase
       .from("service_requests")
       .insert({
         client_id: clientId,
-        service_type: service_category,
-        request_type: request_type || "digital",
-        title,
-        description,
-        preferred_date: preferred_date || null,
-        address: request_type === "on_site" ? site_address : null,
+        service_type: "general_inquiry",
+        request_type: "digital",
+        title: subject || "Contact Form Inquiry",
+        description: message,
         status: "pending",
       })
       .select()
       .single()
 
     if (requestError) {
-      console.error("Error creating service request:", requestError)
+      console.error("Error creating contact request:", requestError)
       return NextResponse.json(
-        { error: "Failed to create service request" },
+        { error: "Failed to create contact request" },
         { status: 500 }
       )
     }
 
     return NextResponse.json({
       success: true,
-      message: "Service request submitted successfully",
+      message: "Contact form submitted successfully",
       request_id: request.id,
     })
   } catch (error) {
-    console.error("Service request error:", error)
+    console.error("Contact form error:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

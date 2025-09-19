@@ -1,4 +1,4 @@
-// components/navigation.tsx
+// components/navigation.tsx - IMPROVED VERSION
 "use client"
 
 import { useState, useEffect } from "react"
@@ -40,13 +40,9 @@ export function Navigation() {
       setLoading(false)
     }
     
-    // Initial check
     checkAuth()
-
-    // Set up an interval to periodically check auth state
-    const interval = setInterval(checkAuth, 2000) // Check every 2 seconds
+    const interval = setInterval(checkAuth, 2000)
     
-    // Listen for storage events (logout from another tab)
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'admin_logout') {
         setIsAuthenticated(false)
@@ -70,21 +66,19 @@ export function Navigation() {
       localStorage.setItem('lastActivity', Date.now().toString())
     }
 
-    // Track user activity
     const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart']
     events.forEach(event => {
       document.addEventListener(event, updateActivity, true)
     })
 
-    // Check for inactivity
     const inactivityCheck = setInterval(() => {
       const storedActivity = localStorage.getItem('lastActivity')
       const lastActivityTime = storedActivity ? parseInt(storedActivity) : lastActivity
       
       if (Date.now() - lastActivityTime > INACTIVITY_TIMEOUT) {
-        handleSignOut(true) // true indicates auto-logout
+        handleSignOut(true)
       }
-    }, 60000) // Check every minute
+    }, 60000)
 
     return () => {
       events.forEach(event => {
@@ -98,43 +92,58 @@ export function Navigation() {
     try {
       setLoading(true)
       
-      // Call the logout API
-      const response = await fetch("/admin/logout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
+      // Multiple approaches to ensure logout works
       
-      if (!response.ok) {
-        throw new Error('Logout request failed')
+      // Method 1: Call logout API
+      try {
+        const response = await fetch("/admin/logout", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+        
+        if (!response.ok) {
+          throw new Error('Logout API failed')
+        }
+      } catch (apiError) {
+        console.warn("Logout API failed, proceeding with manual cleanup:", apiError)
       }
       
-      // Clear client-side state
-      setIsAuthenticated(false)
+      // Method 2: Manual cookie cleanup (fallback)
+      // Clear cookie with various configurations
+      const cookieConfigs = [
+        "admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;",
+        `admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`,
+        `admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${window.location.hostname};`,
+        "admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=strict;",
+      ]
+      
+      cookieConfigs.forEach(config => {
+        document.cookie = config
+      })
+      
+      // Method 3: Clear localStorage
       localStorage.removeItem('lastActivity')
       
-      // Trigger storage event for other tabs
+      // Method 4: Trigger storage event for other tabs
       localStorage.setItem('admin_logout', Date.now().toString())
-      localStorage.removeItem('admin_logout')
+      setTimeout(() => localStorage.removeItem('admin_logout'), 100)
+      
+      // Update state
+      setIsAuthenticated(false)
       
       if (isAutoLogout) {
         alert("You have been automatically logged out due to inactivity.")
       }
       
-      // Redirect to login page
-      router.push("/admin/login")
+      // Force redirect
+      window.location.href = "/admin/login"
+      
     } catch (error) {
       console.error("Logout error:", error)
       
-      // Fallback: clear cookie manually and redirect
-      document.cookie = "admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=" + window.location.hostname
-      document.cookie = "admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/"
-      
-      localStorage.removeItem('lastActivity')
-      setIsAuthenticated(false)
-      
-      // Force page reload to clear any cached state
+      // Emergency fallback - force page reload to login
       window.location.href = "/admin/login"
     } finally {
       setLoading(false)
@@ -183,7 +192,7 @@ export function Navigation() {
                 className="hidden md:inline-flex text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 bg-transparent border-red-200 dark:border-red-800"
               >
                 <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
+                {loading ? "..." : "Sign Out"}
               </Button>
             </>
           )}
