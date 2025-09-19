@@ -1,4 +1,4 @@
-// components/navigation.tsx - FIXED VERSION
+/ components/navigation.tsx - Updated with dynamic admin/signout button
 "use client"
 
 import { useState, useEffect } from "react"
@@ -6,7 +6,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Shield, Menu, X } from "lucide-react"
+import { Shield, Menu, X, LogOut } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navigation = [
@@ -23,25 +23,55 @@ export function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [adminUser, setAdminUser] = useState<{ name: string; email: string } | null>(null)
   const pathname = usePathname()
 
+  // Check authentication status
   useEffect(() => {
-    const checkAuth = () => {
-      const token = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('admin_token='))
-        ?.split('=')[1]
-      
-      setIsAuthenticated(!!token)
-      setLoading(false)
+    const checkAuth = async () => {
+      try {
+        const token = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('admin_token='))
+          ?.split('=')[1]
+        
+        if (token) {
+          // Verify token with backend
+          const response = await fetch('/api/admin/verify', {
+            credentials: 'include'
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            setIsAuthenticated(true)
+            setAdminUser(data.user)
+          } else {
+            setIsAuthenticated(false)
+            setAdminUser(null)
+          }
+        } else {
+          setIsAuthenticated(false)
+          setAdminUser(null)
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error)
+        setIsAuthenticated(false)
+        setAdminUser(null)
+      } finally {
+        setLoading(false)
+      }
     }
     
     checkAuth()
-    const interval = setInterval(checkAuth, 2000)
     
+    // Check every 30 seconds
+    const interval = setInterval(checkAuth, 30000)
+    
+    // Listen for storage events (logout from other tabs)
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'admin_logout') {
         setIsAuthenticated(false)
+        setAdminUser(null)
       }
     }
     
@@ -53,8 +83,30 @@ export function Navigation() {
     }
   }, [])
 
+  // Handle admin logout
+  const handleSignOut = async () => {
+    try {
+      await fetch('/api/admin/logout', {
+        method: 'POST',
+        credentials: 'include'
+      })
+    } catch (error) {
+      console.error('Logout failed:', error)
+    } finally {
+      setIsAuthenticated(false)
+      setAdminUser(null)
+      
+      // Clear localStorage and trigger event for other tabs
+      localStorage.setItem('admin_logout', Date.now().toString())
+      setTimeout(() => localStorage.removeItem('admin_logout'), 100)
+      
+      // Redirect to home page
+      window.location.href = '/'
+    }
+  }
+
   // Don't show navigation on admin pages when authenticated
-  if (isAuthenticated && pathname.startsWith('/admin')) {
+  if (isAuthenticated && pathname.startsWith('/admin') && pathname !== '/admin/login') {
     return null
   }
 
@@ -82,14 +134,35 @@ export function Navigation() {
 
         <div className="flex items-center space-x-4">
           <ThemeToggle />
-          {!loading && !isAuthenticated && (
-            <Button variant="outline" size="sm" asChild className="hidden md:inline-flex bg-transparent">
-              <Link href="/admin/login">Admin</Link>
-            </Button>
+          
+          {!loading && (
+            <>
+              {isAuthenticated ? (
+                <div className="hidden md:flex items-center space-x-2">
+                  <span className="text-sm text-muted-foreground">
+                    {adminUser?.name || 'Admin'}
+                  </span>
+                  <Button variant="outline" size="sm" onClick={handleSignOut} className="bg-transparent">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign Out
+                  </Button>
+                  <Button asChild>
+                    <Link href="/admin">Dashboard</Link>
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <Button variant="outline" size="sm" asChild className="hidden md:inline-flex bg-transparent">
+                    <Link href="/admin/login">Admin</Link>
+                  </Button>
+                  <Button asChild className="hidden md:inline-flex">
+                    <Link href="/request-service">Hire Us</Link>
+                  </Button>
+                </>
+              )}
+            </>
           )}
-          <Button asChild className="hidden md:inline-flex">
-            <Link href="/request-service">Hire Us</Link>
-          </Button>
+
           <Button
             variant="ghost"
             size="sm"
@@ -120,18 +193,45 @@ export function Navigation() {
                   {item.name}
                 </Link>
               ))}
-              <Button asChild className="w-full mt-4">
-                <Link href="/request-service" onClick={() => setIsMobileMenuOpen(false)}>
-                  Hire Us
-                </Link>
-              </Button>
-              {!loading && !isAuthenticated && (
-                <Button variant="outline" asChild className="w-full mt-2 bg-transparent">
-                  <Link href="/admin/login" onClick={() => setIsMobileMenuOpen(false)}>
-                    Admin Login
+              
+              <div className="pt-4 space-y-2">
+                <Button asChild className="w-full">
+                  <Link href="/request-service" onClick={() => setIsMobileMenuOpen(false)}>
+                    Hire Us
                   </Link>
                 </Button>
-              )}
+                
+                {!loading && (
+                  <>
+                    {isAuthenticated ? (
+                      <>
+                        <Button asChild variant="outline" className="w-full bg-transparent">
+                          <Link href="/admin" onClick={() => setIsMobileMenuOpen(false)}>
+                            Dashboard
+                          </Link>
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => {
+                            handleSignOut()
+                            setIsMobileMenuOpen(false)
+                          }}
+                          className="w-full bg-transparent"
+                        >
+                          <LogOut className="mr-2 h-4 w-4" />
+                          Sign Out ({adminUser?.name || 'Admin'})
+                        </Button>
+                      </>
+                    ) : (
+                      <Button variant="outline" asChild className="w-full bg-transparent">
+                        <Link href="/admin/login" onClick={() => setIsMobileMenuOpen(false)}>
+                          Admin Login
+                        </Link>
+                      </Button>
+                    )}
+                  </>
+                )}
+              </div>
             </nav>
           </div>
         </div>

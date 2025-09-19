@@ -1,37 +1,20 @@
+// Update app/page.tsx to include payment buttons
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { PaymentButton } from "@/components/payment-button"
+import { ServiceCard } from "@/components/service-card"
 import { ArrowRight, Code, Smartphone, Shield, TrendingUp, Users, Award } from "lucide-react"
 import { COMPANY_INFO } from "@/lib/constants/services"
 
 export default function HomePage() {
   const featuredServices = [
-    {
-      icon: Code,
-      category: "full_stack_development",
-      title: "Full-Stack Development",
-      description: "End-to-end web applications with modern technologies",
-    },
-    {
-      icon: Shield,
-      category: "blockchain_solutions",
-      title: "Blockchain Solutions",
-      description: "Decentralized applications and smart contracts",
-    },
-    {
-      icon: TrendingUp,
-      category: "fintech_platforms",
-      title: "Fintech Platforms",
-      description: "Financial technology and payment systems",
-    },
-    {
-      icon: Smartphone,
-      category: "mobile_app_development",
-      title: "Mobile Development",
-      description: "Native and cross-platform mobile applications",
-    },
-  ]
+    "full_stack_development",
+    "blockchain_solutions", 
+    "fintech_platforms",
+    "mobile_app_development"
+  ] as const
 
   const stats = [
     { label: "Years of Experience", value: "9+" },
@@ -66,9 +49,7 @@ export default function HomePage() {
                   Hire Us <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" asChild>
-                <Link href="/services">Explore Services</Link>
-              </Button>
+              <PaymentButton variant="outline" size="lg" />
             </div>
           </div>
         </div>
@@ -99,22 +80,14 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredServices.map((service, index) => {
-              const Icon = service.icon
-              return (
-                <Card key={index} className="group hover:shadow-lg transition-all duration-300 border-0 bg-card/50">
-                  <CardHeader className="text-center pb-4">
-                    <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                      <Icon className="h-6 w-6 text-primary" />
-                    </div>
-                    <CardTitle className="text-lg">{service.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-center">
-                    <CardDescription className="text-sm">{service.description}</CardDescription>
-                  </CardContent>
-                </Card>
-              )
-            })}
+            {featuredServices.map((category, index) => (
+              <ServiceCard 
+                key={category}
+                category={category}
+                showPaymentButton={true}
+                featured={index === 1} // Make blockchain solutions featured
+              />
+            ))}
           </div>
 
           <div className="text-center mt-12">

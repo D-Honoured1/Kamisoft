@@ -1,11 +1,11 @@
-// components/admin-navigation.tsx - FIXED VERSION
+// components/admin-navigation.tsx - Updated to show user info and signout
 "use client"
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Users, FileText, CreditCard, Briefcase, Settings, ArrowLeft, Menu, X, LogOut } from "lucide-react"
+import { LayoutDashboard, Users, FileText, CreditCard, Briefcase, Settings, ArrowLeft, Menu, X, LogOut, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navigation = [
@@ -19,7 +19,7 @@ const navigation = [
 
 export function AdminNavigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [adminUser, setAdminUser] = useState<{ name: string; email: string } | null>(null)
   const [loading, setLoading] = useState(true)
   const [lastActivity, setLastActivity] = useState(Date.now())
   const pathname = usePathname()
@@ -27,29 +27,39 @@ export function AdminNavigation() {
 
   const INACTIVITY_TIMEOUT = 30 * 60 * 1000 // 30 minutes
 
-  // Check authentication status on mount and periodically
+  // Check authentication status
   useEffect(() => {
-    const checkAuth = () => {
-      const token = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('admin_token='))
-        ?.split('=')[1]
-      
-      setIsAuthenticated(!!token)
-      setLoading(false)
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/admin/verify', {
+          credentials: 'include'
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          setAdminUser(data.user)
+        } else {
+          setAdminUser(null)
+          router.push('/admin/login')
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error)
+        setAdminUser(null)
+        router.push('/admin/login')
+      } finally {
+        setLoading(false)
+      }
     }
     
     checkAuth()
-    
-    // Check every 2 seconds for auth changes
     const interval = setInterval(checkAuth, 2000)
     
     return () => clearInterval(interval)
-  }, [])
+  }, [router])
 
   // Activity tracking for auto-logout
   useEffect(() => {
-    if (!isAuthenticated) return
+    if (!adminUser) return
 
     const updateActivity = () => {
       setLastActivity(Date.now())
@@ -76,57 +86,27 @@ export function AdminNavigation() {
       })
       clearInterval(inactivityCheck)
     }
-  }, [isAuthenticated, lastActivity])
+  }, [adminUser, lastActivity])
 
   const handleSignOut = async (isAutoLogout = false) => {
     try {
       setLoading(true)
       
-      // Call logout API
-      try {
-        await fetch("/api/admin/logout", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        })
-      } catch (apiError) {
-        console.warn("Logout API failed, proceeding with manual cleanup:", apiError)
-      }
-      
-      // Manual cookie cleanup (fallback)
-      const cookieConfigs = [
-        "admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;",
-        `admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`,
-        `admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${window.location.hostname};`,
-        "admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=strict;",
-      ]
-      
-      cookieConfigs.forEach(config => {
-        document.cookie = config
+      await fetch("/api/admin/logout", {
+        method: "POST",
+        credentials: "include",
       })
       
-      // Clear localStorage
+      setAdminUser(null)
       localStorage.removeItem('lastActivity')
-      
-      // Trigger storage event for other tabs
-      localStorage.setItem('admin_logout', Date.now().toString())
-      setTimeout(() => localStorage.removeItem('admin_logout'), 100)
-      
-      // Update state
-      setIsAuthenticated(false)
       
       if (isAutoLogout) {
         alert("You have been automatically logged out due to inactivity.")
       }
       
-      // Force redirect
       router.push("/admin/login")
-      
     } catch (error) {
       console.error("Logout error:", error)
-      
-      // Emergency fallback - force page reload to login
       window.location.href = "/admin/login"
     } finally {
       setLoading(false)
@@ -158,7 +138,6 @@ export function AdminNavigation() {
   const isDetailPage = pathname.match(/\/admin\/(clients|requests|payments|portfolio)\/[^\/]+$/) ||
                       pathname === "/admin/portfolio/new"
 
-  // Check for specific pages that need back buttons
   const isSubPage = pathname === "/admin/requests" || 
                    pathname === "/admin/clients" || 
                    pathname === "/admin/payments" || 
@@ -174,20 +153,13 @@ export function AdminNavigation() {
           {/* Left side */}
           <div className="flex items-center">
             {showBackButton ? (
-              // Back button for detail pages and sub-pages
-              <Button
-                variant="ghost"
-                size="sm"
-                asChild
-                className="mr-4"
-              >
+              <Button variant="ghost" size="sm" asChild className="mr-4">
                 <Link href="/admin">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back to Dashboard
                 </Link>
               </Button>
             ) : (
-              // Logo for main dashboard
               <Link href="/admin" className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                   <span className="text-primary-foreground font-bold text-lg">K</span>
@@ -197,8 +169,8 @@ export function AdminNavigation() {
             )}
           </div>
 
-          {/* Center - Desktop Navigation - only show on dashboard */}
-          {isAuthenticated && pathname === "/admin" && (
+          {/* Center - Desktop Navigation */}
+          {adminUser && pathname === "/admin" && (
             <div className="hidden md:flex items-center space-x-1">
               {navigation.slice(1).map((item) => {
                 const Icon = item.icon
@@ -216,39 +188,48 @@ export function AdminNavigation() {
             </div>
           )}
 
-          {/* Right side - Sign Out Button */}
-          <div className="flex items-center space-x-2">
-            {isAuthenticated && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => handleSignOut()}
-                disabled={loading}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 bg-transparent border-red-200 dark:border-red-800"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                {loading ? "..." : "Sign Out"}
-              </Button>
-            )}
-            
-            {/* Mobile menu button - only show on dashboard when authenticated */}
-            {isAuthenticated && pathname === "/admin" && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="md:hidden"
-              >
-                {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </Button>
+          {/* Right side */}
+          <div className="flex items-center space-x-4">
+            {adminUser && (
+              <>
+                {/* User info and Sign Out Button */}
+                <div className="hidden md:flex items-center space-x-3">
+                  <div className="flex items-center space-x-2 px-3 py-1 bg-muted/50 rounded-md">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">{adminUser.name}</span>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => handleSignOut()}
+                    disabled={loading}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 bg-transparent border-red-200 dark:border-red-800"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    {loading ? "..." : "Sign Out"}
+                  </Button>
+                </div>
+                
+                {/* Mobile menu button */}
+                {pathname === "/admin" && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    className="md:hidden"
+                  >
+                    {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </div>
 
-        {/* Mobile Navigation - only show on dashboard */}
-        {isMobileMenuOpen && isAuthenticated && pathname === "/admin" && (
+        {/* Mobile Navigation */}
+        {isMobileMenuOpen && adminUser && pathname === "/admin" && (
           <div className="md:hidden py-4 border-t border-border">
-            <div className="space-y-1">
+            <div className="space-y-1 mb-4">
               {navigation.slice(1).map((item) => {
                 const Icon = item.icon
                 return (
@@ -263,6 +244,25 @@ export function AdminNavigation() {
                   </Link>
                 )
               })}
+            </div>
+            
+            {/* Mobile user info and logout */}
+            <div className="border-t border-border pt-4">
+              <div className="flex items-center justify-between px-3 py-2 mb-2">
+                <div className="flex items-center space-x-2">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">{adminUser.name}</span>
+                </div>
+              </div>
+              <Button 
+                variant="outline" 
+                onClick={() => handleSignOut()}
+                disabled={loading}
+                className="w-full text-red-600 hover:text-red-700 bg-transparent border-red-200"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign Out
+              </Button>
             </div>
           </div>
         )}
