@@ -1,7 +1,7 @@
 // lib/auth/server-auth.ts
+import { redirect } from "next/navigation"
 import { cookies } from "next/headers"
 import jwt from "jsonwebtoken"
-import { redirect } from "next/navigation"
 
 export interface AdminUser {
   id: string
@@ -19,32 +19,33 @@ export async function getAdminUser(): Promise<AdminUser | null> {
       return null
     }
 
-    const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET
-    if (!jwtSecret) {
-      console.error("[Auth] No JWT secret available")
+    // Verify JWT token
+    const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET!
+    const decoded = jwt.verify(token, jwtSecret) as any
+
+    if (!decoded || decoded.role !== "admin") {
       return null
     }
 
-    const decoded = jwt.verify(token, jwtSecret) as any
-    
     return {
       id: decoded.id,
       email: decoded.email,
       name: decoded.name,
-      role: decoded.role
+      role: decoded.role,
     }
   } catch (error) {
-    console.error("[Auth] Token verification failed:", error.message)
+    console.error("Auth verification error:", error)
     return null
   }
 }
 
 export async function requireAuth(): Promise<AdminUser> {
-  const user = await getAdminUser()
+  const adminUser = await getAdminUser()
   
-  if (!user) {
+  if (!adminUser) {
+    console.log("No admin user found, redirecting to login")
     redirect("/admin/login")
   }
   
-  return user
+  return adminUser
 }

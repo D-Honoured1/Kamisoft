@@ -65,10 +65,17 @@ export function AdminNavigation() {
   }
 
   // Check if we're on a detail page that needs a back button
-  const isDetailPage = pathname.includes('/clients/') || 
-                      pathname.includes('/requests/') || 
-                      pathname.includes('/payments/') || 
-                      (pathname.includes('/portfolio/') && pathname !== '/admin/portfolio')
+  const isDetailPage = pathname.match(/\/admin\/(clients|requests|payments|portfolio)\/[^\/]+$/) ||
+                      pathname === "/admin/portfolio/new"
+
+  // Check for specific pages that need back buttons
+  const isSubPage = pathname === "/admin/requests" || 
+                   pathname === "/admin/clients" || 
+                   pathname === "/admin/payments" || 
+                   pathname === "/admin/portfolio" ||
+                   pathname === "/admin/settings"
+
+  const showBackButton = isDetailPage || (isSubPage && pathname !== "/admin")
 
   return (
     <nav className="bg-card border-b border-border">
@@ -76,19 +83,21 @@ export function AdminNavigation() {
         <div className="flex items-center justify-between h-16">
           {/* Left side */}
           <div className="flex items-center">
-            {isDetailPage ? (
-              // Back button for detail pages
+            {showBackButton ? (
+              // Back button for detail pages and sub-pages
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => window.history.back()}
+                asChild
                 className="mr-4"
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
+                <Link href="/admin">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Dashboard
+                </Link>
               </Button>
             ) : (
-              // Logo for main pages
+              // Logo for main dashboard
               <Link href="/admin" className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                   <span className="text-primary-foreground font-bold text-lg">K</span>
@@ -98,22 +107,16 @@ export function AdminNavigation() {
             )}
           </div>
 
-          {/* Desktop Navigation - only show on main pages */}
-          {isAuthenticated && !isDetailPage && (
+          {/* Desktop Navigation - only show on dashboard */}
+          {isAuthenticated && pathname === "/admin" && (
             <div className="hidden md:flex items-center space-x-1">
-              {navigation.map((item) => {
+              {navigation.slice(1).map((item) => {
                 const Icon = item.icon
-                const isActive = pathname === item.href
                 return (
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={cn(
-                      "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                      isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-accent",
-                    )}
+                    className="flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors text-muted-foreground hover:text-foreground hover:bg-accent"
                   >
                     <Icon className="mr-2 h-4 w-4" />
                     {item.name}
@@ -123,9 +126,9 @@ export function AdminNavigation() {
             </div>
           )}
 
-          {/* Mobile menu button */}
+          {/* Mobile menu button - only show on dashboard */}
           <div className="md:hidden">
-            {isAuthenticated && !isDetailPage && (
+            {isAuthenticated && pathname === "/admin" && (
               <Button variant="ghost" size="sm" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
                 {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </Button>
@@ -133,23 +136,17 @@ export function AdminNavigation() {
           </div>
         </div>
 
-        {/* Mobile Navigation */}
-        {isMobileMenuOpen && isAuthenticated && !isDetailPage && (
+        {/* Mobile Navigation - only show on dashboard */}
+        {isMobileMenuOpen && isAuthenticated && pathname === "/admin" && (
           <div className="md:hidden py-4 border-t border-border">
             <div className="space-y-1">
-              {navigation.map((item) => {
+              {navigation.slice(1).map((item) => {
                 const Icon = item.icon
-                const isActive = pathname === item.href
                 return (
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={cn(
-                      "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                      isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-accent",
-                    )}
+                    className="flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors text-muted-foreground hover:text-foreground hover:bg-accent"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <Icon className="mr-2 h-4 w-4" />

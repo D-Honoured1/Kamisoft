@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { createServerClient } from "@/lib/supabase/server"
+import { requireAuth } from "@/lib/auth/server-auth"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -8,15 +9,10 @@ import { Mail, Phone, FileText } from "lucide-react"
 import Link from "next/link"
 
 export default async function ClientsManagement() {
+  // Require authentication first
+  const adminUser = await requireAuth()
+  
   const supabase = createServerClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect("/admin/login")
-  }
 
   const { data: clients, error } = await supabase
     .from("clients")

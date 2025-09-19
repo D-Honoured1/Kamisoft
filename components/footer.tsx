@@ -6,9 +6,10 @@ export function Footer() {
   return (
     <footer className="bg-muted/50 border-t">
       <div className="container py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Company Info */}
-          <div className="space-y-4">
+        {/* Mobile: 2x2 grid, Desktop: 4 columns */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          {/* Company Info - Takes full width on mobile */}
+          <div className="col-span-2 md:col-span-1 space-y-4">
             <div className="flex items-center space-x-2">
               <Shield className="h-6 w-6 text-primary" />
               <span className="text-lg font-bold">Kamisoft Enterprises</span>
@@ -60,17 +61,17 @@ export function Footer() {
           {/* Contact Info */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold">Contact</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center space-x-2 text-muted-foreground">
-                <Mail className="h-4 w-4" />
-                <span>{COMPANY_INFO.contact.email}</span>
+            <div className="space-y-3 text-sm">
+              <div className="flex items-start space-x-2 text-muted-foreground">
+                <Mail className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                <span className="break-all">{COMPANY_INFO.contact.email}</span>
               </div>
               <div className="flex items-center space-x-2 text-muted-foreground">
-                <Phone className="h-4 w-4" />
+                <Phone className="h-4 w-4 flex-shrink-0" />
                 <span>{COMPANY_INFO.contact.phone}</span>
               </div>
-              <div className="flex items-center space-x-2 text-muted-foreground">
-                <MapPin className="h-4 w-4" />
+              <div className="flex items-start space-x-2 text-muted-foreground">
+                <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
                 <span>{COMPANY_INFO.contact.address}</span>
               </div>
             </div>
@@ -80,18 +81,21 @@ export function Footer() {
               <Link
                 href={COMPANY_INFO.social.linkedin}
                 className="text-muted-foreground hover:text-primary transition-colors"
+                aria-label="LinkedIn"
               >
                 <Linkedin className="h-4 w-4" />
               </Link>
               <Link
                 href={COMPANY_INFO.social.twitter}
                 className="text-muted-foreground hover:text-primary transition-colors"
+                aria-label="Twitter"
               >
                 <Twitter className="h-4 w-4" />
               </Link>
               <Link
                 href={COMPANY_INFO.social.github}
                 className="text-muted-foreground hover:text-primary transition-colors"
+                aria-label="GitHub"
               >
                 <Github className="h-4 w-4" />
               </Link>
@@ -99,11 +103,14 @@ export function Footer() {
           </div>
         </div>
 
+        {/* Bottom section */}
         <div className="border-t mt-8 pt-8 text-center text-sm text-muted-foreground">
-          <p>
-            &copy; {new Date().getFullYear()} {COMPANY_INFO.name}. All rights reserved.
-          </p>
-          <p className="mt-1">A subsidiary of {COMPANY_INFO.parentCompany}</p>
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <p>
+              &copy; {new Date().getFullYear()} {COMPANY_INFO.name}. All rights reserved.
+            </p>
+            <p>A subsidiary of {COMPANY_INFO.parentCompany}</p>
+          </div>
         </div>
       </div>
     </footer>

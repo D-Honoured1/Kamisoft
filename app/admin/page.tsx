@@ -147,21 +147,12 @@ export default async function AdminDashboard() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-          <p className="text-muted-foreground mt-2">
-            Welcome back, {adminUser.name}! Here's what's happening at Kamisoft.
-          </p>
-        </div>
-        <div className="flex gap-4">
-          <Button asChild>
-            <Link href="/admin/portfolio/new">Add Project</Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/">View Site</Link>
-          </Button>
-        </div>
+      {/* Header - Removed hero section, kept simple header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
+        <p className="text-muted-foreground mt-2">
+          Welcome back, {adminUser.name}! Here's what's happening at Kamisoft.
+        </p>
       </div>
 
       {/* Stats Grid */}
