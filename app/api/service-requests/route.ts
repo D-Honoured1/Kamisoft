@@ -20,6 +20,8 @@ export async function POST(req: Request) {
       site_address,
     } = body
 
+    console.log("Received service request:", { name, email, service_category, title })
+
     // Validate required fields
     if (!name || !email || !service_category || !title || !description) {
       return NextResponse.json(
@@ -38,7 +40,7 @@ export async function POST(req: Request) {
       .from("clients")
       .select("id")
       .eq("email", email.toLowerCase().trim())
-      .single()
+      .maybeSingle()
 
     if (existingClient) {
       clientId = existingClient.id
@@ -69,7 +71,7 @@ export async function POST(req: Request) {
       if (clientError) {
         console.error("Error creating client:", clientError)
         return NextResponse.json(
-          { error: "Failed to create client record" },
+          { error: "Failed to create client record", details: clientError.message },
           { status: 500 }
         )
       }
@@ -82,12 +84,12 @@ export async function POST(req: Request) {
       .from("service_requests")
       .insert({
         client_id: clientId,
-        service_type: service_category,
+        service_type: service_category, // Using service_type to match your existing schema
         request_type: request_type || "digital",
         title,
         description,
         preferred_date: preferred_date || null,
-        address: request_type === "on_site" ? site_address : null,
+        site_address: request_type === "on_site" ? site_address : null,
         status: "pending",
       })
       .select()
@@ -96,20 +98,26 @@ export async function POST(req: Request) {
     if (requestError) {
       console.error("Error creating service request:", requestError)
       return NextResponse.json(
-        { error: "Failed to create service request" },
+        { error: "Failed to create service request", details: requestError.message },
         { status: 500 }
       )
     }
+
+    console.log("Service request created successfully:", request.id)
 
     return NextResponse.json({
       success: true,
       message: "Service request submitted successfully",
       request_id: request.id,
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error("Service request error:", error)
     return NextResponse.json(
-      { error: "Internal server error" },
+      { 
+        error: "Internal server error", 
+        details: error.message,
+        stack: process.env.NODE_ENV === "development" ? error.stack : undefined
+      },
       { status: 500 }
     )
   }

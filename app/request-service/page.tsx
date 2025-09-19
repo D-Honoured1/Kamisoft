@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { CheckCircle, Briefcase, Mail, Phone, Building, Calendar } from "lucide-react"
+import { CheckCircle, Briefcase, Mail, Phone, Building, Calendar, AlertTriangle } from "lucide-react"
 import { SERVICE_CATEGORIES } from "@/lib/constants/services"
 
 export default function RequestServicePage() {
@@ -37,19 +37,42 @@ export default function RequestServicePage() {
     setError("")
 
     try {
+      console.log("Submitting form data:", formData)
+
       const res = await fetch("/api/service-request", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
         body: JSON.stringify(formData),
       })
 
-      const data = await res.json()
+      console.log("Response status:", res.status)
+      console.log("Response headers:", Object.fromEntries(res.headers.entries()))
 
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to submit request")
+      let data
+      try {
+        const responseText = await res.text()
+        console.log("Raw response:", responseText)
+        
+        if (!responseText) {
+          throw new Error("Empty response from server")
+        }
+        
+        data = JSON.parse(responseText)
+      } catch (parseError) {
+        console.error("JSON parse error:", parseError)
+        throw new Error(`Invalid response from server. Status: ${res.status}`)
       }
 
+      if (!res.ok) {
+        throw new Error(data.error || `Server error: ${res.status} ${res.statusText}`)
+      }
+
+      console.log("Success response:", data)
       setIsSubmitted(true)
+      
       // Reset form
       setFormData({
         name: "",
@@ -64,7 +87,22 @@ export default function RequestServicePage() {
         site_address: "",
       })
     } catch (error: any) {
-      setError(error.message || "An error occurred while submitting your request")
+      console.error("Form submission error:", error)
+      let errorMessage = "An unexpected error occurred while submitting your request."
+      
+      if (error.message) {
+        if (error.message.includes("Failed to fetch")) {
+          errorMessage = "Network error. Please check your internet connection and try again."
+        } else if (error.message.includes("405")) {
+          errorMessage = "Service temporarily unavailable. Please try again in a few minutes."
+        } else if (error.message.includes("500")) {
+          errorMessage = "Server error. Our team has been notified. Please try again later."
+        } else {
+          errorMessage = error.message
+        }
+      }
+      
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -148,7 +186,13 @@ export default function RequestServicePage() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 {error && (
                   <Alert variant="destructive" className="border-2">
-                    <AlertDescription>{error}</AlertDescription>
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription className="font-medium">
+                      {error}
+                      <div className="text-sm mt-2 opacity-90">
+                        If this problem persists, please contact us directly at hello@kamisoftenterprises.online
+                      </div>
+                    </AlertDescription>
                   </Alert>
                 )}
 
@@ -169,6 +213,7 @@ export default function RequestServicePage() {
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         placeholder="John Doe"
                         required
+                        disabled={isLoading}
                         className="border-2"
                       />
                     </div>
@@ -183,6 +228,7 @@ export default function RequestServicePage() {
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         placeholder="john@example.com"
                         required
+                        disabled={isLoading}
                         className="border-2"
                       />
                     </div>
@@ -201,6 +247,7 @@ export default function RequestServicePage() {
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                         placeholder="+1 (555) 123-4567"
+                        disabled={isLoading}
                         className="border-2"
                       />
                     </div>
@@ -216,6 +263,7 @@ export default function RequestServicePage() {
                         value={formData.company}
                         onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                         placeholder="Your Company Name"
+                        disabled={isLoading}
                         className="border-2"
                       />
                     </div>
@@ -236,6 +284,7 @@ export default function RequestServicePage() {
                         value={formData.service_category}
                         onValueChange={(value) => setFormData({ ...formData, service_category: value })}
                         required
+                        disabled={isLoading}
                       >
                         <SelectTrigger className="border-2">
                           <SelectValue placeholder="Select a service" />
@@ -256,13 +305,14 @@ export default function RequestServicePage() {
                         value={formData.request_type}
                         onValueChange={(value) => setFormData({ ...formData, request_type: value })}
                         className="flex gap-6 mt-2"
+                        disabled={isLoading}
                       >
                         <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="digital" id="digital" />
+                          <RadioGroupItem value="digital" id="digital" disabled={isLoading} />
                           <Label htmlFor="digital">Digital/Remote</Label>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="on_site" id="on_site" />
+                          <RadioGroupItem value="on_site" id="on_site" disabled={isLoading} />
                           <Label htmlFor="on_site">On-site</Label>
                         </div>
                       </RadioGroup>
@@ -278,6 +328,7 @@ export default function RequestServicePage() {
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                       placeholder="E.g., E-commerce Platform Development"
                       required
+                      disabled={isLoading}
                       className="border-2"
                     />
                   </div>
@@ -292,6 +343,7 @@ export default function RequestServicePage() {
                       placeholder="Describe your project requirements, goals, and any specific features you need..."
                       rows={5}
                       required
+                      disabled={isLoading}
                       className="border-2"
                     />
                   </div>
@@ -308,6 +360,7 @@ export default function RequestServicePage() {
                         type="date"
                         value={formData.preferred_date}
                         onChange={(e) => setFormData({ ...formData, preferred_date: e.target.value })}
+                        disabled={isLoading}
                         className="border-2"
                       />
                     </div>
@@ -321,6 +374,7 @@ export default function RequestServicePage() {
                           value={formData.site_address}
                           onChange={(e) => setFormData({ ...formData, site_address: e.target.value })}
                           placeholder="Enter the project site address"
+                          disabled={isLoading}
                           className="border-2"
                         />
                       </div>

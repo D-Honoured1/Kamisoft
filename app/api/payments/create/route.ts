@@ -1,9 +1,11 @@
+// app/api/payments/create/route.ts
+export const dynamic = "force-dynamic"
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerClient()
+    const supabase = createServerClient()
     const { requestId, paymentMethod, amount } = await request.json()
 
     // Validate input
@@ -55,10 +57,9 @@ export async function POST(request: NextRequest) {
         break
       case "bank_transfer":
         // Send bank transfer instructions via email
-        await sendBankTransferInstructions(serviceRequest.client.email, payment.id)
+        await sendBankTransferInstructions(serviceRequest.client.email, payment.id, amount)
         break
       case "crypto":
-        // TODO: Implement crypto payment
         return NextResponse.json({ error: "Cryptocurrency payments not yet supported" }, { status: 400 })
     }
 
@@ -78,27 +79,125 @@ export async function POST(request: NextRequest) {
 }
 
 async function createStripeCheckout(paymentId: string, amount: number, serviceRequest: any) {
-  // TODO: Implement Stripe checkout
-  // This would typically use the Stripe SDK to create a checkout session
-  console.log("Creating Stripe checkout for payment:", paymentId)
+  try {
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
+    
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error("Stripe secret key not configured")
+      throw new Error("Payment configuration error")
+    }
 
-  // Mock implementation - replace with actual Stripe integration
-  return `https://checkout.stripe.com/pay/mock-session-${paymentId}`
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: serviceRequest.title,
+            description: `Service request for ${serviceRequest.client.name}`,
+          },
+          unit_amount: Math.round(amount * 100), // Stripe uses cents
+        },
+        quantity: 1,
+      }],
+      mode: 'payment',
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/success?payment_id=${paymentId}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/cancelled?payment_id=${paymentId}`,
+      metadata: {
+        paymentId: paymentId,
+        requestId: serviceRequest.id,
+        clientEmail: serviceRequest.client.email
+      },
+      customer_email: serviceRequest.client.email,
+    })
+
+    return session.url
+  } catch (error) {
+    console.error("Stripe checkout creation failed:", error)
+    throw new Error("Failed to create Stripe checkout session")
+  }
 }
 
 async function createPaystackCheckout(paymentId: string, amount: number, serviceRequest: any) {
-  // TODO: Implement Paystack checkout
-  // This would typically use the Paystack API to initialize a transaction
-  console.log("Creating Paystack checkout for payment:", paymentId)
+  try {
+    if (!process.env.PAYSTACK_SECRET_KEY) {
+      console.error("Paystack secret key not configured")
+      throw new Error("Payment configuration error")
+    }
 
-  // Mock implementation - replace with actual Paystack integration
-  return `https://checkout.paystack.com/mock-session-${paymentId}`
+    const response = await fetch('https://api.paystack.co/transaction/initialize', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: serviceRequest.client.email,
+        amount: Math.round(amount * 100), // Paystack uses kobo for NGN, but since we're using USD, multiply by 100
+        currency: 'USD',
+        reference: `KE_${paymentId}_${Date.now()}`,
+        callback_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/success?payment_id=${paymentId}`,
+        metadata: {
+          paymentId: paymentId,
+          requestId: serviceRequest.id,
+          clientName: serviceRequest.client.name,
+          serviceTitle: serviceRequest.title
+        },
+        channels: ['card', 'bank', 'ussd', 'qr', 'mobile_money', 'bank_transfer']
+      })
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error("Paystack API error:", errorData)
+      throw new Error("Failed to initialize Paystack transaction")
+    }
+
+    const data = await response.json()
+    
+    if (!data.status || !data.data.authorization_url) {
+      throw new Error("Invalid response from Paystack")
+    }
+
+    return data.data.authorization_url
+  } catch (error) {
+    console.error("Paystack checkout creation failed:", error)
+    throw new Error("Failed to create Paystack checkout session")
+  }
 }
 
-async function sendBankTransferInstructions(email: string, paymentId: string) {
-  // TODO: Implement email sending with bank transfer instructions
-  console.log("Sending bank transfer instructions to:", email, "for payment:", paymentId)
-
-  // This would typically use an email service like SendGrid, Resend, or similar
-  // to send detailed bank transfer instructions to the client
+async function sendBankTransferInstructions(email: string, paymentId: string, amount: number) {
+  try {
+    // This would typically use an email service like SendGrid, Resend, or similar
+    console.log("Sending bank transfer instructions to:", email, "for payment:", paymentId)
+    
+    // For now, we'll just log the instructions
+    // In a real implementation, you would send an email with:
+    const instructions = {
+      bankName: "First Bank of Nigeria",
+      accountNumber: "1234567890",
+      accountName: "Kamisoft Enterprises",
+      amount: amount,
+      reference: `KE_BANK_${paymentId}`,
+      instructions: [
+        "Transfer the exact amount to the account details provided",
+        "Use the reference number in your transfer description",
+        "Send proof of payment to hello@kamisoft.com",
+        "Payment will be verified within 24 hours"
+      ]
+    }
+    
+    // TODO: Implement actual email sending
+    // await sendEmail({
+    //   to: email,
+    //   subject: `Bank Transfer Instructions - Payment ${paymentId}`,
+    //   template: 'bank-transfer-instructions',
+    //   data: instructions
+    // })
+    
+    console.log("Bank transfer instructions:", instructions)
+  } catch (error) {
+    console.error("Failed to send bank transfer instructions:", error)
+    throw new Error("Failed to send payment instructions")
+  }
 }

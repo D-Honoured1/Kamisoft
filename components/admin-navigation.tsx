@@ -3,9 +3,9 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Users, FileText, CreditCard, Briefcase, Settings, ArrowLeft, Menu, X } from "lucide-react"
+import { LayoutDashboard, Users, FileText, CreditCard, Briefcase, Settings, ArrowLeft, Menu, X, LogOut } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navigation = [
@@ -21,7 +21,11 @@ export function AdminNavigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [lastActivity, setLastActivity] = useState(Date.now())
   const pathname = usePathname()
+  const router = useRouter()
+
+  const INACTIVITY_TIMEOUT = 30 * 60 * 1000 // 30 minutes
 
   // Check authentication status on mount and periodically
   useEffect(() => {
@@ -42,6 +46,96 @@ export function AdminNavigation() {
     
     return () => clearInterval(interval)
   }, [])
+
+  // Activity tracking for auto-logout
+  useEffect(() => {
+    if (!isAuthenticated) return
+
+    const updateActivity = () => {
+      setLastActivity(Date.now())
+      localStorage.setItem('lastActivity', Date.now().toString())
+    }
+
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart']
+    events.forEach(event => {
+      document.addEventListener(event, updateActivity, true)
+    })
+
+    const inactivityCheck = setInterval(() => {
+      const storedActivity = localStorage.getItem('lastActivity')
+      const lastActivityTime = storedActivity ? parseInt(storedActivity) : lastActivity
+      
+      if (Date.now() - lastActivityTime > INACTIVITY_TIMEOUT) {
+        handleSignOut(true)
+      }
+    }, 60000)
+
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, updateActivity, true)
+      })
+      clearInterval(inactivityCheck)
+    }
+  }, [isAuthenticated, lastActivity])
+
+  const handleSignOut = async (isAutoLogout = false) => {
+    try {
+      setLoading(true)
+      
+      // Call logout API
+      try {
+        const response = await fetch("/admin/logout", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+        
+        if (!response.ok) {
+          throw new Error('Logout API failed')
+        }
+      } catch (apiError) {
+        console.warn("Logout API failed, proceeding with manual cleanup:", apiError)
+      }
+      
+      // Manual cookie cleanup (fallback)
+      const cookieConfigs = [
+        "admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;",
+        `admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`,
+        `admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${window.location.hostname};`,
+        "admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=strict;",
+      ]
+      
+      cookieConfigs.forEach(config => {
+        document.cookie = config
+      })
+      
+      // Clear localStorage
+      localStorage.removeItem('lastActivity')
+      
+      // Trigger storage event for other tabs
+      localStorage.setItem('admin_logout', Date.now().toString())
+      setTimeout(() => localStorage.removeItem('admin_logout'), 100)
+      
+      // Update state
+      setIsAuthenticated(false)
+      
+      if (isAutoLogout) {
+        alert("You have been automatically logged out due to inactivity.")
+      }
+      
+      // Force redirect
+      window.location.href = "/admin/login"
+      
+    } catch (error) {
+      console.error("Logout error:", error)
+      
+      // Emergency fallback - force page reload to login
+      window.location.href = "/admin/login"
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Don't render anything while checking auth
   if (loading) {
@@ -107,7 +201,7 @@ export function AdminNavigation() {
             )}
           </div>
 
-          {/* Desktop Navigation - only show on dashboard */}
+          {/* Center - Desktop Navigation - only show on dashboard */}
           {isAuthenticated && pathname === "/admin" && (
             <div className="hidden md:flex items-center space-x-1">
               {navigation.slice(1).map((item) => {
@@ -126,10 +220,29 @@ export function AdminNavigation() {
             </div>
           )}
 
-          {/* Mobile menu button - only show on dashboard */}
-          <div className="md:hidden">
+          {/* Right side - Sign Out Button */}
+          <div className="flex items-center space-x-2">
+            {isAuthenticated && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => handleSignOut()}
+                disabled={loading}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 bg-transparent border-red-200 dark:border-red-800"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                {loading ? "..." : "Sign Out"}
+              </Button>
+            )}
+            
+            {/* Mobile menu button - only show on dashboard when authenticated */}
             {isAuthenticated && pathname === "/admin" && (
-              <Button variant="ghost" size="sm" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="md:hidden"
+              >
                 {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </Button>
             )}

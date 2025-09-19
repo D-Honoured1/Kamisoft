@@ -1,12 +1,12 @@
-// components/navigation.tsx - IMPROVED VERSION
+// components/navigation.tsx - UPDATED VERSION
 "use client"
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Shield, Menu, X, LogOut } from "lucide-react"
+import { Shield, Menu, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navigation = [
@@ -23,11 +23,7 @@ export function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [lastActivity, setLastActivity] = useState(Date.now())
   const pathname = usePathname()
-  const router = useRouter()
-
-  const INACTIVITY_TIMEOUT = 30 * 60 * 1000 // 30 minutes
 
   useEffect(() => {
     const checkAuth = () => {
@@ -57,97 +53,9 @@ export function Navigation() {
     }
   }, [])
 
-  // Activity tracking for auto-logout
-  useEffect(() => {
-    if (!isAuthenticated) return
-
-    const updateActivity = () => {
-      setLastActivity(Date.now())
-      localStorage.setItem('lastActivity', Date.now().toString())
-    }
-
-    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart']
-    events.forEach(event => {
-      document.addEventListener(event, updateActivity, true)
-    })
-
-    const inactivityCheck = setInterval(() => {
-      const storedActivity = localStorage.getItem('lastActivity')
-      const lastActivityTime = storedActivity ? parseInt(storedActivity) : lastActivity
-      
-      if (Date.now() - lastActivityTime > INACTIVITY_TIMEOUT) {
-        handleSignOut(true)
-      }
-    }, 60000)
-
-    return () => {
-      events.forEach(event => {
-        document.removeEventListener(event, updateActivity, true)
-      })
-      clearInterval(inactivityCheck)
-    }
-  }, [isAuthenticated, lastActivity])
-
-  const handleSignOut = async (isAutoLogout = false) => {
-    try {
-      setLoading(true)
-      
-      // Multiple approaches to ensure logout works
-      
-      // Method 1: Call logout API
-      try {
-        const response = await fetch("/admin/logout", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        })
-        
-        if (!response.ok) {
-          throw new Error('Logout API failed')
-        }
-      } catch (apiError) {
-        console.warn("Logout API failed, proceeding with manual cleanup:", apiError)
-      }
-      
-      // Method 2: Manual cookie cleanup (fallback)
-      // Clear cookie with various configurations
-      const cookieConfigs = [
-        "admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;",
-        `admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`,
-        `admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${window.location.hostname};`,
-        "admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=strict;",
-      ]
-      
-      cookieConfigs.forEach(config => {
-        document.cookie = config
-      })
-      
-      // Method 3: Clear localStorage
-      localStorage.removeItem('lastActivity')
-      
-      // Method 4: Trigger storage event for other tabs
-      localStorage.setItem('admin_logout', Date.now().toString())
-      setTimeout(() => localStorage.removeItem('admin_logout'), 100)
-      
-      // Update state
-      setIsAuthenticated(false)
-      
-      if (isAutoLogout) {
-        alert("You have been automatically logged out due to inactivity.")
-      }
-      
-      // Force redirect
-      window.location.href = "/admin/login"
-      
-    } catch (error) {
-      console.error("Logout error:", error)
-      
-      // Emergency fallback - force page reload to login
-      window.location.href = "/admin/login"
-    } finally {
-      setLoading(false)
-    }
+  // Hide the main navigation completely when admin is logged in
+  if (isAuthenticated) {
+    return null
   }
 
   return (
@@ -178,23 +86,6 @@ export function Navigation() {
             <Button variant="outline" size="sm" asChild className="hidden md:inline-flex bg-transparent">
               <Link href="/admin/login">Admin</Link>
             </Button>
-          )}
-          {!loading && isAuthenticated && (
-            <>
-              <Button variant="outline" size="sm" asChild className="hidden md:inline-flex bg-transparent">
-                <Link href="/admin">Dashboard</Link>
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => handleSignOut()}
-                disabled={loading}
-                className="hidden md:inline-flex text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 bg-transparent border-red-200 dark:border-red-800"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                {loading ? "..." : "Sign Out"}
-              </Button>
-            </>
           )}
           <Button asChild className="hidden md:inline-flex">
             <Link href="/request-service">Hire Us</Link>
@@ -240,27 +131,6 @@ export function Navigation() {
                     Admin Login
                   </Link>
                 </Button>
-              )}
-              {!loading && isAuthenticated && (
-                <>
-                  <Button variant="outline" asChild className="w-full mt-2 bg-transparent">
-                    <Link href="/admin" onClick={() => setIsMobileMenuOpen(false)}>
-                      Dashboard
-                    </Link>
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      setIsMobileMenuOpen(false)
-                      handleSignOut()
-                    }}
-                    disabled={loading}
-                    className="w-full mt-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 bg-transparent border-red-200 dark:border-red-800"
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    {loading ? "Signing Out..." : "Sign Out"}
-                  </Button>
-                </>
               )}
             </nav>
           </div>

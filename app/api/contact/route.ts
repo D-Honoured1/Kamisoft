@@ -71,7 +71,7 @@ export async function POST(req: Request) {
       .from("service_requests")
       .insert({
         client_id: clientId,
-        service_type: "general_inquiry",
+        service_type: "consultancy", // Using consultancy for general inquiries
         request_type: "digital",
         title: subject || "Contact Form Inquiry",
         description: message,
