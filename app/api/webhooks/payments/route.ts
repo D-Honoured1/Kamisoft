@@ -112,6 +112,55 @@ async function handleStripeWebhook(body: string, signature: string, jsonBody: an
         }
 
       default:
+        console.log(`Unhandled Stripe event type: ${event.type}`)
+        return null
+    }
+  } catch (error) {
+    console.error("Error processing Stripe webhook:", error)
+    return null
+  }
+}
+
+async function handlePaystackWebhook(body: string, signature: string, jsonBody: any) {
+  try {
+    const webhookSecret = process.env.PAYSTACK_WEBHOOK_SECRET
+
+    if (!webhookSecret) {
+      console.error("Paystack webhook secret not configured")
+      return null
+    }
+
+    // Verify the webhook signature
+    const hash = crypto.createHmac('sha512', webhookSecret).update(body).digest('hex')
+    if (hash !== signature) {
+      console.error("Paystack webhook signature verification failed")
+      return null
+    }
+
+    console.log("Processing Paystack webhook:", jsonBody.event)
+
+    switch (jsonBody.event) {
+      case "charge.success":
+        const successData = jsonBody.data
+        return {
+          paymentId: successData.metadata?.paymentId,
+          status: "completed",
+          reference: successData.reference,
+          referenceField: "paystack_reference",
+          amount: successData.amount / 100, // Convert from kobo
+          customerEmail: successData.customer.email
+        }
+
+      case "charge.failed":
+        const failedData = jsonBody.data
+        return {
+          paymentId: failedData.metadata?.paymentId,
+          status: "failed",
+          reference: failedData.reference,
+          referenceField: "paystack_reference",
+        }
+
+      default:
         console.log(`Unhandled Paystack event type: ${jsonBody.event}`)
         return null
     }
@@ -284,52 +333,4 @@ async function sendInvoiceEmail(
   } catch (error) {
     console.error("Error sending invoice email:", error)
   }
-}console.log(`Unhandled Stripe event type: ${event.type}`)
-        return null
-    }
-  } catch (error) {
-    console.error("Error processing Stripe webhook:", error)
-    return null
-  }
 }
-
-async function handlePaystackWebhook(body: string, signature: string, jsonBody: any) {
-  try {
-    const webhookSecret = process.env.PAYSTACK_WEBHOOK_SECRET
-
-    if (!webhookSecret) {
-      console.error("Paystack webhook secret not configured")
-      return null
-    }
-
-    // Verify the webhook signature
-    const hash = crypto.createHmac('sha512', webhookSecret).update(body).digest('hex')
-    if (hash !== signature) {
-      console.error("Paystack webhook signature verification failed")
-      return null
-    }
-
-    console.log("Processing Paystack webhook:", jsonBody.event)
-
-    switch (jsonBody.event) {
-      case "charge.success":
-        const successData = jsonBody.data
-        return {
-          paymentId: successData.metadata?.paymentId,
-          status: "completed",
-          reference: successData.reference,
-          referenceField: "paystack_reference",
-          amount: successData.amount / 100, // Convert from kobo
-          customerEmail: successData.customer.email
-        }
-
-      case "charge.failed":
-        const failedData = jsonBody.data
-        return {
-          paymentId: failedData.metadata?.paymentId,
-          status: "failed",
-          reference: failedData.reference,
-          referenceField: "paystack_reference",
-        }
-
-      default:
