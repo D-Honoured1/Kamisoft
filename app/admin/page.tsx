@@ -1,5 +1,5 @@
 import { createServerClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
+import { requireAuth } from "@/lib/auth/server-auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -9,6 +9,9 @@ import Link from "next/link"
 export const dynamic = "force-dynamic"
 
 export default async function AdminDashboard() {
+  // Require authentication - this will redirect to login if not authenticated
+  const adminUser = await requireAuth()
+  
   const supabase = createServerClient()
 
   // Initialize default stats
@@ -147,7 +150,9 @@ export default async function AdminDashboard() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-          <p className="text-muted-foreground mt-2">Welcome back! Here's what's happening at Kamisoft.</p>
+          <p className="text-muted-foreground mt-2">
+            Welcome back, {adminUser.name}! Here's what's happening at Kamisoft.
+          </p>
         </div>
         <div className="flex gap-4">
           <Button asChild>
