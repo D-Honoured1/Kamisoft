@@ -1,26 +1,42 @@
-// app/admin/requests/[id]/page.tsx - Add payment button to request details
-export const dynamic = "force-dynamic";
+// app/api/admin/verify/route.ts - Add this new file for auth verification
 
-import { createServerClient } from "@/lib/supabase/server"
-import { redirect, notFound } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { PaymentButton } from "@/components/payment-button" // Add this import
-import { Calendar, MapPin, Mail, Phone, DollarSign, User, ArrowLeft } from "lucide-react"
-import Link from "next/link"
-import { requireAuth } from "@/lib/auth/server-auth"
+import { NextResponse } from "next/server"
+import { getAdminUser } from "@/lib/auth/server-auth"
+
+export async function GET() {
+  try {
+    const user = await getAdminUser()
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: "Not authenticated" },
+        { status: 401 }
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role
+      }
+    })
+  } catch (error) {
+    console.error("Verification error:", error)
+    return NextResponse.json(
+      { error: "Authentication verification failed" },
+      { status: 500 }
+    )
+  }
+}
 
 export default async function ServiceRequestDetail({ params }: { params: { id: string } }) {
+  // Require authentication
+  await requireAuth()
+  
   const supabase = createServerClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect("/admin/login")
-  }
 
   const { data: request, error } = await supabase
     .from("service_requests")
@@ -35,7 +51,7 @@ export default async function ServiceRequestDetail({ params }: { params: { id: s
       payments (
         id,
         amount,
-        status,
+        payment_status,
         payment_method,
         created_at
       )
@@ -75,6 +91,9 @@ export default async function ServiceRequestDetail({ params }: { params: { id: s
     }
   }
 
+  const hasUnpaidAmount = request.estimated_cost && (!request.payments || 
+    request.payments.filter((p: any) => p.payment_status === 'completed').length === 0)
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-8">
@@ -96,13 +115,15 @@ export default async function ServiceRequestDetail({ params }: { params: { id: s
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div>
-                  <CardTitle className="text-xl">{request.service_type}</CardTitle>
+                  <CardTitle className="text-xl">{request.title || request.service_type}</CardTitle>
                   <CardDescription className="mt-1">
                     Submitted on {new Date(request.created_at).toLocaleDateString()}
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Badge className={getPriorityColor(request.priority)}>{request.priority} priority</Badge>
+                  {request.priority && (
+                    <Badge className={getPriorityColor(request.priority)}>{request.priority} priority</Badge>
+                  )}
                   <Badge className={getStatusColor(request.status)}>{request.status.replace("_", " ")}</Badge>
                 </div>
               </div>
@@ -114,60 +135,28 @@ export default async function ServiceRequestDetail({ params }: { params: { id: s
                   <p className="text-muted-foreground">{request.description}</p>
                 </div>
 
-                {request.requirements && (
+                {request.service_location === "on_site" && request.address && (
                   <div>
-                    <h4 className="font-medium text-foreground mb-2">Requirements</h4>
-                    <p className="text-muted-foreground">{request.requirements}</p>
+                    <h4 className="font-medium text-foreground mb-2">Service Address</h4>
+                    <p className="text-muted-foreground flex items-start gap-2">
+                      <MapPin className="h-4 w-4 mt-1" />
+                      {request.address}
+                    </p>
                   </div>
                 )}
 
-                {request.timeline && (
+                {request.preferred_date && (
                   <div>
-                    <h4 className="font-medium text-foreground mb-2">Timeline</h4>
-                    <p className="text-muted-foreground">{request.timeline}</p>
-                  </div>
-                )}
-
-                {request.budget_range && (
-                  <div>
-                    <h4 className="font-medium text-foreground mb-2">Budget Range</h4>
-                    <p className="text-muted-foreground">{request.budget_range}</p>
+                    <h4 className="font-medium text-foreground mb-2">Preferred Date</h4>
+                    <p className="text-muted-foreground flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      {new Date(request.preferred_date).toLocaleDateString()}
+                    </p>
                   </div>
                 )}
               </div>
             </CardContent>
           </Card>
-
-          {/* Service Location Details */}
-          {request.service_location === "on_site" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>On-Site Service Details</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {request.address && (
-                    <div className="flex items-start gap-2">
-                      <MapPin className="h-4 w-4 mt-1 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium text-foreground">Service Address</p>
-                        <p className="text-muted-foreground">{request.address}</p>
-                      </div>
-                    </div>
-                  )}
-                  {request.preferred_date && (
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium text-foreground">Preferred Date</p>
-                        <p className="text-muted-foreground">{new Date(request.preferred_date).toLocaleDateString()}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
 
         {/* Sidebar */}
@@ -182,17 +171,17 @@ export default async function ServiceRequestDetail({ params }: { params: { id: s
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <p className="font-medium text-foreground">{request.clients.name}</p>
-                    {request.clients.company && (
+                    <p className="font-medium text-foreground">{request.clients?.name}</p>
+                    {request.clients?.company && (
                       <p className="text-sm text-muted-foreground">{request.clients.company}</p>
                     )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">{request.clients.email}</p>
+                  <p className="text-muted-foreground">{request.clients?.email}</p>
                 </div>
-                {request.clients.phone && (
+                {request.clients?.phone && (
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-muted-foreground" />
                     <p className="text-muted-foreground">{request.clients.phone}</p>
@@ -202,13 +191,13 @@ export default async function ServiceRequestDetail({ params }: { params: { id: s
             </CardContent>
           </Card>
 
-          {/* Financial Information */}
+          {/* Payment Information */}
           <Card>
             <CardHeader>
-              <CardTitle>Financial Details</CardTitle>
+              <CardTitle>Payment Details</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {request.estimated_cost && (
                   <div className="flex items-center gap-2">
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -219,44 +208,59 @@ export default async function ServiceRequestDetail({ params }: { params: { id: s
                   </div>
                 )}
 
-                {request.payments && request.payments.length > 0 && (
+                {request.payments && request.payments.length > 0 ? (
                   <div>
-                    <p className="font-medium text-foreground mb-2">Payments</p>
+                    <p className="font-medium text-foreground mb-2">Payment History</p>
                     {request.payments.map((payment: any) => (
-                      <div key={payment.id} className="flex items-center justify-between p-2 border rounded">
+                      <div key={payment.id} className="flex items-center justify-between p-2 border rounded mb-2">
                         <div>
-                          <p className="text-sm font-medium">${payment.amount.toLocaleString()}</p>
+                          <p className="text-sm font-medium">${payment.amount.toFixed(2)}</p>
                           <p className="text-xs text-muted-foreground">{payment.payment_method}</p>
                         </div>
                         <Badge
                           className={
-                            payment.status === "completed"
+                            payment.payment_status === "completed"
                               ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                               : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
                           }
                         >
-                          {payment.status}
+                          {payment.payment_status}
                         </Badge>
                       </div>
                     ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-sm">No payments recorded yet</p>
+                )}
+
+                {/* Payment Action Button */}
+                {hasUnpaidAmount && (
+                  <div className="pt-4 border-t">
+                    <PaymentButton 
+                      requestId={request.id}
+                      amount={request.estimated_cost}
+                      className="w-full"
+                    />
                   </div>
                 )}
               </div>
             </CardContent>
           </Card>
 
-          {/* Actions */}
+          {/* Quick Actions */}
           <Card>
             <CardHeader>
               <CardTitle>Actions</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <Button className="w-full" asChild>
-                  <Link href={`/admin/requests/${request.id}/edit`}>Update Status</Link>
+                <Button className="w-full" variant="outline" asChild>
+                  <Link href={`mailto:${request.clients?.email}?subject=Re: ${request.title || request.service_type}`}>
+                    Contact Client
+                  </Link>
                 </Button>
-                <Button variant="outline" className="w-full bg-transparent" asChild>
-                  <Link href={`/payment/${request.id}`}>View Payment</Link>
+                <Button className="w-full" variant="outline" asChild>
+                  <Link href={`/admin/requests/${request.id}/edit`}>Update Status</Link>
                 </Button>
               </div>
             </CardContent>
