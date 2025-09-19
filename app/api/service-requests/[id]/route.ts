@@ -1,9 +1,10 @@
+// app/api/service-requests/[id]/route.ts
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const supabase = await createServerClient()
+    const supabase = createServerClient()
     const { id } = params
 
     const { data: serviceRequest, error } = await supabase
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const supabase = await createClient()
+    const supabase = createServerClient()
     const { id } = params
     const updates = await request.json()
 

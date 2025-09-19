@@ -6,12 +6,12 @@ import { requireAuth } from "@/lib/auth/server-auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { FileText, Mail, Phone, Calendar, DollarSign } from "lucide-react"
+import { FileText, User, Calendar, ArrowRight } from "lucide-react"
 import Link from "next/link"
 
-export default async function ServiceRequestsPage() {
+export default async function RequestsPage() {
   // Require authentication
-  await requireAuth()
+  const adminUser = await requireAuth()
   
   const supabase = createServerClient()
 
@@ -23,7 +23,6 @@ export default async function ServiceRequestsPage() {
         id,
         name,
         email,
-        phone,
         company
       )
     `)
@@ -53,20 +52,26 @@ export default async function ServiceRequestsPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Service Requests</h1>
-          <p className="text-muted-foreground mt-2">Manage all client service requests</p>
+          <p className="text-muted-foreground mt-2">Manage and track all client service requests</p>
         </div>
       </div>
 
       {requests && requests.length > 0 ? (
         <div className="space-y-6">
           {requests.map((request: any) => (
-            <Card key={request.id}>
+            <Card key={request.id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-xl">{request.title}</CardTitle>
-                    <CardDescription className="mt-2">
-                      Client: {request.clients?.name} • {request.service_type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                  <div className="space-y-2">
+                    <CardTitle className="text-lg">{request.title}</CardTitle>
+                    <CardDescription className="flex items-center gap-4">
+                      <span className="flex items-center gap-1">
+                        <User className="h-4 w-4" />
+                        {request.clients?.name || 'Unknown Client'}
+                      </span>
+                      {request.clients?.company && (
+                        <span>• {request.clients.company}</span>
+                      )}
                     </CardDescription>
                   </div>
                   <Badge className={getStatusColor(request.status)}>
@@ -75,62 +80,34 @@ export default async function ServiceRequestsPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <p className="text-sm text-muted-foreground">{request.description}</p>
-                    
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Mail className="h-4 w-4" />
-                      {request.clients?.email}
-                    </div>
-                    
-                    {request.clients?.phone && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Phone className="h-4 w-4" />
-                        {request.clients?.phone}
-                      </div>
-                    )}
-                    
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Calendar className="h-4 w-4" />
-                      Created: {new Date(request.created_at).toLocaleDateString()}
-                    </div>
-                    
-                    {request.estimated_cost && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <DollarSign className="h-4 w-4" />
-                        Estimated: ${request.estimated_cost}
-                      </div>
-                    )}
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium text-sm text-muted-foreground mb-2">Service Type</h4>
+                    <p className="text-sm">{request.service_type}</p>
                   </div>
                   
-                  <div className="flex flex-col justify-between">
-                    <div className="space-y-2">
+                  <div>
+                    <h4 className="font-medium text-sm text-muted-foreground mb-2">Description</h4>
+                    <p className="text-sm line-clamp-2">{request.description}</p>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-4 border-t">
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4" />
+                        Created: {new Date(request.created_at).toLocaleDateString()}
+                      </span>
                       {request.preferred_date && (
-                        <p className="text-sm">
-                          <strong>Preferred Date:</strong> {new Date(request.preferred_date).toLocaleDateString()}
-                        </p>
+                        <span>
+                          Preferred: {new Date(request.preferred_date).toLocaleDateString()}
+                        </span>
                       )}
-                      
-                      {request.site_address && (
-                        <p className="text-sm">
-                          <strong>Site Address:</strong> {request.site_address}
-                        </p>
-                      )}
-                      
-                      <p className="text-sm">
-                        <strong>Request Type:</strong> {request.request_type.replace('_', ' ')}
-                      </p>
                     </div>
-                    
-                    <div className="flex gap-2 mt-4">
-                      <Button size="sm" asChild>
-                        <Link href={`/admin/requests/${request.id}`}>View Details</Link>
-                      </Button>
-                      <Button size="sm" variant="outline" asChild>
-                        <Link href={`/admin/clients/${request.clients?.id}`}>View Client</Link>
-                      </Button>
-                    </div>
+                    <Button size="sm" variant="outline" asChild>
+                      <Link href={`/admin/requests/${request.id}`}>
+                        View Details <ArrowRight className="ml-2 h-4 w-4" />
+                      </Link>
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -140,7 +117,7 @@ export default async function ServiceRequestsPage() {
       ) : (
         <Card>
           <CardContent className="text-center py-12">
-            <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+            <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-medium text-foreground mb-2">No service requests yet</h3>
             <p className="text-muted-foreground">Service requests will appear here as clients submit them.</p>
           </CardContent>

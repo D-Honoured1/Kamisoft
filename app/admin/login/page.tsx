@@ -28,6 +28,9 @@ export default function AdminLogin() {
   // Ensure component is mounted before checking auth
   useEffect(() => {
     setMounted(true)
+    
+    // Clear any existing activity tracking when accessing login
+    localStorage.removeItem('lastActivity')
   }, [])
 
   // Check if user is already logged in
@@ -71,6 +74,9 @@ export default function AdminLogin() {
       if (!res.ok) {
         throw new Error(data.error || "Login failed")
       }
+
+      // Set initial activity timestamp for the session
+      localStorage.setItem('lastActivity', Date.now().toString())
 
       // Wait a moment for the cookie to be set, then redirect
       setTimeout(() => {

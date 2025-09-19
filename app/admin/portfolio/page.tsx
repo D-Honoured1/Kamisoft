@@ -1,18 +1,17 @@
 // app/admin/portfolio/page.tsx
 export const dynamic = "force-dynamic";
 
-import { requireAuth } from "@/lib/auth/server-auth"
 import { createServerClient } from "@/lib/supabase/server"
+import { requireAuth } from "@/lib/auth/server-auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Briefcase, Plus, Edit, Trash2, Eye, EyeOff, Star } from "lucide-react"
+import { Briefcase, Plus, Eye, Calendar, ExternalLink, Star } from "lucide-react"
 import Link from "next/link"
-import Image from "next/image"
 
-export default async function PortfolioManagementPage() {
+export default async function PortfolioPage() {
   // Require authentication
-  await requireAuth()
+  const adminUser = await requireAuth()
   
   const supabase = createServerClient()
 
@@ -25,133 +24,136 @@ export default async function PortfolioManagementPage() {
     console.error("Error fetching portfolio projects:", error)
   }
 
+  const publishedProjects = projects?.filter(p => p.is_published) || []
+  const featuredProjects = projects?.filter(p => p.is_featured) || []
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Portfolio Management</h1>
-          <p className="text-muted-foreground mt-2">Manage your portfolio projects and showcase your work</p>
+          <p className="text-muted-foreground mt-2">Manage your portfolio projects and showcases</p>
         </div>
         <Button asChild>
           <Link href="/admin/portfolio/new">
             <Plus className="mr-2 h-4 w-4" />
-            Add New Project
+            Add Project
           </Link>
         </Button>
       </div>
 
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Projects</p>
+                <p className="text-2xl font-bold text-foreground">{projects?.length || 0}</p>
+              </div>
+              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                <Briefcase className="h-6 w-6 text-primary" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Published</p>
+                <p className="text-2xl font-bold text-green-600">{publishedProjects.length}</p>
+              </div>
+              <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+                <Eye className="h-6 w-6 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Featured</p>
+                <p className="text-2xl font-bold text-yellow-600">{featuredProjects.length}</p>
+              </div>
+              <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center">
+                <Star className="h-6 w-6 text-yellow-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Projects Grid */}
       {projects && projects.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map((project: any) => (
-            <Card key={project.id} className="group hover:shadow-lg transition-shadow">
-              <CardHeader className="p-4">
-                {project.featured_image_url ? (
-                  <div className="relative w-full h-40 mb-4 rounded-lg overflow-hidden">
-                    <Image
-                      src={project.featured_image_url}
-                      alt={project.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-full h-40 bg-muted rounded-lg flex items-center justify-center mb-4">
-                    <Briefcase className="h-12 w-12 text-muted-foreground" />
-                  </div>
-                )}
-                
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg line-clamp-1">{project.title}</CardTitle>
-                    <CardDescription className="mt-1">
-                      {project.service_category?.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
-                    </CardDescription>
-                  </div>
-                  <div className="flex gap-1 ml-2">
+            <Card key={project.id} className="group hover:shadow-lg transition-all duration-300">
+              <CardHeader>
+                <div className="flex items-start justify-between mb-2">
+                  <CardTitle className="text-lg line-clamp-2">{project.title}</CardTitle>
+                  <div className="flex gap-2">
                     {project.is_featured && (
                       <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-                        <Star className="h-3 w-3 mr-1" />
+                        <Star className="w-3 h-3 mr-1" />
                         Featured
                       </Badge>
                     )}
-                    {project.is_published ? (
-                      <Badge variant="secondary" className="bg-green-100 text-green-800">
-                        <Eye className="h-3 w-3 mr-1" />
-                        Published
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary" className="bg-gray-100 text-gray-800">
-                        <EyeOff className="h-3 w-3 mr-1" />
-                        Draft
-                      </Badge>
-                    )}
+                    <Badge variant={project.is_published ? "default" : "secondary"}>
+                      {project.is_published ? "Published" : "Draft"}
+                    </Badge>
                   </div>
                 </div>
-              </CardHeader>
-              
-              <CardContent className="p-4 pt-0">
-                <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+                <CardDescription className="line-clamp-2">
                   {project.description}
-                </p>
-                
-                {project.client_name && (
-                  <p className="text-sm mb-2">
-                    <strong>Client:</strong> {project.client_name}
-                  </p>
-                )}
-                
-                {project.technologies && project.technologies.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-4">
-                    {project.technologies.slice(0, 3).map((tech: string, index: number) => (
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex flex-wrap gap-2">
+                    {project.technologies?.slice(0, 3).map((tech: string, index: number) => (
                       <Badge key={index} variant="outline" className="text-xs">
                         {tech}
                       </Badge>
                     ))}
-                    {project.technologies.length > 3 && (
+                    {project.technologies?.length > 3 && (
                       <Badge variant="outline" className="text-xs">
                         +{project.technologies.length - 3} more
                       </Badge>
                     )}
                   </div>
-                )}
-                
-                <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
-                  <span>Created: {new Date(project.created_at).toLocaleDateString()}</span>
-                  {project.completion_date && (
-                    <span>Completed: {new Date(project.completion_date).toLocaleDateString()}</span>
-                  )}
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" className="flex-1" asChild>
-                    <Link href={`/admin/portfolio/${project.id}/edit`}>
-                      <Edit className="h-3 w-3 mr-1" />
-                      Edit
-                    </Link>
-                  </Button>
-                  <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700">
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-                
-                {(project.project_url || project.github_url) && (
-                  <div className="flex gap-2 mt-2">
-                    {project.project_url && (
-                      <Button size="sm" variant="ghost" className="flex-1 text-xs" asChild>
-                        <Link href={project.project_url} target="_blank">
-                          View Live
-                        </Link>
-                      </Button>
+
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-4 w-4" />
+                      {project.completion_date 
+                        ? new Date(project.completion_date).toLocaleDateString()
+                        : "In Progress"
+                      }
+                    </span>
+                    {project.service_category && (
+                      <span className="capitalize">{project.service_category.replace("_", " ")}</span>
                     )}
-                    {project.github_url && (
-                      <Button size="sm" variant="ghost" className="flex-1 text-xs" asChild>
-                        <Link href={project.github_url} target="_blank">
-                          GitHub
+                  </div>
+
+                  <div className="flex gap-2 pt-4 border-t">
+                    <Button size="sm" variant="outline" className="flex-1" asChild>
+                      <Link href={`/admin/portfolio/${project.id}`}>
+                        Edit
+                      </Link>
+                    </Button>
+                    {project.project_url && (
+                      <Button size="sm" variant="outline" asChild>
+                        <Link href={project.project_url} target="_blank">
+                          <ExternalLink className="w-4 h-4" />
                         </Link>
                       </Button>
                     )}
                   </div>
-                )}
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -159,9 +161,9 @@ export default async function PortfolioManagementPage() {
       ) : (
         <Card>
           <CardContent className="text-center py-12">
-            <Briefcase className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+            <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-medium text-foreground mb-2">No portfolio projects yet</h3>
-            <p className="text-muted-foreground mb-6">Start building your portfolio by adding your first project.</p>
+            <p className="text-muted-foreground mb-4">Start building your portfolio by adding your first project.</p>
             <Button asChild>
               <Link href="/admin/portfolio/new">
                 <Plus className="mr-2 h-4 w-4" />
