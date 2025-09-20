@@ -3,7 +3,7 @@ import { requireAuth } from "@/lib/auth/server-auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Users, FileText, CreditCard, Briefcase, Clock } from "lucide-react"
+import { Users, FileText, CreditCard, Briefcase, Clock, MessageSquare } from "lucide-react"
 import Link from "next/link"
 
 export const dynamic = "force-dynamic"
@@ -147,7 +147,7 @@ export default async function AdminDashboard() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Simple Header - No duplicate navigation buttons */}
+      {/* Simple Header - No navigation buttons */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
         <p className="text-muted-foreground mt-2">
