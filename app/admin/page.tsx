@@ -147,7 +147,7 @@ export default async function AdminDashboard() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Header - Removed hero section, kept simple header */}
+      {/* Simple Header - No duplicate navigation buttons */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
         <p className="text-muted-foreground mt-2">
@@ -177,24 +177,25 @@ export default async function AdminDashboard() {
         })}
       </div>
 
-      {/* Quick Actions */}
+      {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {/* Quick Actions - All navigation buttons are here */}
         <Card>
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>Common administrative tasks</CardDescription>
+            <CardDescription>Access all administrative functions</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Button asChild variant="outline" className="w-full justify-start bg-transparent">
               <Link href="/admin/requests">
                 <FileText className="mr-2 h-4 w-4" />
-                Manage Requests
+                Manage Service Requests
               </Link>
             </Button>
             <Button asChild variant="outline" className="w-full justify-start bg-transparent">
               <Link href="/admin/clients">
                 <Users className="mr-2 h-4 w-4" />
-                View Clients
+                View All Clients
               </Link>
             </Button>
             <Button asChild variant="outline" className="w-full justify-start bg-transparent">
@@ -212,6 +213,7 @@ export default async function AdminDashboard() {
           </CardContent>
         </Card>
 
+        {/* Recent Service Requests */}
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Recent Service Requests</CardTitle>
