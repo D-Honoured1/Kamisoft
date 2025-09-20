@@ -1,4 +1,4 @@
-// hooks/use-admin-auth.ts - OPTIMIZED VERSION
+// hooks/use-admin-auth.ts - SSR-SAFE VERSION
 "use client"
 
 import { useState, useEffect } from "react"
@@ -7,10 +7,19 @@ import { usePathname } from "next/navigation"
 export function useAdminAuth() {
   const [user, setUser] = useState<{ name: string; email: string } | null>(null)
   const [loading, setLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
 
+  // Track if component is mounted (client-side)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   // Only check auth if we're on admin pages or if there's already a token
-  const shouldCheckAuth = pathname.startsWith('/admin') || document.cookie.includes('admin_token=')
+  const shouldCheckAuth = mounted && (
+    pathname.startsWith('/admin') || 
+    document.cookie.includes('admin_token=')
+  )
 
   useEffect(() => {
     if (shouldCheckAuth) {
@@ -29,11 +38,11 @@ export function useAdminAuth() {
         clearInterval(interval)
         window.removeEventListener('storage', handleStorageChange)
       }
-    } else {
-      // Not on admin pages and no token - skip auth check
+    } else if (mounted) {
+      // Component is mounted but we don't need to check auth
       setLoading(false)
     }
-  }, [shouldCheckAuth])
+  }, [shouldCheckAuth, mounted])
 
   const checkAuth = async () => {
     try {
@@ -73,10 +82,20 @@ export function useAdminAuth() {
     }
   }
 
+  // Return safe defaults during SSR
+  if (!mounted) {
+    return {
+      user: null,
+      isAuthenticated: false,
+      loading: false,
+      logout: () => {}
+    }
+  }
+
   return {
     user,
     isAuthenticated: !!user,
-    loading: shouldCheckAuth ? loading : false, // Don't show loading if we're not checking
+    loading: shouldCheckAuth ? loading : false,
     logout
   }
 }
