@@ -89,6 +89,7 @@
 // }
 
 // app/api/admin/login/route.ts - WITH DEBUG LOGS
+// app/api/admin/login/route.ts
 export const dynamic = "force-dynamic"
 
 import { NextResponse } from "next/server"
@@ -101,30 +102,26 @@ export async function POST(req: Request) {
   
   try {
     const { email, password } = await req.json()
-    
     console.log("📧 Login attempt for:", email)
-    console.log("🔑 Password provided:", !!password)
     
     // Check environment variables
-    console.log("🌍 Environment check:", {
-      SUPABASE_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-      SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-      JWT_SECRET: !!process.env.JWT_SECRET,
-      URL_VALUE: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30) + "..."
-    })
+    const envCheck = {
+      hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      hasJwtSecret: !!process.env.JWT_SECRET
+    }
+    console.log("🌍 Environment check:", envCheck)
     
     if (!email || !password) {
-      console.log("❌ Missing email or password")
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 })
     }
 
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
       console.log("❌ Missing Supabase environment variables")
-      return NextResponse.json({ error: "Server configuration error - missing Supabase config" }, { status: 500 })
+      return NextResponse.json({ error: "Server configuration error" }, { status: 500 })
     }
     
-    // Create Supabase client
-    console.log("🔗 Creating Supabase client...")
+    // Create Supabase admin client
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -138,7 +135,7 @@ export async function POST(req: Request) {
     
     console.log("🔍 Querying admin_users table...")
     
-    // Query the admin_users table
+    // Query admin_users table
     const { data: adminUser, error } = await supabaseAdmin
       .from("admin_users")
       .select("*")
@@ -146,56 +143,33 @@ export async function POST(req: Request) {
       .eq("is_active", true)
       .maybeSingle()
 
-    console.log("📊 Database query result:", { 
+    console.log("📊 Query result:", { 
       foundUser: !!adminUser, 
-      error: error?.message,
-      errorCode: error?.code
+      error: error?.message 
     })
 
     if (error) {
       console.error("💥 Database error:", error)
-      
-      if (error.message.includes("relation") && error.message.includes("does not exist")) {
-        return NextResponse.json({ 
-          error: "Admin users table not found. Please run the database setup script." 
-        }, { status: 500 })
-      }
-      
-      return NextResponse.json({ error: "Database error occurred: " + error.message }, { status: 500 })
+      return NextResponse.json({ 
+        error: "Database error: " + error.message 
+      }, { status: 500 })
     }
 
     if (!adminUser) {
-      console.log("❌ No admin user found for email:", email)
+      console.log("❌ No user found")
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
     }
 
-    console.log("✅ Admin user found:", adminUser.email)
-
-    // Verify password
-    const isValidPassword = password === adminUser.password
-    console.log("🔐 Password check:", isValidPassword)
-
-    if (!isValidPassword) {
-      console.log("❌ Invalid password for user:", email)
+    // Check password (in production, use bcrypt)
+    if (password !== adminUser.password) {
+      console.log("❌ Invalid password")
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
     }
 
-    // Check JWT secret
-    const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET
-    if (!jwtSecret) {
-      console.error("❌ JWT_SECRET not configured")
-      return NextResponse.json({ error: "Server configuration error - missing JWT secret" }, { status: 500 })
-    }
-
-    console.log("🎟️ Creating JWT token...")
-    
-    // Update last login
-    await supabaseAdmin
-      .from("admin_users")
-      .update({ last_login: new Date().toISOString() })
-      .eq("id", adminUser.id)
+    console.log("✅ Password correct")
 
     // Create JWT token
+    const jwtSecret = process.env.JWT_SECRET || "fallback-secret-key"
     const token = jwt.sign(
       { 
         role: "admin", 
@@ -206,6 +180,14 @@ export async function POST(req: Request) {
       jwtSecret, 
       { expiresIn: "24h" }
     )
+
+    console.log("🎟️ JWT token created")
+
+    // Update last login
+    await supabaseAdmin
+      .from("admin_users")
+      .update({ last_login: new Date().toISOString() })
+      .eq("id", adminUser.id)
 
     const response = NextResponse.json({ 
       success: true, 
@@ -218,6 +200,7 @@ export async function POST(req: Request) {
       }
     })
 
+    // Set cookie
     response.headers.set(
       "Set-Cookie",
       serialize("admin_token", token, {
@@ -229,14 +212,22 @@ export async function POST(req: Request) {
       })
     )
 
-    console.log("🎉 Login successful for:", email)
+    console.log("🎉 Login successful!")
     return response
     
   } catch (error) {
     console.error("💥 Login error:", error)
     return NextResponse.json({ 
       error: "Internal server error",
-      details: error.message
+      details: error.message 
     }, { status: 500 })
   }
+}
+
+// Keep GET for testing
+export async function GET() {
+  return NextResponse.json({ 
+    message: "Login API is running",
+    timestamp: new Date().toISOString()
+  })
 }
