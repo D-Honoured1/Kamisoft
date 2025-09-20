@@ -5,6 +5,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { requireAuth } from "@/lib/auth/server-auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { DashboardHomeButton } from "@/components/admin-navigation/dashboard-home-button"
 import { Button } from "@/components/ui/button"
 import { Briefcase, Plus, Eye, Calendar, ExternalLink, Star } from "lucide-react"
 import Link from "next/link"
@@ -29,7 +30,9 @@ export default async function PortfolioPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
+    <DashboardHomeButton />
+    
+    <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Portfolio Management</h1>
           <p className="text-muted-foreground mt-2">Manage your portfolio projects and showcases</p>

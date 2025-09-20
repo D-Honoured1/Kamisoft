@@ -1,16 +1,19 @@
-// Update app/page.tsx to include payment buttons
+// Update app/page.tsx to hide hero section for logged-in admins
+"use client"
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Navigation } from "@/components/navigation"
-import { AdminNavigation } from "@/components/admin-navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { PaymentButton } from "@/components/payment-button"
 import { ServiceCard } from "@/components/service-card"
 import { ArrowRight, Code, Smartphone, Shield, TrendingUp, Users, Award } from "lucide-react"
 import { COMPANY_INFO } from "@/lib/constants/services"
+import { useAdminAuth } from "@/hooks/use-admin-auth"
 
 export default function HomePage() {
+  const { isAuthenticated: isAdminAuthenticated } = useAdminAuth()
+
   const featuredServices = [
     "full_stack_development",
     "blockchain_solutions", 
@@ -27,35 +30,37 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col">
-      {/* Hero Section */}
-      <section className="relative py-20 lg:py-32 bg-gradient-to-br from-background to-muted/50">
-        <div className="container">
-          <div className="max-w-4xl mx-auto text-center space-y-8">
-            <Badge variant="secondary" className="text-sm">
-              Established 2015 • A subsidiary of Amor Group
-            </Badge>
+      {/* Hero Section - Hidden for logged-in admins */}
+      {!isAdminAuthenticated && (
+        <section className="relative py-20 lg:py-32 bg-gradient-to-br from-background to-muted/50">
+          <div className="container">
+            <div className="max-w-4xl mx-auto text-center space-y-8">
+              <Badge variant="secondary" className="text-sm">
+                Established 2015 • A subsidiary of Amor Group
+              </Badge>
 
-            <h1 className="text-4xl lg:text-6xl font-bold text-balance">
-              From Code to Connectivity—
-              <span className="text-primary">We Build It All</span>
-            </h1>
+              <h1 className="text-4xl lg:text-6xl font-bold text-balance">
+                From Code to Connectivity—
+                <span className="text-primary">We Build It All</span>
+              </h1>
 
-            <p className="text-xl text-muted-foreground text-balance max-w-2xl mx-auto">
-              {COMPANY_INFO.description} Trusted by enterprises, startups, and government organizations across Africa
-              and beyond.
-            </p>
+              <p className="text-xl text-muted-foreground text-balance max-w-2xl mx-auto">
+                {COMPANY_INFO.description} Trusted by enterprises, startups, and government organizations across Africa
+                and beyond.
+              </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" asChild>
-                <Link href="/request-service">
-                  Hire Us <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-              <PaymentButton variant="outline" size="lg" />
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button size="lg" asChild>
+                  <Link href="/request-service">
+                    Hire Us <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+                <PaymentButton variant="outline" size="lg" />
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Stats Section */}
       <section className="py-16 bg-muted/30">

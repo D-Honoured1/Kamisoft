@@ -1,8 +1,6 @@
-// components/navigation/auth-buttons.tsx
-
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { LogOut } from "lucide-react"
+import { LogOut, User } from "lucide-react"
 import { useAdminAuth } from "@/hooks/use-admin-auth"
 
 export function AuthButtons() {
@@ -15,9 +13,10 @@ export function AuthButtons() {
   if (isAuthenticated) {
     return (
       <div className="flex items-center space-x-2">
-        <span className="text-sm text-muted-foreground">
-          {user?.name}
-        </span>
+        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+          <User className="h-4 w-4" />
+          <span>{user?.name}</span>
+        </div>
         <Button variant="outline" size="sm" onClick={logout}>
           <LogOut className="mr-2 h-4 w-4" />
           Sign Out
@@ -32,7 +31,7 @@ export function AuthButtons() {
   return (
     <div className="flex items-center space-x-2">
       <Button variant="outline" size="sm" asChild>
-        <Link href="/admin/login">Admin</Link>
+        <Link href="/admin/login">Admin Login</Link>
       </Button>
       <Button asChild>
         <Link href="/request-service">Hire Us</Link>

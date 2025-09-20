@@ -4,6 +4,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { requireAuth } from "@/lib/auth/server-auth"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { DashboardHomeButton } from "@/components/admin-navigation/dashboard-home-button"
 import { Button } from "@/components/ui/button"
 import { Mail, Phone, FileText } from "lucide-react"
 import Link from "next/link"
@@ -32,8 +33,11 @@ export default async function ClientsManagement() {
   }
 
   return (
+    
     <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
+    <DashboardHomeButton />
+    
+    <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Client Management</h1>
           <p className="text-muted-foreground mt-2">View and manage your client database</p>

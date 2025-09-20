@@ -1,21 +1,35 @@
-// components/admin-navigation/admin-logo.tsx
+"use client"
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Home } from "lucide-react"
 import { usePathname } from "next/navigation"
 
 export function AdminLogo() {
   const pathname = usePathname()
-  const isDetailPage = pathname.includes("/admin/") && pathname.split("/").length > 3
+  
+  // Check if we're on a detail/sub page (more than 2 path segments after /admin)
+  const pathSegments = pathname.split('/').filter(Boolean)
+  const isDetailPage = pathSegments.length > 2 && pathSegments[0] === 'admin'
+  const isMainDashboard = pathname === '/admin'
 
   if (isDetailPage) {
     return (
-      <Button variant="ghost" size="sm" asChild>
-        <Link href="/admin">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+      <div className="flex items-center space-x-3">
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/admin">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Link>
+        </Button>
+        <div className="h-6 w-px bg-border" />
+        <Link href="/admin" className="flex items-center space-x-2">
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+            <span className="text-primary-foreground font-bold">K</span>
+          </div>
+          <span className="font-bold text-lg">Admin</span>
         </Link>
-      </Button>
+      </div>
     )
   }
 
@@ -24,7 +38,9 @@ export function AdminLogo() {
       <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
         <span className="text-primary-foreground font-bold">K</span>
       </div>
-      <span className="font-bold text-xl">Admin</span>
+      <span className="font-bold text-xl">
+        {isMainDashboard ? 'Kamisoft Admin' : 'Admin'}
+      </span>
     </Link>
   )
 }

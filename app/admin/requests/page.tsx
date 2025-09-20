@@ -5,6 +5,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { requireAuth } from "@/lib/auth/server-auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { DashboardHomeButton } from "@/components/admin-navigation/dashboard-home-button"
 import { Button } from "@/components/ui/button"
 import { FileText, User, Calendar, ArrowRight } from "lucide-react"
 import Link from "next/link"
@@ -49,7 +50,9 @@ export default async function RequestsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
+    <DashboardHomeButton />
+    
+    <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Service Requests</h1>
           <p className="text-muted-foreground mt-2">Manage and track all client service requests</p>
