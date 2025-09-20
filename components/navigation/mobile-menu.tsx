@@ -38,15 +38,16 @@ export function MobileMenu() {
         size="sm"
         className="md:hidden"
         onClick={() => setIsOpen(!isOpen)}
+        aria-label="Toggle mobile menu"
       >
         {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </Button>
 
       {isOpen && (
-        <div className="md:hidden border-t bg-background/95 backdrop-blur">
-          <div className="container py-4">
+        <div className="md:hidden fixed inset-x-0 top-16 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="container py-4 max-h-[calc(100vh-4rem)] overflow-y-auto">
             {!loading && isAuthenticated ? (
-              /* Admin is logged in - show only sign out */
+              /* Admin is logged in - show only sign out button */
               <div className="space-y-3">
                 <div className="text-center py-4">
                   <p className="text-sm text-muted-foreground">Signed in as</p>
@@ -63,22 +64,24 @@ export function MobileMenu() {
               </div>
             ) : (
               /* Admin is not logged in - show full navigation */
-              <nav className="space-y-2">
-                {navigation.map((item) => (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={cn(
-                      "block px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                      pathname === item.href
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-accent",
-                    )}
-                    onClick={closeMenu}
-                  >
-                    {item.name}
-                  </Link>
-                ))}
+              <div className="space-y-4">
+                <nav className="space-y-2">
+                  {navigation.map((item) => (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className={cn(
+                        "block px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                        pathname === item.href
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                      )}
+                      onClick={closeMenu}
+                    >
+                      {item.name}
+                    </Link>
+                  ))}
+                </nav>
                 
                 <div className="pt-4 space-y-2 border-t">
                   <Button asChild className="w-full">
@@ -93,7 +96,7 @@ export function MobileMenu() {
                     </Link>
                   </Button>
                 </div>
-              </nav>
+              </div>
             )}
           </div>
         </div>
