@@ -1,4 +1,4 @@
-// hooks/use-admin-auth.ts - SIMPLE SSR-SAFE VERSION
+// hooks/use-admin-auth.ts - COMPLETE FIXED VERSION
 "use client"
 
 import { useState, useEffect } from "react"
@@ -32,7 +32,20 @@ export function useAdminAuth() {
     }
   }, [mounted])
 
+  const hasAdminToken = () => {
+    // Check if admin token exists in cookies before making API calls
+    if (typeof document === 'undefined') return false
+    return document.cookie.includes('admin_token=')
+  }
+
   const checkAuth = async () => {
+    // Only make API call if we have a token
+    if (!hasAdminToken()) {
+      setLoading(false)
+      setUser(null)
+      return
+    }
+
     try {
       const response = await fetch('/api/admin/verify', { 
         credentials: 'include',
@@ -43,11 +56,17 @@ export function useAdminAuth() {
       
       if (response.ok) {
         const data = await response.json()
-        setUser(data.user)
+        // Handle both old and new response formats
+        if (data.success || data.authenticated) {
+          setUser(data.user)
+        } else {
+          setUser(null)
+        }
       } else {
         setUser(null)
       }
     } catch (error) {
+      console.error('Auth check failed:', error)
       setUser(null)
     } finally {
       setLoading(false)
