@@ -34,18 +34,25 @@ export default function NewPortfolioProject() {
   const [technologies, setTechnologies] = useState<string[]>([])
   const [newTechnology, setNewTechnology] = useState("")
 
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    service_category: "",
-    client_name: "",
-    project_url: "",
-    github_url: "",
-    featured_image_url: "",
-    completion_date: "",
-    is_featured: false,
-    is_published: true,
-  })
+  // Add these new state fields in the formData useState:
+const [formData, setFormData] = useState({
+  title: "",
+  description: "",
+  service_category: "",
+  client_name: "",
+  project_url: "",
+  github_url: "",
+  featured_image_url: "",
+  completion_date: "",
+  is_featured: false,
+  is_published: true,
+  // New client feedback fields
+  client_feedback: "",
+  client_rating: 0,
+  feedback_date: "",
+})
+
+
 
   const addTechnology = () => {
     if (newTechnology.trim() && !technologies.includes(newTechnology.trim())) {
@@ -258,6 +265,58 @@ export default function NewPortfolioProject() {
                 </div>
               )}
             </div>
+
+            {/* Client Feedback Section */}
+<div className="space-y-4 p-4 border-2 border-dashed rounded-lg">
+  <Label>Client Feedback (Optional)</Label>
+  
+  <div className="space-y-4">
+    <div className="space-y-2">
+      <Label htmlFor="client_feedback">Client Testimonial</Label>
+      <Textarea
+        id="client_feedback"
+        value={formData.client_feedback}
+        onChange={(e) => setFormData({ ...formData, client_feedback: e.target.value })}
+        placeholder="Enter client feedback or testimonial..."
+        rows={3}
+        className="border-2"
+      />
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="space-y-2">
+        <Label htmlFor="client_rating">Client Rating (1-5 stars)</Label>
+        <Select
+          value={formData.client_rating.toString()}
+          onValueChange={(value) => setFormData({ ...formData, client_rating: parseInt(value) })}
+        >
+          <SelectTrigger className="border-2">
+            <SelectValue placeholder="Select rating" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="0">No Rating</SelectItem>
+            <SelectItem value="1">⭐ 1 Star</SelectItem>
+            <SelectItem value="2">⭐⭐ 2 Stars</SelectItem>
+            <SelectItem value="3">⭐⭐⭐ 3 Stars</SelectItem>
+            <SelectItem value="4">⭐⭐⭐⭐ 4 Stars</SelectItem>
+            <SelectItem value="5">⭐⭐⭐⭐⭐ 5 Stars</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="feedback_date">Feedback Date</Label>
+        <Input
+          id="feedback_date"
+          type="date"
+          value={formData.feedback_date}
+          onChange={(e) => setFormData({ ...formData, feedback_date: e.target.value })}
+          className="border-2"
+        />
+      </div>
+    </div>
+  </div>
+</div>
 
             <div className="space-y-4 p-4 border-2 border-dashed rounded-lg">
               <Label>Project Settings</Label>

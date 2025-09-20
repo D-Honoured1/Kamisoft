@@ -32,56 +32,55 @@ export default function RequestServicePage() {
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
+  e.preventDefault()
+  setIsLoading(true)
+  setError("")
 
-    try {
-      console.log("Submitting form data:", formData)
+  try {
+    console.log("Submitting form data:", formData)
 
-      // FIXED: Use the correct API endpoint (plural)
-      const res = await fetch("/api/service-requests", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify(formData),
-      })
+    const res = await fetch("/api/service-requests", {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify(formData),
+    })
 
-      console.log("Response status:", res.status)
-      
-      if (!res.ok) {
-        const errorData = await res.text()
-        console.error("Server error response:", errorData)
-        throw new Error(`Server error: ${res.status} ${res.statusText}`)
-      }
-
-      const data = await res.json()
-      console.log("Success response:", data)
-      
-      setIsSubmitted(true)
-      
-      // Reset form
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        company: "",
-        service_category: "",
-        request_type: "digital",
-        title: "",
-        description: "",
-        preferred_date: "",
-        site_address: "",
-      })
-    } catch (error: any) {
-      console.error("Form submission error:", error)
-      setError(error.message || "An unexpected error occurred while submitting your request.")
-    } finally {
-      setIsLoading(false)
+    console.log("Response status:", res.status)
+    
+    if (!res.ok) {
+      const errorData = await res.text()
+      console.error("Server error response:", errorData)
+      throw new Error(`Server error: ${res.status} ${res.statusText}`)
     }
+
+    const data = await res.json()
+    console.log("Success response:", data)
+    
+    setIsSubmitted(true)
+    
+    // Reset form
+    setFormData({
+      name: "",
+      email: "",
+      phone: "",
+      company: "",
+      service_category: "",
+      request_type: "digital",
+      title: "",
+      description: "",
+      preferred_date: "",
+      site_address: "",
+    })
+  } catch (error: any) {
+    console.error("Form submission error:", error)
+    setError(error.message || "An unexpected error occurred while submitting your request.")
+  } finally {
+    setIsLoading(false)
   }
+}
 
   if (isSubmitted) {
     return (

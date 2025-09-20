@@ -199,6 +199,12 @@ export default async function AdminDashboard() {
               </Link>
             </Button>
             <Button asChild variant="outline" className="w-full justify-start bg-transparent">
+             <Link href="/admin/contact-submissions">
+              <MessageSquare className="mr-2 h-4 w-4" />
+               Contact Submissions
+             </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full justify-start bg-transparent">
               <Link href="/admin/payments">
                 <CreditCard className="mr-2 h-4 w-4" />
                 Payment History

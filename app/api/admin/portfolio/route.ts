@@ -1,4 +1,3 @@
-// app/api/admin/portfolio/route.ts
 export const dynamic = "force-dynamic"
 
 import { NextResponse } from "next/server"
@@ -26,6 +25,10 @@ export async function POST(req: Request) {
       completion_date,
       is_featured,
       is_published,
+      // New client feedback fields
+      client_feedback,
+      client_rating,
+      feedback_date,
     } = body
 
     // Validate required fields
@@ -53,6 +56,9 @@ export async function POST(req: Request) {
         completion_date: completion_date || null,
         is_featured: is_featured || false,
         is_published: is_published !== undefined ? is_published : true,
+        client_feedback: client_feedback || null,
+        client_rating: client_rating || null,
+        feedback_date: feedback_date || null,
       })
       .select()
       .single()
@@ -72,6 +78,53 @@ export async function POST(req: Request) {
     })
   } catch (error) {
     console.error("Portfolio creation error:", error)
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PUT(req: Request) {
+  try {
+    // Check authentication
+    const adminUser = await getAdminUser()
+    if (!adminUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const body = await req.json()
+    const { id, ...updateData } = body
+
+    if (!id) {
+      return NextResponse.json({ error: "Project ID is required" }, { status: 400 })
+    }
+
+    const supabase = createServerClient()
+
+    // Update the portfolio project
+    const { data: project, error } = await supabase
+      .from("portfolio_projects")
+      .update(updateData)
+      .eq("id", id)
+      .select()
+      .single()
+
+    if (error) {
+      console.error("Database error:", error)
+      return NextResponse.json(
+        { error: "Failed to update portfolio project", details: error.message },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Portfolio project updated successfully",
+      project,
+    })
+  } catch (error) {
+    console.error("Portfolio update error:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -1,12 +1,12 @@
-// app/admin/portfolio/page.tsx
 export const dynamic = "force-dynamic";
 
 import { createServerClient } from "@/lib/supabase/server"
 import { requireAuth } from "@/lib/auth/server-auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { DashboardHomeButton } from "@/components/admin-navigation/dashboard-home-button"
 import { Button } from "@/components/ui/button"
+import { DashboardHomeButton } from "@/components/admin-navigation/dashboard-home-button"
+import { PortfolioActions } from "@/components/admin/portfolio-actions"
 import { Briefcase, Plus, Eye, Calendar, ExternalLink, Star } from "lucide-react"
 import Link from "next/link"
 
@@ -30,9 +30,9 @@ export default async function PortfolioPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-    <DashboardHomeButton />
-    
-    <div className="flex items-center justify-between mb-8">
+      <DashboardHomeButton />
+      
+      <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Portfolio Management</h1>
           <p className="text-muted-foreground mt-2">Manage your portfolio projects and showcases</p>
@@ -114,7 +114,7 @@ export default async function PortfolioPage() {
                   {project.description}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <div className="space-y-4">
                   <div className="flex flex-wrap gap-2">
                     {project.technologies?.slice(0, 3).map((tech: string, index: number) => (
@@ -129,6 +129,29 @@ export default async function PortfolioPage() {
                     )}
                   </div>
 
+                  {/* Client Feedback Display */}
+                  {project.client_feedback && (
+                    <div className="bg-muted/50 p-3 rounded-lg">
+                      <p className="text-xs font-medium text-muted-foreground mb-1">Client Feedback</p>
+                      <p className="text-sm italic">"{project.client_feedback}"</p>
+                      {project.client_rating && (
+                        <div className="flex items-center mt-2">
+                          <span className="text-xs text-muted-foreground mr-1">Rating:</span>
+                          <div className="flex">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-3 h-3 ${
+                                  i < project.client_rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Calendar className="h-4 w-4" />
@@ -142,9 +165,10 @@ export default async function PortfolioPage() {
                     )}
                   </div>
 
+                  {/* Action Buttons */}
                   <div className="flex gap-2 pt-4 border-t">
                     <Button size="sm" variant="outline" className="flex-1" asChild>
-                      <Link href={`/admin/portfolio/${project.id}`}>
+                      <Link href={`/admin/portfolio/edit/${project.id}`}>
                         Edit
                       </Link>
                     </Button>
@@ -155,6 +179,7 @@ export default async function PortfolioPage() {
                         </Link>
                       </Button>
                     )}
+                    <PortfolioActions projectId={project.id} projectTitle={project.title} />
                   </div>
                 </div>
               </CardContent>
