@@ -1,40 +1,56 @@
-// hooks/use-admin-auth.ts
+// hooks/use-admin-auth.ts - OPTIMIZED VERSION
 "use client"
 
 import { useState, useEffect } from "react"
+import { usePathname } from "next/navigation"
 
 export function useAdminAuth() {
   const [user, setUser] = useState<{ name: string; email: string } | null>(null)
   const [loading, setLoading] = useState(true)
+  const pathname = usePathname()
+
+  // Only check auth if we're on admin pages or if there's already a token
+  const shouldCheckAuth = pathname.startsWith('/admin') || document.cookie.includes('admin_token=')
 
   useEffect(() => {
-    checkAuth()
-    const interval = setInterval(checkAuth, 30000) // Check every 30 seconds
-    
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'admin_logout') {
-        setUser(null)
+    if (shouldCheckAuth) {
+      checkAuth()
+      const interval = setInterval(checkAuth, 30000) // Check every 30 seconds
+      
+      const handleStorageChange = (e: StorageEvent) => {
+        if (e.key === 'admin_logout') {
+          setUser(null)
+        }
       }
+      
+      window.addEventListener('storage', handleStorageChange)
+      
+      return () => {
+        clearInterval(interval)
+        window.removeEventListener('storage', handleStorageChange)
+      }
+    } else {
+      // Not on admin pages and no token - skip auth check
+      setLoading(false)
     }
-    
-    window.addEventListener('storage', handleStorageChange)
-    
-    return () => {
-      clearInterval(interval)
-      window.removeEventListener('storage', handleStorageChange)
-    }
-  }, [])
+  }, [shouldCheckAuth])
 
   const checkAuth = async () => {
     try {
-      const response = await fetch('/api/admin/verify', { credentials: 'include' })
+      const response = await fetch('/api/admin/verify', { 
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      
       if (response.ok) {
         const data = await response.json()
         setUser(data.user)
       } else {
         setUser(null)
       }
-    } catch {
+    } catch (error) {
       setUser(null)
     } finally {
       setLoading(false)
@@ -60,7 +76,7 @@ export function useAdminAuth() {
   return {
     user,
     isAuthenticated: !!user,
-    loading,
+    loading: shouldCheckAuth ? loading : false, // Don't show loading if we're not checking
     logout
   }
 }

@@ -1,4 +1,4 @@
-// components/navigation/index.tsx - Main Navigation Component
+// components/navigation/index.tsx - OPTIMIZED VERSION
 "use client"
 
 import { usePathname } from "next/navigation"
@@ -7,14 +7,12 @@ import { NavigationLogo } from "./navigation-logo"
 import { NavigationMenu } from "./navigation-menu"
 import { AuthButtons } from "./auth-buttons"
 import { MobileMenu } from "./mobile-menu"
-import { useAdminAuth } from "@/hooks/use-admin-auth"
 
 export function Navigation() {
   const pathname = usePathname()
-  const { isAuthenticated } = useAdminAuth()
 
-  // Don't show navigation on admin pages when authenticated
-  if (isAuthenticated && pathname.startsWith('/admin') && pathname !== '/admin/login') {
+  // Don't show navigation on admin pages (except login)
+  if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
     return null
   }
 

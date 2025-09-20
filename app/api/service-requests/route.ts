@@ -1,8 +1,20 @@
-// app/api/service-request/route.ts (FIXED)
+// app/api/service-requests/route.ts - UPDATED VERSION
 export const dynamic = "force-dynamic"
 
 import { NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
+import { createClient } from "@supabase/supabase-js"
+
+// Create a service role client for bypassing RLS
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!, // This bypasses RLS
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+)
 
 export async function POST(req: Request) {
   try {
@@ -20,7 +32,7 @@ export async function POST(req: Request) {
       site_address,
     } = body
 
-    console.log("Received service request:", { name, email, service_category, title })
+    console.log("Service request submission:", { name, email, service_category, title })
 
     // Validate required fields
     if (!name || !email || !service_category || !title || !description) {
@@ -30,13 +42,11 @@ export async function POST(req: Request) {
       )
     }
 
-    const supabase = createServerClient()
-
-    // First, create or get the client
+    // First, create or get the client using service role
     let clientId: string
     
     // Check if client already exists
-    const { data: existingClient } = await supabase
+    const { data: existingClient } = await supabaseAdmin
       .from("clients")
       .select("id")
       .eq("email", email.toLowerCase().trim())
@@ -46,7 +56,7 @@ export async function POST(req: Request) {
       clientId = existingClient.id
       
       // Update client information if provided
-      await supabase
+      const { error: updateError } = await supabaseAdmin
         .from("clients")
         .update({
           name,
@@ -55,9 +65,13 @@ export async function POST(req: Request) {
           updated_at: new Date().toISOString(),
         })
         .eq("id", clientId)
+
+      if (updateError) {
+        console.error("Error updating client:", updateError)
+      }
     } else {
       // Create new client
-      const { data: newClient, error: clientError } = await supabase
+      const { data: newClient, error: clientError } = await supabaseAdmin
         .from("clients")
         .insert({
           name,
@@ -80,7 +94,7 @@ export async function POST(req: Request) {
     }
 
     // Create the service request
-    const { data: request, error: requestError } = await supabase
+    const { data: request, error: requestError } = await supabaseAdmin
       .from("service_requests")
       .insert({
         client_id: clientId,
