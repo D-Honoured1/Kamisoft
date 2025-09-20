@@ -1,28 +1,19 @@
-// hooks/use-admin-auth.ts - SSR-SAFE VERSION
+// hooks/use-admin-auth.ts - SIMPLE SSR-SAFE VERSION
 "use client"
 
 import { useState, useEffect } from "react"
-import { usePathname } from "next/navigation"
 
 export function useAdminAuth() {
   const [user, setUser] = useState<{ name: string; email: string } | null>(null)
   const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
-  const pathname = usePathname()
 
-  // Track if component is mounted (client-side)
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  // Only check auth if we're on admin pages or if there's already a token
-  const shouldCheckAuth = mounted && (
-    pathname.startsWith('/admin') || 
-    document.cookie.includes('admin_token=')
-  )
-
   useEffect(() => {
-    if (shouldCheckAuth) {
+    if (mounted) {
       checkAuth()
       const interval = setInterval(checkAuth, 30000) // Check every 30 seconds
       
@@ -38,11 +29,8 @@ export function useAdminAuth() {
         clearInterval(interval)
         window.removeEventListener('storage', handleStorageChange)
       }
-    } else if (mounted) {
-      // Component is mounted but we don't need to check auth
-      setLoading(false)
     }
-  }, [shouldCheckAuth, mounted])
+  }, [mounted])
 
   const checkAuth = async () => {
     try {
@@ -95,7 +83,7 @@ export function useAdminAuth() {
   return {
     user,
     isAuthenticated: !!user,
-    loading: shouldCheckAuth ? loading : false,
+    loading,
     logout
   }
 }

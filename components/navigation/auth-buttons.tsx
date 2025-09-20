@@ -1,16 +1,14 @@
-// components/navigation/auth-buttons.tsx - SSR-SAFE VERSION
+// components/navigation/auth-buttons.tsx - SIMPLE VERSION
 "use client"
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { LogOut, User } from "lucide-react"
-import { usePathname } from "next/navigation"
 import { useAdminAuth } from "@/hooks/use-admin-auth"
 import { useState, useEffect } from "react"
 
 export function AuthButtons() {
   const [mounted, setMounted] = useState(false)
-  const pathname = usePathname()
   const { user, isAuthenticated, loading, logout } = useAdminAuth()
 
   useEffect(() => {
