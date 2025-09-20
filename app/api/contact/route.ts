@@ -1,13 +1,12 @@
-// app/api/contact/route.ts - UPDATED VERSION
+// app/api/contact/route.ts
 export const dynamic = "force-dynamic"
 
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 
-// Create a service role client for bypassing RLS
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!, // This bypasses RLS
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
   {
     auth: {
       autoRefreshToken: false,
@@ -21,8 +20,6 @@ export async function POST(req: Request) {
     const body = await req.json()
     const { name, email, phone, company, message, subject } = body
 
-    console.log("Contact form submission:", { name, email, subject })
-
     // Validate required fields
     if (!name || !email || !message) {
       return NextResponse.json(
@@ -31,10 +28,9 @@ export async function POST(req: Request) {
       )
     }
 
-    // First, create or update the client using service role
+    // Create or update client
     let clientId: string
     
-    // Check if client already exists
     const { data: existingClient } = await supabaseAdmin
       .from("clients")
       .select("id")
@@ -43,9 +39,7 @@ export async function POST(req: Request) {
 
     if (existingClient) {
       clientId = existingClient.id
-      
-      // Update client information if provided
-      const { error: updateError } = await supabaseAdmin
+      await supabaseAdmin
         .from("clients")
         .update({
           name,
@@ -54,12 +48,7 @@ export async function POST(req: Request) {
           updated_at: new Date().toISOString(),
         })
         .eq("id", clientId)
-
-      if (updateError) {
-        console.error("Error updating client:", updateError)
-      }
     } else {
-      // Create new client
       const { data: newClient, error: clientError } = await supabaseAdmin
         .from("clients")
         .insert({
@@ -72,9 +61,8 @@ export async function POST(req: Request) {
         .single()
 
       if (clientError) {
-        console.error("Error creating client:", clientError)
         return NextResponse.json(
-          { error: "Failed to create client record", details: clientError.message },
+          { error: "Failed to create client record" },
           { status: 500 }
         )
       }
@@ -82,12 +70,12 @@ export async function POST(req: Request) {
       clientId = newClient.id
     }
 
-    // Create a service request for the contact inquiry
+    // Create service request for contact inquiry
     const { data: request, error: requestError } = await supabaseAdmin
       .from("service_requests")
       .insert({
         client_id: clientId,
-        service_type: "consultancy", // Using consultancy for general inquiries
+        service_type: "consultancy",
         request_type: "digital",
         title: subject || "Contact Form Inquiry",
         description: message,
@@ -97,14 +85,11 @@ export async function POST(req: Request) {
       .single()
 
     if (requestError) {
-      console.error("Error creating contact request:", requestError)
       return NextResponse.json(
-        { error: "Failed to create contact request", details: requestError.message },
+        { error: "Failed to create contact request" },
         { status: 500 }
       )
     }
-
-    console.log("Contact request created successfully:", request.id)
 
     return NextResponse.json({
       success: true,
@@ -112,9 +97,8 @@ export async function POST(req: Request) {
       request_id: request.id,
     })
   } catch (error: any) {
-    console.error("Contact form error:", error)
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error" },
       { status: 500 }
     )
   }
