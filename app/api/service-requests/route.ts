@@ -1,4 +1,4 @@
-// app/api/service-requests/route.ts
+// app/api/service-requests/route.ts - FIXED VERSION
 export const dynamic = "force-dynamic"
 
 import { NextResponse } from "next/server"
@@ -18,6 +18,8 @@ const supabaseAdmin = createClient(
 export async function POST(req: Request) {
   try {
     const body = await req.json()
+    console.log("Received service request data:", body)
+
     const {
       name,
       email,
@@ -42,49 +44,60 @@ export async function POST(req: Request) {
     // Create or update client
     let clientId: string
     
-    const { data: existingClient } = await supabaseAdmin
-      .from("clients")
-      .select("id")
-      .eq("email", email.toLowerCase().trim())
-      .maybeSingle()
-
-    if (existingClient) {
-      clientId = existingClient.id
-      await supabaseAdmin
+    try {
+      const { data: existingClient, error: clientSearchError } = await supabaseAdmin
         .from("clients")
-        .update({
-          name,
-          phone: phone || null,
-          company: company || null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", clientId)
-    } else {
-      const { data: newClient, error: clientError } = await supabaseAdmin
-        .from("clients")
-        .insert({
-          name,
-          email: email.toLowerCase().trim(),
-          phone: phone || null,
-          company: company || null,
-        })
         .select("id")
-        .single()
+        .eq("email", email.toLowerCase().trim())
+        .maybeSingle()
 
-      if (clientError) {
-        return NextResponse.json(
-          { error: "Failed to create client record" },
-          { status: 500 }
-        )
+      if (clientSearchError) {
+        console.error("Error searching for existing client:", clientSearchError)
+        throw new Error("Database error while searching for client")
       }
 
-      clientId = newClient.id
-    }
+      if (existingClient) {
+        clientId = existingClient.id
+        // Update existing client
+        const { error: updateError } = await supabaseAdmin
+          .from("clients")
+          .update({
+            name,
+            phone: phone || null,
+            company: company || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", clientId)
 
-    // Create service request
-    const { data: request, error: requestError } = await supabaseAdmin
-      .from("service_requests")
-      .insert({
+        if (updateError) {
+          console.error("Error updating client:", updateError)
+          throw new Error("Failed to update client information")
+        }
+      } else {
+        // Create new client
+        const { data: newClient, error: clientError } = await supabaseAdmin
+          .from("clients")
+          .insert({
+            name,
+            email: email.toLowerCase().trim(),
+            phone: phone || null,
+            company: company || null,
+          })
+          .select("id")
+          .single()
+
+        if (clientError) {
+          console.error("Error creating client:", clientError)
+          throw new Error("Failed to create client record")
+        }
+
+        clientId = newClient.id
+      }
+
+      console.log("Client ID:", clientId)
+
+      // Create service request
+      const serviceRequestData = {
         client_id: clientId,
         service_type: service_category,
         request_type: request_type || "digital",
@@ -93,25 +106,41 @@ export async function POST(req: Request) {
         preferred_date: preferred_date || null,
         address: request_type === "on_site" ? site_address : null,
         status: "pending",
-      })
-      .select()
-      .single()
+      }
 
-    if (requestError) {
+      console.log("Creating service request with data:", serviceRequestData)
+
+      const { data: request, error: requestError } = await supabaseAdmin
+        .from("service_requests")
+        .insert(serviceRequestData)
+        .select()
+        .single()
+
+      if (requestError) {
+        console.error("Error creating service request:", requestError)
+        throw new Error("Failed to create service request")
+      }
+
+      console.log("Service request created successfully:", request)
+
+      return NextResponse.json({
+        success: true,
+        message: "Service request submitted successfully",
+        request_id: request.id,
+      })
+
+    } catch (dbError: any) {
+      console.error("Database operation error:", dbError)
       return NextResponse.json(
-        { error: "Failed to create service request" },
+        { error: dbError.message || "Database error occurred" },
         { status: 500 }
       )
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "Service request submitted successfully",
-      request_id: request.id,
-    })
   } catch (error: any) {
+    console.error("Service request API error:", error)
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: error.message || "Internal server error" },
       { status: 500 }
     )
   }

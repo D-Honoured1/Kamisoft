@@ -1,3 +1,4 @@
+// app/admin/page.tsx - FIXED VERSION WITH BETTER ERROR HANDLING
 import { createServerClient } from "@/lib/supabase/server"
 import { requireAuth } from "@/lib/auth/server-auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -54,80 +55,158 @@ export default async function AdminDashboard() {
   ]
 
   let recentRequests = null
+  let errorMessages: string[] = []
 
   try {
-    // Try to fetch data, but don't fail if database isn't set up
-    const [
-      { count: totalClients },
-      { count: totalRequests },
-      { count: pendingRequests },
-      { count: totalPayments },
-      { count: portfolioProjects },
-    ] = await Promise.all([
-      supabase.from("clients").select("*", { count: "exact", head: true }),
-      supabase.from("service_requests").select("*", { count: "exact", head: true }),
-      supabase.from("service_requests").select("*", { count: "exact", head: true }).eq("status", "pending"),
-      supabase.from("payments").select("*", { count: "exact", head: true }),
-      supabase.from("portfolio_projects").select("*", { count: "exact", head: true }),
-    ])
+    // Try to fetch data with better error handling
+    console.log("Fetching dashboard data...")
 
-    // Fetch recent requests
-    const { data: fetchedRecentRequests, error: requestsError } = await supabase
-      .from("service_requests")
-      .select(`
-        *,
-        clients (
-          name,
-          email
-        )
-      `)
-      .order("created_at", { ascending: false })
-      .limit(5)
-
-    if (!requestsError) {
-      recentRequests = fetchedRecentRequests
+    // Fetch clients count
+    let totalClients = 0
+    try {
+      const { count, error } = await supabase.from("clients").select("*", { count: "exact", head: true })
+      if (error) {
+        console.error("Error fetching clients:", error)
+        errorMessages.push("Could not load clients data")
+      } else {
+        totalClients = count || 0
+      }
+    } catch (err) {
+      console.error("Clients query failed:", err)
+      errorMessages.push("Clients table query failed")
     }
 
+    // Fetch service requests count
+    let totalRequests = 0
+    let pendingRequests = 0
+    try {
+      const [totalResult, pendingResult] = await Promise.all([
+        supabase.from("service_requests").select("*", { count: "exact", head: true }),
+        supabase.from("service_requests").select("*", { count: "exact", head: true }).eq("status", "pending")
+      ])
+
+      if (totalResult.error) {
+        console.error("Error fetching service requests:", totalResult.error)
+        errorMessages.push("Could not load service requests data")
+      } else {
+        totalRequests = totalResult.count || 0
+      }
+
+      if (pendingResult.error) {
+        console.error("Error fetching pending requests:", pendingResult.error)
+        errorMessages.push("Could not load pending requests data")
+      } else {
+        pendingRequests = pendingResult.count || 0
+      }
+    } catch (err) {
+      console.error("Service requests query failed:", err)
+      errorMessages.push("Service requests table query failed")
+    }
+
+    // Fetch payments count
+    let totalPayments = 0
+    try {
+      const { count, error } = await supabase.from("payments").select("*", { count: "exact", head: true })
+      if (error) {
+        console.error("Error fetching payments:", error)
+        errorMessages.push("Could not load payments data")
+      } else {
+        totalPayments = count || 0
+      }
+    } catch (err) {
+      console.error("Payments query failed:", err)
+      errorMessages.push("Payments table query failed")
+    }
+
+    // Fetch portfolio projects count
+    let portfolioProjects = 0
+    try {
+      const { count, error } = await supabase.from("portfolio_projects").select("*", { count: "exact", head: true })
+      if (error) {
+        console.error("Error fetching portfolio projects:", error)
+        errorMessages.push("Could not load portfolio projects data")
+      } else {
+        portfolioProjects = count || 0
+      }
+    } catch (err) {
+      console.error("Portfolio projects query failed:", err)
+      errorMessages.push("Portfolio projects table query failed")
+    }
+
+    // Fetch recent requests with better error handling
+    try {
+      const { data: fetchedRecentRequests, error: requestsError } = await supabase
+        .from("service_requests")
+        .select(`
+          id,
+          title,
+          service_type,
+          status,
+          created_at,
+          client_id,
+          clients!inner (
+            name,
+            email
+          )
+        `)
+        .order("created_at", { ascending: false })
+        .limit(5)
+
+      if (requestsError) {
+        console.error("Error fetching recent requests:", requestsError)
+        errorMessages.push("Could not load recent requests")
+      } else {
+        recentRequests = fetchedRecentRequests
+      }
+    } catch (err) {
+      console.error("Recent requests query failed:", err)
+      errorMessages.push("Recent requests query failed")
+    }
+
+    // Update stats with fetched data
     stats = [
       {
         title: "Total Clients",
-        value: totalClients || 0,
+        value: totalClients,
         icon: Users,
         color: "text-blue-600",
         bgColor: "bg-blue-50 dark:bg-blue-950",
       },
       {
         title: "Service Requests",
-        value: totalRequests || 0,
+        value: totalRequests,
         icon: FileText,
         color: "text-green-600",
         bgColor: "bg-green-50 dark:bg-green-950",
       },
       {
         title: "Pending Requests",
-        value: pendingRequests || 0,
+        value: pendingRequests,
         icon: Clock,
         color: "text-yellow-600",
         bgColor: "bg-yellow-50 dark:bg-yellow-950",
       },
       {
         title: "Total Payments",
-        value: totalPayments || 0,
+        value: totalPayments,
         icon: CreditCard,
         color: "text-purple-600",
         bgColor: "bg-purple-50 dark:bg-purple-950",
       },
       {
         title: "Portfolio Projects",
-        value: portfolioProjects || 0,
+        value: portfolioProjects,
         icon: Briefcase,
         color: "text-indigo-600",
         bgColor: "bg-indigo-50 dark:bg-indigo-950",
       },
     ]
+
+    console.log("Dashboard data loaded successfully")
+
   } catch (error) {
-    console.error("Dashboard data error:", error)
-    // Continue with default stats if database queries fail
+    console.error("Critical dashboard error:", error)
+    errorMessages.push("Critical error loading dashboard data")
   }
 
   const getStatusColor = (status: string) => {
@@ -147,12 +226,23 @@ export default async function AdminDashboard() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Simple Header - No navigation buttons */}
+      {/* Header with Error Messages */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
         <p className="text-muted-foreground mt-2">
           Welcome back, {adminUser.name}! Here's what's happening at Kamisoft.
         </p>
+        
+        {errorMessages.length > 0 && (
+          <div className="mt-4 p-4 bg-yellow-100 border border-yellow-300 rounded-md">
+            <h4 className="font-medium text-yellow-800">Dashboard Warnings:</h4>
+            <ul className="mt-2 text-sm text-yellow-700">
+              {errorMessages.map((msg, index) => (
+                <li key={index}>• {msg}</li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
       {/* Stats Grid */}
@@ -179,7 +269,7 @@ export default async function AdminDashboard() {
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        {/* Quick Actions - All navigation buttons are here */}
+        {/* Quick Actions */}
         <Card>
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
@@ -189,13 +279,13 @@ export default async function AdminDashboard() {
             <Button asChild variant="outline" className="w-full justify-start bg-transparent">
               <Link href="/admin/requests">
                 <FileText className="mr-2 h-4 w-4" />
-                Manage Service Requests
+                Manage Service Requests ({stats[1].value})
               </Link>
             </Button>
             <Button asChild variant="outline" className="w-full justify-start bg-transparent">
               <Link href="/admin/clients">
                 <Users className="mr-2 h-4 w-4" />
-                View All Clients
+                View All Clients ({stats[0].value})
               </Link>
             </Button>
             <Button asChild variant="outline" className="w-full justify-start bg-transparent">
@@ -207,13 +297,13 @@ export default async function AdminDashboard() {
             <Button asChild variant="outline" className="w-full justify-start bg-transparent">
               <Link href="/admin/payments">
                 <CreditCard className="mr-2 h-4 w-4" />
-                Payment History
+                Payment History ({stats[3].value})
               </Link>
             </Button>
             <Button asChild variant="outline" className="w-full justify-start bg-transparent">
               <Link href="/admin/portfolio">
                 <Briefcase className="mr-2 h-4 w-4" />
-                Portfolio Management
+                Portfolio Management ({stats[4].value})
               </Link>
             </Button>
           </CardContent>
@@ -231,7 +321,8 @@ export default async function AdminDashboard() {
                 {recentRequests.map((request: any) => (
                   <div key={request.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex-1">
-                      <h4 className="font-medium text-foreground">{request.clients?.name}</h4>
+                      <h4 className="font-medium text-foreground">{request.title || 'Untitled Request'}</h4>
+                      <p className="text-sm text-muted-foreground">{request.clients?.name || 'Unknown Client'}</p>
                       <p className="text-sm text-muted-foreground">{request.service_type}</p>
                       <p className="text-xs text-muted-foreground mt-1">
                         {new Date(request.created_at).toLocaleDateString()}
@@ -247,11 +338,42 @@ export default async function AdminDashboard() {
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground text-center py-8">No recent requests</p>
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">
+                  {errorMessages.includes("Could not load recent requests") 
+                    ? "Unable to load recent requests due to database issues"
+                    : "No recent requests"}
+                </p>
+              </div>
             )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Database Status Section */}
+      {errorMessages.length > 0 && (
+        <Card className="border-yellow-200 bg-yellow-50">
+          <CardHeader>
+            <CardTitle className="text-yellow-800">Database Status</CardTitle>
+            <CardDescription className="text-yellow-600">
+              Some database tables may need to be set up or have schema issues
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 text-sm">
+              <p className="font-medium text-yellow-800">Tables that may need attention:</p>
+              <ul className="list-disc list-inside text-yellow-700">
+                {errorMessages.map((msg, index) => (
+                  <li key={index}>{msg}</li>
+                ))}
+              </ul>
+              <p className="mt-4 text-yellow-600">
+                Check your Supabase dashboard to ensure all tables exist with the correct schemas.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

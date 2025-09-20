@@ -1,3 +1,4 @@
+// app/contact/page.tsx - FIXED VERSION WITH API INTEGRATION
 "use client"
 
 import type React from "react"
@@ -11,7 +12,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Mail, Phone, MapPin, Clock, Send } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Mail, Phone, MapPin, Clock, Send, CheckCircle, AlertTriangle } from "lucide-react"
 import { COMPANY_INFO, SERVICE_CATEGORIES } from "@/lib/constants/services"
 
 export default function ContactPage(): ReactElement {
@@ -21,32 +23,61 @@ export default function ContactPage(): ReactElement {
     phone: "",
     company: "",
     service: "",
+    subject: "",
     message: "",
   })
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [successMessage, setSuccessMessage] = useState("")
+  const [error, setError] = useState("")
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
+    setError("")
+    setSuccessMessage("")
 
-    // TODO: Implement form submission logic
-    console.log("Form submitted:", formData)
+    try {
+      console.log("Submitting contact form:", formData)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify(formData),
+      })
 
-    setIsSubmitting(false)
-    setSuccessMessage("Your message has been sent successfully!")
-    setFormData({
-      name: "",
-      email: "",
-      phone: "",
-      company: "",
-      service: "",
-      message: "",
-    })
+      console.log("Response status:", res.status)
+      
+      if (!res.ok) {
+        const errorData = await res.text()
+        console.error("Server error response:", errorData)
+        throw new Error(`Server error: ${res.status} ${res.statusText}`)
+      }
+
+      const data = await res.json()
+      console.log("Success response:", data)
+      
+      setSuccessMessage("Your message has been sent successfully! We'll get back to you within 24 hours.")
+      
+      // Reset form
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        company: "",
+        service: "",
+        subject: "",
+        message: "",
+      })
+    } catch (error: any) {
+      console.error("Contact form submission error:", error)
+      setError(error.message || "An unexpected error occurred while sending your message.")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleInputChange = (field: string, value: string) => {
@@ -89,8 +120,19 @@ export default function ContactPage(): ReactElement {
                 </CardHeader>
                 <CardContent>
                   {successMessage && (
-                    <div className="bg-green-100 text-green-800 p-4 mb-4 rounded">{successMessage}</div>
+                    <Alert className="mb-6 border-green-200 bg-green-50 text-green-800">
+                      <CheckCircle className="h-4 w-4" />
+                      <AlertDescription>{successMessage}</AlertDescription>
+                    </Alert>
                   )}
+
+                  {error && (
+                    <Alert variant="destructive" className="mb-6">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
@@ -101,6 +143,7 @@ export default function ContactPage(): ReactElement {
                           value={formData.name}
                           onChange={(e) => handleInputChange("name", e.target.value)}
                           required
+                          disabled={isSubmitting}
                         />
                       </div>
                       <div className="space-y-2">
@@ -112,6 +155,7 @@ export default function ContactPage(): ReactElement {
                           value={formData.email}
                           onChange={(e) => handleInputChange("email", e.target.value)}
                           required
+                          disabled={isSubmitting}
                         />
                       </div>
                     </div>
@@ -124,6 +168,7 @@ export default function ContactPage(): ReactElement {
                           placeholder="+234 XXX XXX XXXX"
                           value={formData.phone}
                           onChange={(e) => handleInputChange("phone", e.target.value)}
+                          disabled={isSubmitting}
                         />
                       </div>
                       <div className="space-y-2">
@@ -133,13 +178,14 @@ export default function ContactPage(): ReactElement {
                           placeholder="Your Company Name"
                           value={formData.company}
                           onChange={(e) => handleInputChange("company", e.target.value)}
+                          disabled={isSubmitting}
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="service">Service of Interest</Label>
-                      <Select value={formData.service} onValueChange={(value) => handleInputChange("service", value)}>
+                      <Select value={formData.service} onValueChange={(value) => handleInputChange("service", value)} disabled={isSubmitting}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a service" />
                         </SelectTrigger>
@@ -154,7 +200,18 @@ export default function ContactPage(): ReactElement {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="message">Project Description *</Label>
+                      <Label htmlFor="subject">Subject</Label>
+                      <Input
+                        id="subject"
+                        placeholder="Brief subject of your inquiry"
+                        value={formData.subject}
+                        onChange={(e) => handleInputChange("subject", e.target.value)}
+                        disabled={isSubmitting}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="message">Message *</Label>
                       <Textarea
                         id="message"
                         placeholder="Tell us about your project requirements, timeline, and any specific needs..."
@@ -162,12 +219,16 @@ export default function ContactPage(): ReactElement {
                         value={formData.message}
                         onChange={(e) => handleInputChange("message", e.target.value)}
                         required
+                        disabled={isSubmitting}
                       />
                     </div>
 
                     <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
                       {isSubmitting ? (
-                        "Sending..."
+                        <div className="flex items-center gap-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          Sending...
+                        </div>
                       ) : (
                         <>
                           Send Message <Send className="ml-2 h-4 w-4" />
@@ -179,6 +240,7 @@ export default function ContactPage(): ReactElement {
               </Card>
             </div>
 
+            {/* Rest of the component remains the same... */}
             {/* Contact Information */}
             <div className="space-y-8">
               <Card className="border-0 bg-card/50">
@@ -251,7 +313,7 @@ export default function ContactPage(): ReactElement {
         </div>
       </section>
 
-      {/* FAQ Section */}
+      {/* FAQ Section - keeping the same as before */}
       <section className="py-20 bg-muted/30">
         <div className="container">
           <div className="text-center space-y-4 mb-16">
