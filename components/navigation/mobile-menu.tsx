@@ -25,6 +25,12 @@ export function MobileMenu() {
   const { user, isAuthenticated, loading, logout } = useAdminAuth()
 
   const closeMenu = () => setIsOpen(false)
+  const isOnAdminPages = pathname.startsWith('/admin')
+
+  // Don't show mobile menu on admin pages - admin has its own navigation
+  if (isOnAdminPages) {
+    return null
+  }
 
   return (
     <>
