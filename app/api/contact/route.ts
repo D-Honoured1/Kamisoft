@@ -114,11 +114,12 @@ export async function POST(req: Request) {
     
     const serviceRequestData = {
       client_id: clientId,
-      service_type: service || "consultancy",
+      service_category: service || "consultancy", // Use service_category instead of service_type
       request_type: "digital",
       title: subject || "Contact Form Inquiry",
       description: message,
       status: "pending",
+      request_source: "contact", // Mark as coming from contact form
     }
 
     console.log("Contact service request data:", JSON.stringify(serviceRequestData, null, 2))

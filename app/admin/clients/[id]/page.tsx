@@ -1,4 +1,4 @@
-// app/admin/clients/[id]/page.tsx
+// app/admin/clients/[id]/page.tsx - FIXED VERSION
 export const dynamic = "force-dynamic";
 
 import { createServerClient } from "@/lib/supabase/server"
@@ -29,7 +29,8 @@ export default async function ClientDetailPage({ params }: ClientDetailPageProps
       service_requests (
         id,
         title,
-        service_type,
+        service_category,
+        request_source,
         status,
         created_at,
         preferred_date
@@ -64,6 +65,17 @@ export default async function ClientDetailPage({ params }: ClientDetailPageProps
     }
   }
 
+  const getSourceColor = (source: string) => {
+    switch (source) {
+      case "hire_us":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+      case "contact":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+    }
+  }
+
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
       case "paid":
@@ -80,6 +92,9 @@ export default async function ClientDetailPage({ params }: ClientDetailPageProps
   const totalPayments = client.payments?.reduce((sum: number, payment: any) => {
     return payment.payment_status === 'paid' ? sum + payment.amount : sum
   }, 0) || 0
+
+  const hireUsRequests = client.service_requests?.filter((req: any) => req.request_source === 'hire_us') || []
+  const contactRequests = client.service_requests?.filter((req: any) => req.request_source === 'contact') || []
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -141,8 +156,12 @@ export default async function ClientDetailPage({ params }: ClientDetailPageProps
               {/* Quick Stats */}
               <div className="pt-4 border-t space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Total Requests</span>
-                  <span className="font-medium">{client.service_requests?.length || 0}</span>
+                  <span className="text-sm text-muted-foreground">Service Requests</span>
+                  <span className="font-medium">{hireUsRequests.length}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Contact Inquiries</span>
+                  <span className="font-medium">{contactRequests.length}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Total Paid</span>
@@ -161,30 +180,35 @@ export default async function ClientDetailPage({ params }: ClientDetailPageProps
 
         {/* Service Requests and Payments */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Service Requests */}
+          {/* Service Requests (Hire Us) */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
-                Service Requests ({client.service_requests?.length || 0})
+                Service Requests ({hireUsRequests.length})
               </CardTitle>
               <CardDescription>
-                All service requests from this client
+                Requests from the "Hire Us" form
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {client.service_requests && client.service_requests.length > 0 ? (
+              {hireUsRequests.length > 0 ? (
                 <div className="space-y-4">
-                  {client.service_requests.map((request: any) => (
+                  {hireUsRequests.map((request: any) => (
                     <div key={request.id} className="border rounded-lg p-4">
                       <div className="flex items-start justify-between mb-2">
                         <div>
                           <h4 className="font-medium text-foreground">{request.title}</h4>
-                          <p className="text-sm text-muted-foreground">{request.service_type}</p>
+                          <p className="text-sm text-muted-foreground">{request.service_category}</p>
                         </div>
-                        <Badge className={getStatusColor(request.status)}>
-                          {request.status.replace("_", " ")}
-                        </Badge>
+                        <div className="flex gap-2">
+                          <Badge className={getSourceColor(request.request_source)}>
+                            {request.request_source === 'hire_us' ? 'Service Request' : 'Contact'}
+                          </Badge>
+                          <Badge className={getStatusColor(request.status)}>
+                            {request.status.replace("_", " ")}
+                          </Badge>
+                        </div>
                       </div>
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">
@@ -200,6 +224,55 @@ export default async function ClientDetailPage({ params }: ClientDetailPageProps
               ) : (
                 <p className="text-muted-foreground text-center py-8">
                   No service requests found for this client.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Contact Inquiries */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5" />
+                Contact Inquiries ({contactRequests.length})
+              </CardTitle>
+              <CardDescription>
+                Inquiries from the contact form
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {contactRequests.length > 0 ? (
+                <div className="space-y-4">
+                  {contactRequests.map((request: any) => (
+                    <div key={request.id} className="border rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h4 className="font-medium text-foreground">{request.title}</h4>
+                          <p className="text-sm text-muted-foreground">{request.service_category}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Badge className={getSourceColor(request.request_source)}>
+                            Contact Inquiry
+                          </Badge>
+                          <Badge className={getStatusColor(request.status)}>
+                            {request.status.replace("_", " ")}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          Created: {new Date(request.created_at).toLocaleDateString()}
+                        </span>
+                        <Button size="sm" variant="outline" asChild>
+                          <Link href={`/admin/requests/${request.id}`}>View Details</Link>
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-8">
+                  No contact inquiries found for this client.
                 </p>
               )}
             </CardContent>

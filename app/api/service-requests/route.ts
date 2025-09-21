@@ -1,4 +1,4 @@
-// app/api/service-requests/route.ts - FINAL FIXED VERSION
+// app/api/service-requests/route.ts - FIXED VERSION
 export const dynamic = "force-dynamic"
 
 import { NextResponse } from "next/server"
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
       email,
       phone,
       company,
-      service_category,
+      service_category, // This is the correct field name
       request_type,
       title,
       description,
@@ -127,29 +127,16 @@ export async function POST(req: Request) {
     // Step 2: Create service request
     console.log("Step 2: Creating service request")
     
-    // Build service request data carefully - only include fields that exist
-    const serviceRequestData: any = {
+    const serviceRequestData = {
       client_id: clientId,
-      service_type: service_category,
+      service_category, // Use service_category instead of service_type
+      request_type: request_type || "digital",
       title,
       description,
       status: "pending",
-    }
-
-    // Add optional fields only if they have values
-    if (request_type) {
-      serviceRequestData.request_type = request_type
-    }
-
-    if (preferred_date) {
-      serviceRequestData.preferred_date = preferred_date
-    }
-
-    // Handle address field - check if it exists in your schema
-    if (request_type === "on_site" && site_address) {
-      // Try different possible column names
-      serviceRequestData.site_address = site_address // First try this
-      // serviceRequestData.address = site_address // Fallback
+      request_source: "hire_us", // Mark as coming from hire us form
+      preferred_date: preferred_date || null,
+      site_address: (request_type === "on_site" && site_address) ? site_address : null,
     }
 
     console.log("Service request data to insert:", JSON.stringify(serviceRequestData, null, 2))
@@ -168,33 +155,6 @@ export async function POST(req: Request) {
           details: requestError.details,
           hint: requestError.hint
         })
-
-        // If it's a column error, try without the problematic field
-        if (requestError.message.includes('column') && site_address) {
-          console.log("Retrying without site_address field...")
-          delete serviceRequestData.site_address
-          delete serviceRequestData.address
-          
-          const { data: retryRequest, error: retryError } = await supabaseAdmin
-            .from("service_requests")
-            .insert(serviceRequestData)
-            .select()
-            .single()
-
-          if (retryError) {
-            console.error("Retry also failed:", retryError)
-            throw new Error(`Service request creation failed: ${retryError.message}`)
-          }
-
-          console.log("Service request created on retry:", retryRequest.id)
-          return NextResponse.json({
-            success: true,
-            message: "Service request submitted successfully (note: site address not saved due to schema)",
-            request_id: retryRequest.id,
-            warning: "Site address field not supported in current schema"
-          })
-        }
-
         throw new Error(`Service request creation failed: ${requestError.message}`)
       }
 
