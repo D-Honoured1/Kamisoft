@@ -1,60 +1,40 @@
-// middleware.ts - Add this file to your project root
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
-import jwt from "jsonwebtoken"
+// middleware.ts - SIMPLE VERSION (no JWT validation)
+import { NextResponse, type NextRequest } from "next/server"
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
+export async function middleware(request: NextRequest) {
+  const url = request.nextUrl.clone()
 
-  // Skip middleware for public API routes and static files
+  // Only handle /admin routes
+  if (!url.pathname.startsWith("/admin")) {
+    return NextResponse.next()
+  }
+
+  // Allow access to login page and auth endpoints
   if (
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/api/contact') ||
-    pathname.startsWith('/api/service-requests') && request.method === 'POST' ||
-    pathname.startsWith('/api/webhooks') ||
-    pathname.includes('.') // static files
+    url.pathname === "/admin/login" || 
+    url.pathname.startsWith("/admin/logout") ||
+    url.pathname.startsWith("/admin/auth")
   ) {
     return NextResponse.next()
   }
 
-  // Check admin authentication for admin routes and admin API routes
-  if (
-    pathname.startsWith('/admin') && !pathname.startsWith('/admin/login') ||
-    pathname.startsWith('/api/admin') && !pathname.startsWith('/api/admin/login')
-  ) {
-    const token = request.cookies.get('admin_token')?.value
+  // Simple check: if no admin_token cookie, redirect to login
+  const adminToken = request.cookies.get("admin_token")?.value
 
-    if (!token) {
-      console.log('[Middleware] No token found for:', pathname)
-      
-      if (pathname.startsWith('/api/')) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-      }
-      
-      return NextResponse.redirect(new URL('/admin/login', request.url))
-    }
-
-    try {
-      const jwtSecret = process.env.JWT_SECRET || "fallback-secret"
-      jwt.verify(token, jwtSecret)
-      console.log('[Middleware] Token found, allowing access to:', pathname)
-      return NextResponse.next()
-    } catch (error) {
-      console.log('[Middleware] Invalid token for:', pathname)
-      
-      if (pathname.startsWith('/api/')) {
-        return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
-      }
-      
-      return NextResponse.redirect(new URL('/admin/login', request.url))
-    }
+  if (!adminToken) {
+    console.log(`[Middleware] No admin token, redirecting to login from: ${url.pathname}`)
+    const loginUrl = new URL("/admin/login", request.url)
+    return NextResponse.redirect(loginUrl)
   }
 
+  // Token exists, let the API routes handle validation
+  console.log(`[Middleware] Token found, allowing access to: ${url.pathname}`)
   return NextResponse.next()
 }
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    // Match all /admin routes except static files and API routes
+    "/admin((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 }

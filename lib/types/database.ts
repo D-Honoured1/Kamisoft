@@ -32,6 +32,8 @@ export interface Client {
   updated_at: string
 }
 
+// lib/types/database.ts - FIXED ServiceRequest interface
+
 export interface ServiceRequest {
   id: string
   client_id: string
@@ -44,11 +46,15 @@ export interface ServiceRequest {
   site_address?: string
   estimated_cost?: number
   final_cost?: number
+  priority?: string
+  requirements?: string
+  timeline?: string
+  request_source?: string
   created_at: string
   updated_at: string
 
-  // Relations
-  client?: Client
+  // Relations - FIXED: singular "client" not "clients"
+  client?: Client  // Changed from clients to client
   payments?: Payment[]
   invoices?: Invoice[]
   staff_assignments?: StaffAssignment[]

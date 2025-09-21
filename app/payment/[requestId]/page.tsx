@@ -287,15 +287,15 @@ export default function PaymentPage() {
                   {serviceRequest?.description}
                 </p>
 
-                {serviceRequest?.clients && (
+                {serviceRequest?.client && (
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Client:</span>
-                      <span>{serviceRequest.clients.name}</span>
+                      <span>{serviceRequest.client.name}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Email:</span>
-                      <span>{serviceRequest.clients.email}</span>
+                      <span>{serviceRequest.client.email}</span>
                     </div>
                   </div>
                 )}

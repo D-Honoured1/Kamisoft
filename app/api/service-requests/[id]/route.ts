@@ -29,7 +29,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .from("service_requests")
       .select(`
         *,
-        clients (
+        client:clients (
           id,
           name,
           email,
