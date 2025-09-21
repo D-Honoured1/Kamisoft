@@ -249,11 +249,6 @@ export default async function RequestsPage() {
                               View Details <ArrowRight className="ml-2 h-4 w-4" />
                             </Link>
                           </Button>
-                          <Button size="sm" asChild>
-                            <Link href={`/admin/requests/${request.id}/edit`}>
-                              Update Status
-                            </Link>
-                          </Button>
                         </div>
                       </div>
                     </div>
