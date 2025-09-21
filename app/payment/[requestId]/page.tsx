@@ -175,3 +175,272 @@ export default function PaymentPage() {
       processingFee: "1.0%",
     },
   ]
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/50 py-12">
+        <div className="container max-w-2xl">
+          <Card className="border-0 shadow-lg">
+            <CardContent className="p-8 text-center">
+              <Clock className="h-8 w-8 text-muted-foreground mx-auto mb-4 animate-spin" />
+              <p>Loading payment information...</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  // Access Denied Screen
+  if (accessDenied || (error && !serviceRequest)) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/50 py-12">
+        <div className="container max-w-2xl">
+          <Card className="border-0 shadow-lg border-red-200">
+            <CardContent className="p-8 text-center">
+              <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                <Lock className="h-8 w-8 text-red-600" />
+              </div>
+              <h2 className="text-xl font-semibold mb-2 text-red-800">Payment Access Restricted</h2>
+              <p className="text-muted-foreground mb-4">{error}</p>
+              
+              <div className="bg-red-50 dark:bg-red-950/20 rounded-lg p-4 mb-6">
+                <h3 className="font-semibold mb-2 text-red-800 dark:text-red-200">Why am I seeing this?</h3>
+                <ul className="text-sm text-red-700 dark:text-red-300 space-y-1 text-left">
+                  <li>• Payment links are only active for approved requests</li>
+                  <li>• The request must have an estimated cost set by admin</li>
+                  <li>• Payment may already be completed</li>
+                  <li>• The service request may not exist</li>
+                </ul>
+              </div>
+
+              <div className="space-y-2">
+                {isAdmin ? (
+                  <Button asChild>
+                    <a href={`/admin/requests/${requestId}`}>View Request in Admin</a>
+                  </Button>
+                ) : (
+                  <Button asChild>
+                    <a href="/contact">Contact Support</a>
+                  </Button>
+                )}
+                <Button 
+                  variant="outline" 
+                  onClick={() => window.location.reload()}
+                  className="ml-2"
+                >
+                  Try Again
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  const serviceCategory = SERVICE_CATEGORIES[serviceRequest?.service_category as keyof typeof SERVICE_CATEGORIES]
+  const upfrontAmount = (serviceRequest?.estimated_cost || 0) * 0.5 // 50% upfront
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/50 py-12">
+      <div className="container max-w-4xl">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold mb-2">Complete Your Payment</h1>
+          <p className="text-muted-foreground">Secure payment processing for your approved service request</p>
+          {isAdmin && (
+            <div className="mt-4">
+              <Badge variant="secondary" className="flex items-center gap-2 w-fit mx-auto">
+                <User className="h-3 w-3" />
+                Admin Preview Mode
+              </Badge>
+            </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Order Summary */}
+          <Card className="border-0 shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                Approved Service Request
+              </CardTitle>
+              <CardDescription>Your request has been approved and is ready for payment</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold text-lg">{serviceRequest?.title}</h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge variant="secondary">{serviceCategory?.label}</Badge>
+                    <Badge variant={serviceRequest?.request_type === "digital" ? "default" : "outline"}>
+                      {serviceRequest?.request_type === "digital" ? "Digital" : "On-Site"}
+                    </Badge>
+                    <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                      Approved
+                    </Badge>
+                  </div>
+                </div>
+
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {serviceRequest?.description}
+                </p>
+
+                {serviceRequest?.clients && (
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Client:</span>
+                      <span>{serviceRequest.clients.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Email:</span>
+                      <span>{serviceRequest.clients.email}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span>Project Total</span>
+                  <span>${serviceRequest?.estimated_cost?.toFixed(2) || "0.00"}</span>
+                </div>
+                <div className="flex justify-between text-sm text-green-600">
+                  <span>Upfront Payment (50%)</span>
+                  <span>${upfrontAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Remaining (Upon Completion)</span>
+                  <span>${((serviceRequest?.estimated_cost || 0) - upfrontAmount).toFixed(2)}</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between font-semibold">
+                  <span>Amount Due Now</span>
+                  <span>${upfrontAmount.toFixed(2)}</span>
+                </div>
+              </div>
+
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Payment Terms:</strong>
+                  <ul className="mt-2 space-y-1 text-sm">
+                    <li>• 50% upfront payment to begin work</li>
+                    <li>• Remaining 50% upon project completion</li>
+                    <li>• Work begins within 24 hours of payment</li>
+                    <li>• All payments are secured with SSL encryption</li>
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            </CardContent>
+          </Card>
+
+          {/* Payment Methods */}
+          <Card className="border-0 shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-primary" />
+                Payment Method
+              </CardTitle>
+              <CardDescription>Choose your preferred payment method</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <RadioGroup
+                value={selectedPaymentMethod}
+                onValueChange={(value) => setSelectedPaymentMethod(value as PaymentMethod)}
+                className="space-y-4"
+              >
+                {paymentMethods.map((method) => {
+                  const Icon = method.icon
+                  return (
+                    <Card
+                      key={method.id}
+                      className={`p-4 cursor-pointer transition-all hover:shadow-md border-2 ${
+                        selectedPaymentMethod === method.id ? "border-primary bg-primary/5" : "border-border"
+                      } ${!method.available ? "opacity-50 cursor-not-allowed" : ""}`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <RadioGroupItem value={method.id} id={method.id} disabled={!method.available} />
+                        <Icon className="h-5 w-5 text-muted-foreground" />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <Label
+                              htmlFor={method.id}
+                              className={`text-base font-medium ${method.available ? "cursor-pointer" : "cursor-not-allowed"}`}
+                            >
+                              {method.name}
+                            </Label>
+                            {method.recommended && (
+                              <Badge variant="default" className="text-xs">
+                                Recommended
+                              </Badge>
+                            )}
+                            {!method.available && (
+                              <Badge variant="outline" className="text-xs">
+                                Coming Soon
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">{method.description}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Processing fee: {method.processingFee}
+                          </p>
+                        </div>
+                      </div>
+                    </Card>
+                  )
+                })}
+              </RadioGroup>
+
+              {error && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              <Button
+                onClick={handlePayment}
+                disabled={isProcessing || !paymentMethods.find((m) => m.id === selectedPaymentMethod)?.available}
+                size="lg"
+                className="w-full"
+              >
+                {isProcessing ? (
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 animate-spin" />
+                    Processing...
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    Pay ${upfrontAmount.toFixed(2)}
+                    <ExternalLink className="h-4 w-4" />
+                  </div>
+                )}
+              </Button>
+
+              <div className="text-center space-y-2 text-xs text-muted-foreground">
+                <p className="flex items-center justify-center gap-1">
+                  <Shield className="h-3 w-3" />
+                  Your payment is secured with 256-bit SSL encryption
+                </p>
+                <p>By proceeding, you agree to our Terms of Service and Privacy Policy</p>
+              </div>
+
+              {isAdmin && (
+                <div className="pt-4 border-t">
+                  <Button variant="outline" className="w-full" asChild>
+                    <a href={`/admin/requests/${requestId}`}>Back to Request Details</a>
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  )
+}
