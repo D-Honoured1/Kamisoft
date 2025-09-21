@@ -172,16 +172,31 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
               <div className="space-y-4">
                 <div>
                   <h4 className="font-medium text-foreground mb-2">Service Category</h4>
-                  <p className="text-sm bg-muted/50 rounded-lg p-3">
-                    {request.service_category?.replace('_', ' ') || 'Not specified'}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-sm">
+                      🔗 {request.service_category?.replace('_', ' ') || 'Not specified'}
+                    </Badge>
+                    {request.service_category === 'blockchain_solutions' && (
+                      <span className="text-xs text-muted-foreground">Blockchain & Web3 Development</span>
+                    )}
+                  </div>
                 </div>
 
                 <div>
                   <h4 className="font-medium text-foreground mb-2">Project Description</h4>
-                  <p className="text-muted-foreground leading-relaxed">
-                    {request.description || 'No description provided'}
-                  </p>
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <p className="text-foreground leading-relaxed">
+                      {request.description || 'No description provided'}
+                    </p>
+                    {request.description?.toLowerCase().includes('blockchain') && (
+                      <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded border border-blue-200 dark:border-blue-800">
+                        <p className="text-sm text-blue-800 dark:text-blue-200">
+                          🎮 <strong>Gaming + Blockchain Project:</strong> This appears to be a blockchain gaming project. 
+                          Consider including NFT integration, smart contracts, and Web3 wallet connectivity.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {request.requirements && (
@@ -210,18 +225,40 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
                   <div>
                     <h4 className="font-medium text-foreground mb-2">Request Type</h4>
                     <Badge variant="outline">
-                      {requestType === 'digital' ? 'Digital/Remote' : 'On-Site'}
+                      {requestType === 'digital' ? '💻 Digital/Remote' : '🏢 On-Site'}
                     </Badge>
                   </div>
                   {request.preferred_date && (
                     <div>
-                      <h4 className="font-medium text-foreground mb-2">Preferred Date</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(request.preferred_date).toLocaleDateString()}
-                      </p>
+                      <h4 className="font-medium text-foreground mb-2">Preferred Start Date</h4>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-sm font-medium">
+                          {new Date(request.preferred_date).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </p>
+                      </div>
                     </div>
                   )}
                 </div>
+
+                {/* Project Suggestions */}
+                {request.service_category === 'blockchain_solutions' && (
+                  <div className="mt-6 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
+                    <h4 className="font-medium text-green-800 dark:text-green-200 mb-2">💡 Suggested Project Components</h4>
+                    <ul className="text-sm text-green-700 dark:text-green-300 space-y-1">
+                      <li>• Smart contract development for game mechanics</li>
+                      <li>• NFT marketplace integration</li>
+                      <li>• Token economics and reward systems</li>
+                      <li>• Web3 wallet connectivity</li>
+                      <li>• Cross-chain compatibility</li>
+                    </ul>
+                  </div>
+                )}
 
                 {/* Raw Data Debug Info */}
                 <details className="mt-6">
