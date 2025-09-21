@@ -1,4 +1,4 @@
-// app/admin/requests/[id]/page.tsx
+// app/admin/requests/[id]/page.tsx - FIXED VERSION WITHOUT FOREIGN KEY ISSUES
 export const dynamic = "force-dynamic";
 
 import { createServerClient } from "@/lib/supabase/server"
@@ -7,7 +7,7 @@ import { notFound } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Calendar, MapPin, Mail, Phone, DollarSign, User, ArrowLeft, MessageSquare, FileText, Clock, CheckCircle, XCircle } from "lucide-react"
+import { Calendar, MapPin, Mail, Phone, DollarSign, User, ArrowLeft, FileText, Clock, CheckCircle, XCircle } from "lucide-react"
 import Link from "next/link"
 
 interface ServiceRequestDetailProps {
@@ -24,36 +24,47 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
 
   console.log("=== SERVICE REQUEST DETAIL PAGE ===")
   console.log("Request ID:", params.id)
-  console.log("Admin user:", adminUser?.email)
 
-  const { data: request, error } = await supabase
+  // First, get the service request without joins
+  const { data: request, error: requestError } = await supabase
     .from("service_requests")
-    .select(`
-      *,
-      clients (
-        id,
-        name,
-        email,
-        phone,
-        company
-      ),
-      payments (
-        id,
-        amount,
-        payment_status,
-        payment_method,
-        created_at
-      )
-    `)
+    .select("*")
     .eq("id", params.id)
     .single()
 
-  console.log("Database query result:", { request, error })
+  console.log("Service request query:", { request, requestError })
 
-  if (error || !request) {
-    console.error("Request not found:", error)
+  if (requestError || !request) {
+    console.error("Request not found:", requestError)
     notFound()
   }
+
+  // Get client information separately if client_id exists
+  let client = null
+  if (request.client_id) {
+    const { data: clientData, error: clientError } = await supabase
+      .from("clients")
+      .select("*")
+      .eq("id", request.client_id)
+      .single()
+    
+    if (!clientError && clientData) {
+      client = clientData
+    }
+    console.log("Client query:", { client: clientData, clientError })
+  }
+
+  // Get payments separately if needed
+  let payments = []
+  const { data: paymentsData, error: paymentsError } = await supabase
+    .from("payments")
+    .select("*")
+    .eq("request_id", request.id)
+
+  if (!paymentsError && paymentsData) {
+    payments = paymentsData
+  }
+  console.log("Payments query:", { payments: paymentsData, paymentsError })
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -105,7 +116,6 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
     }
   }
 
-  const isServiceRequest = request.request_source === 'hire_us' || !request.request_source
   const requestType = request.request_type || 'digital'
 
   return (
@@ -212,6 +222,16 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
                     </div>
                   )}
                 </div>
+
+                {/* Raw Data Debug Info */}
+                <details className="mt-6">
+                  <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
+                    Debug: Raw Request Data
+                  </summary>
+                  <pre className="mt-2 p-4 bg-muted/50 rounded text-xs overflow-x-auto">
+                    {JSON.stringify(request, null, 2)}
+                  </pre>
+                </details>
               </div>
             </CardContent>
           </Card>
@@ -243,34 +263,47 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
               <CardTitle>Client Information</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium text-foreground">{request.clients?.name || 'Unknown Client'}</p>
-                    {request.clients?.company && (
-                      <p className="text-sm text-muted-foreground">{request.clients.company}</p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">{request.clients?.email || 'No email'}</p>
-                </div>
-                {request.clients?.phone && (
+              {client ? (
+                <div className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-muted-foreground">{request.clients.phone}</p>
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium text-foreground">{client.name}</p>
+                      {client.company && (
+                        <p className="text-sm text-muted-foreground">{client.company}</p>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
-              <div className="pt-4 border-t mt-4">
-                <Button variant="outline" size="sm" className="w-full" asChild>
-                  <Link href={`/admin/clients/${request.clients?.id || '#'}`}>
-                    View Client Profile
-                  </Link>
-                </Button>
-              </div>
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-muted-foreground">{client.email}</p>
+                  </div>
+                  {client.phone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-muted-foreground">{client.phone}</p>
+                    </div>
+                  )}
+                  <div className="pt-4 border-t mt-4">
+                    <Button variant="outline" size="sm" className="w-full" asChild>
+                      <Link href={`/admin/clients/${client.id}`}>
+                        View Client Profile
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-muted-foreground text-sm">
+                    Client ID: {request.client_id || 'Not specified'}
+                  </p>
+                  {request.client_id && (
+                    <p className="text-xs text-red-600 mt-2">
+                      Client data not found - possible foreign key issue
+                    </p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -291,11 +324,11 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
                   </div>
                 )}
 
-                {request.payments && request.payments.length > 0 && (
+                {payments && payments.length > 0 && (
                   <div>
-                    <p className="font-medium text-foreground mb-2">Payments</p>
-                    {request.payments.map((payment: any) => (
-                      <div key={payment.id} className="flex items-center justify-between p-2 border rounded">
+                    <p className="font-medium text-foreground mb-2">Payments ({payments.length})</p>
+                    {payments.map((payment: any) => (
+                      <div key={payment.id} className="flex items-center justify-between p-2 border rounded mb-2">
                         <div>
                           <p className="text-sm font-medium">${payment.amount.toLocaleString()}</p>
                           <p className="text-xs text-muted-foreground">{payment.payment_method || 'N/A'}</p>
@@ -312,6 +345,10 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
                       </div>
                     ))}
                   </div>
+                )}
+
+                {(!payments || payments.length === 0) && (
+                  <p className="text-sm text-muted-foreground">No payments recorded</p>
                 )}
               </div>
             </CardContent>
