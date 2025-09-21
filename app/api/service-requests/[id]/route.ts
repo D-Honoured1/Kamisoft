@@ -1,4 +1,4 @@
-// app/api/service-requests/[id]/route.ts - DEBUG VERSION
+// app/api/service-requests/[id]/route.ts - CLEAN PRODUCTION VERSION
 export const dynamic = "force-dynamic"
 
 import { type NextRequest, NextResponse } from "next/server"
@@ -19,22 +19,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   try {
     const { id } = params
 
-    console.log("=== DEBUG: Service Request API ===")
-    console.log("Requested ID:", id)
-    console.log("ID type:", typeof id)
-    console.log("ID length:", id.length)
-
-    // First, let's check if ANY service requests exist
-    const { data: allRequests, error: allError, count } = await supabaseAdmin
-      .from("service_requests")
-      .select("id", { count: "exact" })
-      .limit(5)
-
-    console.log("Total service requests:", count)
-    console.log("All request IDs:", allRequests?.map(r => r.id))
-    console.log("All requests error:", allError)
-
-    // Now try to find the specific one
     const { data: serviceRequest, error } = await supabaseAdmin
       .from("service_requests")
       .select(`
@@ -45,55 +29,27 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
           email,
           phone,
           company
+        ),
+        payments (
+          id,
+          amount,
+          currency,
+          payment_method,
+          payment_status,
+          created_at
         )
       `)
       .eq("id", id)
       .single()
 
-    console.log("Specific query error:", error)
-    console.log("Service request found:", !!serviceRequest)
-    console.log("Service request data:", serviceRequest)
-
-    if (error) {
-      console.error("Database error details:", {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint
-      })
-      
-      return NextResponse.json({ 
-        error: "Service request not found",
-        debug: {
-          requested_id: id,
-          total_requests: count,
-          all_ids: allRequests?.map(r => r.id),
-          error_details: error
-        }
-      }, { status: 404 })
+    if (error || !serviceRequest) {
+      return NextResponse.json({ error: "Service request not found" }, { status: 404 })
     }
 
-    if (!serviceRequest) {
-      return NextResponse.json({ 
-        error: "Service request not found",
-        debug: {
-          requested_id: id,
-          total_requests: count,
-          all_ids: allRequests?.map(r => r.id)
-        }
-      }, { status: 404 })
-    }
-
-    console.log("Service request found successfully")
     return NextResponse.json(serviceRequest)
   } catch (error) {
-    console.error("API Error:", error)
-    return NextResponse.json({ 
-      error: "Internal server error",
-      debug: {
-        error_message: error instanceof Error ? error.message : 'Unknown error'
-      }
-    }, { status: 500 })
+    console.error("Error fetching service request:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
@@ -102,14 +58,29 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const { id } = params
     const updates = await request.json()
 
-    console.log("Updating service request:", id, "with data:", updates)
-
     // Validate status if provided
     if (updates.status) {
       const validStatuses = ['pending', 'approved', 'in_progress', 'completed', 'cancelled', 'declined']
       if (!validStatuses.includes(updates.status)) {
-        return NextResponse.json({ error: "Invalid status. Valid options: " + validStatuses.join(', ') }, { status: 400 })
+        return NextResponse.json({ error: "Invalid status" }, { status: 400 })
       }
+    }
+
+    // Validate priority if provided
+    if (updates.priority) {
+      const validPriorities = ['low', 'medium', 'high']
+      if (!validPriorities.includes(updates.priority)) {
+        return NextResponse.json({ error: "Invalid priority" }, { status: 400 })
+      }
+    }
+
+    // Validate estimated_cost if provided
+    if (updates.estimated_cost !== undefined && updates.estimated_cost !== null) {
+      const cost = parseFloat(updates.estimated_cost)
+      if (isNaN(cost) || cost < 0) {
+        return NextResponse.json({ error: "Invalid estimated cost" }, { status: 400 })
+      }
+      updates.estimated_cost = cost
     }
 
     const { data: serviceRequest, error } = await supabaseAdmin
@@ -119,12 +90,20 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
         updated_at: new Date().toISOString()
       })
       .eq("id", id)
-      .select()
+      .select(`
+        *,
+        clients (
+          id,
+          name,
+          email,
+          phone,
+          company
+        )
+      `)
       .single()
 
-    if (error) {
-      console.error("Error updating service request:", error)
-      return NextResponse.json({ error: "Failed to update service request: " + error.message }, { status: 500 })
+    if (error || !serviceRequest) {
+      return NextResponse.json({ error: "Failed to update service request" }, { status: 500 })
     }
 
     return NextResponse.json({
