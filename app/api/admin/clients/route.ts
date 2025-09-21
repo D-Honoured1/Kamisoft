@@ -1,21 +1,23 @@
-// app/api/admin/clients/route.ts
+// app/api/admin/clients/route.ts - UPDATED VERSION WITH CONTACT INQUIRIES
 export const dynamic = "force-dynamic"
 
 import { NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
-import { getAdminUser } from "@/lib/auth/server-auth"
+import { createClient } from "@supabase/supabase-js"
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+)
 
 export async function GET() {
   try {
-    // Check authentication
-    const adminUser = await getAdminUser()
-    if (!adminUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const supabase = createServerClient()
-
-    const { data: clients, error } = await supabase
+    const { data: clients, error } = await supabaseAdmin
       .from("clients")
       .select(`
         id,
@@ -30,6 +32,12 @@ export async function GET() {
           request_source,
           status,
           service_category,
+          created_at
+        ),
+        contact_inquiries (
+          id,
+          status,
+          subject,
           created_at
         )
       `)

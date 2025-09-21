@@ -98,6 +98,8 @@ export default function EditServiceRequest() {
     switch (status) {
       case "pending":
         return <Clock className="h-4 w-4 text-yellow-600" />
+      case "approved":
+        return <CheckCircle className="h-4 w-4 text-green-600" />
       case "in_progress":
         return <FileText className="h-4 w-4 text-blue-600" />
       case "completed":
@@ -202,6 +204,12 @@ export default function EditServiceRequest() {
                         <div className="flex items-center gap-2">
                           <CheckCircle className="h-4 w-4 text-green-600" />
                           Completed
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="approved">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                          Approved
                         </div>
                       </SelectItem>
                       <SelectItem value="cancelled">
@@ -339,6 +347,13 @@ export default function EditServiceRequest() {
                 <div>
                   <div className="flex items-center gap-2 font-medium">
                     <CheckCircle className="h-3 w-3 text-green-600" />
+                    Approved
+                  </div>
+                  <p className="text-muted-foreground">Request approved, ready to start</p>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 font-medium">
+                    <CheckCircle className="h-3 w-3 text-green-600" />
                     Completed
                   </div>
                   <p className="text-muted-foreground">Project delivered successfully</p>
@@ -356,5 +371,3 @@ export default function EditServiceRequest() {
         </div>
       </div>
     </div>
-  )
-}

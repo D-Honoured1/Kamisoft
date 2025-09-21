@@ -1,4 +1,4 @@
-// app/admin/clients/page.tsx - ENHANCED WITH FILTERS
+// app/admin/clients/page.tsx - FIXED VERSION WITH CONTACT INQUIRIES
 "use client"
 
 import { useEffect, useState } from "react"
@@ -20,9 +20,15 @@ interface Client {
   created_at: string
   service_requests: Array<{
     id: string
-    request_source: 'hire_us' | 'contact'
+    request_source: 'hire_us'
     status: string
     service_category: string
+    created_at: string
+  }>
+  contact_inquiries: Array<{
+    id: string
+    status: string
+    subject: string
     created_at: string
   }>
 }
@@ -33,7 +39,7 @@ export default function ClientsManagement() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
-  const [filterType, setFilterType] = useState("all") // all, service_only, contact_only, both
+  const [filterType, setFilterType] = useState("all") // all, service_only, contact_only
   const [sortBy, setSortBy] = useState("newest") // newest, oldest, name
 
   useEffect(() => {
@@ -74,16 +80,14 @@ export default function ClientsManagement() {
     // Apply type filter
     if (filterType !== "all") {
       filtered = filtered.filter(client => {
-        const hasServiceRequests = client.service_requests.some(req => req.request_source === 'hire_us')
-        const hasContactInquiries = client.service_requests.some(req => req.request_source === 'contact')
+        const hasServiceRequests = client.service_requests?.length > 0
+        const hasContactInquiries = client.contact_inquiries?.length > 0
         
         switch (filterType) {
           case "service_only":
             return hasServiceRequests && !hasContactInquiries
           case "contact_only":
             return hasContactInquiries && !hasServiceRequests
-          case "both":
-            return hasServiceRequests && hasContactInquiries
           default:
             return true
         }
@@ -107,8 +111,8 @@ export default function ClientsManagement() {
   }
 
   const getClientType = (client: Client) => {
-    const hasServiceRequests = client.service_requests.some(req => req.request_source === 'hire_us')
-    const hasContactInquiries = client.service_requests.some(req => req.request_source === 'contact')
+    const hasServiceRequests = client.service_requests?.length > 0
+    const hasContactInquiries = client.contact_inquiries?.length > 0
     
     if (hasServiceRequests && hasContactInquiries) return "both"
     if (hasServiceRequests) return "service"
@@ -126,6 +130,24 @@ export default function ClientsManagement() {
         return { label: "Service + Contact", color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200", icon: Users }
       default:
         return { label: "No Requests", color: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200", icon: Users }
+    }
+  }
+
+  const getClientDetailUrl = (client: Client) => {
+    const hasServiceRequests = client.service_requests?.length > 0
+    const hasContactInquiries = client.contact_inquiries?.length > 0
+    
+    if (hasServiceRequests) {
+      // Redirect to latest service request
+      const latestRequest = client.service_requests[0]
+      return `/admin/requests/${latestRequest.id}`
+    } else if (hasContactInquiries) {
+      // Redirect to latest contact inquiry
+      const latestInquiry = client.contact_inquiries[0]
+      return `/admin/contact-submissions/${latestInquiry.id}`
+    } else {
+      // Fallback to client profile (if it exists)
+      return `/admin/clients/${client.id}`
     }
   }
 
@@ -159,7 +181,7 @@ export default function ClientsManagement() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -190,17 +212,6 @@ export default function ClientsManagement() {
                 <p className="text-2xl font-bold">{stats.contactOnly}</p>
               </div>
               <MessageSquare className="h-8 w-8 text-purple-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Both Types</p>
-                <p className="text-2xl font-bold">{stats.both}</p>
-              </div>
-              <Users className="h-8 w-8 text-orange-600" />
             </div>
           </CardContent>
         </Card>
@@ -239,7 +250,6 @@ export default function ClientsManagement() {
                   <SelectItem value="all">All Clients</SelectItem>
                   <SelectItem value="service_only">Service Clients Only</SelectItem>
                   <SelectItem value="contact_only">Contact Only</SelectItem>
-                  <SelectItem value="both">Both Service & Contact</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -282,6 +292,7 @@ export default function ClientsManagement() {
             const clientType = getClientType(client)
             const typeDisplay = getTypeDisplay(clientType)
             const Icon = typeDisplay.icon
+            const detailUrl = getClientDetailUrl(client)
             
             return (
               <Card key={client.id} className="hover:shadow-lg transition-shadow">
@@ -322,19 +333,19 @@ export default function ClientsManagement() {
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Service Requests:</span>
                       <span className="font-medium">
-                        {client.service_requests?.filter(req => req.request_source === 'hire_us').length || 0}
+                        {client.service_requests?.length || 0}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Contact Inquiries:</span>
                       <span className="font-medium">
-                        {client.service_requests?.filter(req => req.request_source === 'contact').length || 0}
+                        {client.contact_inquiries?.length || 0}
                       </span>
                     </div>
                   </div>
 
                   <Button size="sm" variant="outline" className="w-full" asChild>
-                    <Link href={`/admin/clients/${client.id}`}>View Details</Link>
+                    <Link href={detailUrl}>View Details</Link>
                   </Button>
                 </CardContent>
               </Card>

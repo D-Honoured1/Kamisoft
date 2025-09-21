@@ -209,11 +209,6 @@ export default async function ContactSubmissions() {
                         View Full Details <ArrowRight className="ml-2 h-4 w-4" />
                       </Link>
                     </Button>
-                    <Button size="sm" variant="outline" asChild>
-                      <Link href={`/admin/clients/${submission.clients?.id || '#'}`}>
-                        View Client Profile
-                      </Link>
-                    </Button>
                     {submission.status === 'pending' && (
                       <Button size="sm" variant="outline" asChild>
                         <Link href={`/admin/contact-submissions/${submission.id}/edit`}>

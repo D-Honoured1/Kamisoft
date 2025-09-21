@@ -37,6 +37,8 @@ export default async function RequestsPage() {
     switch (status) {
       case "pending":
         return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+      case "approved":
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
       case "in_progress":
         return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
       case "completed":
@@ -54,6 +56,8 @@ export default async function RequestsPage() {
     switch (status) {
       case "pending":
         return <Clock className="h-4 w-4" />
+      case "approved":
+        return <CheckCircle className="h-4 w-4" />
       case "in_progress":
         return <FileText className="h-4 w-4" />
       case "completed":
@@ -69,6 +73,7 @@ export default async function RequestsPage() {
   // Calculate stats
   const totalRequests = requests?.length || 0
   const pendingRequests = requests?.filter(req => req.status === 'pending').length || 0
+  const approvedRequests = requests?.filter(req => req.status === 'approved').length || 0
   const inProgressRequests = requests?.filter(req => req.status === 'in_progress').length || 0
   const completedRequests = requests?.filter(req => req.status === 'completed').length || 0
 
@@ -84,7 +89,7 @@ export default async function RequestsPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -108,6 +113,20 @@ export default async function RequestsPage() {
               </div>
               <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center">
                 <Clock className="h-6 w-6 text-yellow-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Approved</p>
+                <p className="text-2xl font-bold text-green-600">{approvedRequests}</p>
+              </div>
+              <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+                <CheckCircle className="h-6 w-6 text-green-600" />
               </div>
             </div>
           </CardContent>

@@ -1,3 +1,4 @@
+
 // =============================================================================
 // FILE: app/api/service-requests/[id]/route.ts (UPDATED VERSION)
 // =============================================================================
@@ -49,7 +50,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
     // Validate status if provided
     if (updates.status) {
-      const validStatuses = ['pending', 'in_progress', 'completed', 'cancelled', 'declined']
+      const validStatuses = ['pending', 'approved', 'in_progress', 'completed', 'cancelled', 'declined']
       if (!validStatuses.includes(updates.status)) {
         return NextResponse.json({ error: "Invalid status" }, { status: 400 })
       }

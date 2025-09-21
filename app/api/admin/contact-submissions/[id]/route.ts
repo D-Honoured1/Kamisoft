@@ -1,6 +1,4 @@
-
-// FILE: app/api/admin/contact-submissions/[id]/route.ts
-// =============================================================================
+// app/api/admin/contact-submissions/[id]/route.ts - Contact submissions detail API
 export const dynamic = "force-dynamic"
 
 import { NextResponse } from "next/server"

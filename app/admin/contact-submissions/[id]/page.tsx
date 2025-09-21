@@ -1,4 +1,4 @@
-// app/admin/contact-submissions/[id]/page.tsx - Detail page for contact submissions
+// app/admin/contact-submissions/[id]/page.tsx - COMPLETE VERSION
 export const dynamic = "force-dynamic";
 
 import { createServerClient } from "@/lib/supabase/server"
