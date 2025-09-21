@@ -1,4 +1,4 @@
-// app/api/contact/route.ts - FIXED VERSION
+// app/api/contact/route.ts - FIXED VERSION WITH SEPARATE CONTACT_INQUIRIES TABLE
 export const dynamic = "force-dynamic"
 
 import { NextResponse } from "next/server"
@@ -109,49 +109,47 @@ export async function POST(req: Request) {
       )
     }
 
-    // Step 2: Create service request for contact inquiry
-    console.log("Step 2: Creating service request for contact inquiry")
+    // Step 2: Create contact inquiry (separate from service requests)
+    console.log("Step 2: Creating contact inquiry")
     
-    const serviceRequestData = {
+    const contactInquiryData = {
       client_id: clientId,
-      service_category: service || "consultancy", // Use service_category instead of service_type
-      request_type: "digital",
-      title: subject || "Contact Form Inquiry",
-      description: message,
+      service_category: service || null,
+      subject: subject || "Contact Form Inquiry",
+      message: message,
       status: "pending",
-      request_source: "contact", // Mark as coming from contact form
     }
 
-    console.log("Contact service request data:", JSON.stringify(serviceRequestData, null, 2))
+    console.log("Contact inquiry data:", JSON.stringify(contactInquiryData, null, 2))
 
     try {
-      const { data: request, error: requestError } = await supabaseAdmin
-        .from("service_requests")
-        .insert(serviceRequestData)
+      const { data: inquiry, error: inquiryError } = await supabaseAdmin
+        .from("contact_inquiries")
+        .insert(contactInquiryData)
         .select()
         .single()
 
-      if (requestError) {
-        console.error("Contact service request creation error:", {
-          message: requestError.message,
-          code: requestError.code,
-          details: requestError.details
+      if (inquiryError) {
+        console.error("Contact inquiry creation error:", {
+          message: inquiryError.message,
+          code: inquiryError.code,
+          details: inquiryError.details
         })
-        throw new Error(`Failed to create contact request: ${requestError.message}`)
+        throw new Error(`Failed to create contact inquiry: ${inquiryError.message}`)
       }
 
-      console.log("Contact service request created successfully:", request.id)
+      console.log("Contact inquiry created successfully:", inquiry.id)
 
       return NextResponse.json({
         success: true,
         message: "Contact form submitted successfully",
-        request_id: request.id,
+        inquiry_id: inquiry.id,
       })
 
-    } catch (requestCreationError: any) {
-      console.error("Contact request creation failed:", requestCreationError)
+    } catch (inquiryCreationError: any) {
+      console.error("Contact inquiry creation failed:", inquiryCreationError)
       return NextResponse.json(
-        { error: `Contact request creation failed: ${requestCreationError.message}` },
+        { error: `Contact inquiry creation failed: ${inquiryCreationError.message}` },
         { status: 500 }
       )
     }
