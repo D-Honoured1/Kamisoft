@@ -1,4 +1,4 @@
-// app/api/service-requests/[id]/route.ts - CLEAN PRODUCTION VERSION
+// app/api/service-requests/[id]/route.ts - FIXED VERSION
 export const dynamic = "force-dynamic"
 
 import { type NextRequest, NextResponse } from "next/server"
@@ -15,10 +15,16 @@ const supabaseAdmin = createClient(
   }
 )
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const { id } = params
+interface RouteParams {
+  params: {
+    id: string
+  }
+}
 
+export async function GET(request: NextRequest, { params }: RouteParams) {
+  try {
+    console.log("Fetching service request with ID:", params.id)
+    
     const { data: serviceRequest, error } = await supabaseAdmin
       .from("service_requests")
       .select(`
@@ -39,24 +45,42 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
           created_at
         )
       `)
-      .eq("id", id)
+      .eq("id", params.id)
       .single()
 
-    if (error || !serviceRequest) {
-      return NextResponse.json({ error: "Service request not found" }, { status: 404 })
+    if (error) {
+      console.error("Supabase error:", error)
+      return NextResponse.json(
+        { error: "Service request not found", details: error.message }, 
+        { status: 404 }
+      )
     }
 
+    if (!serviceRequest) {
+      console.log("No service request found for ID:", params.id)
+      return NextResponse.json(
+        { error: "Service request not found" }, 
+        { status: 404 }
+      )
+    }
+
+    console.log("Service request found:", serviceRequest.id)
     return NextResponse.json(serviceRequest)
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching service request:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Internal server error", details: error.message }, 
+      { status: 500 }
+    )
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
-    const { id } = params
+    console.log("Updating service request with ID:", params.id)
+    
     const updates = await request.json()
+    console.log("Updates:", updates)
 
     // Validate status if provided
     if (updates.status) {
@@ -89,7 +113,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
         ...updates,
         updated_at: new Date().toISOString()
       })
-      .eq("id", id)
+      .eq("id", params.id)
       .select(`
         *,
         clients (
@@ -102,17 +126,32 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       `)
       .single()
 
-    if (error || !serviceRequest) {
-      return NextResponse.json({ error: "Failed to update service request" }, { status: 500 })
+    if (error) {
+      console.error("Update error:", error)
+      return NextResponse.json(
+        { error: "Failed to update service request", details: error.message }, 
+        { status: 500 }
+      )
     }
 
+    if (!serviceRequest) {
+      return NextResponse.json(
+        { error: "Service request not found" }, 
+        { status: 404 }
+      )
+    }
+
+    console.log("Service request updated successfully")
     return NextResponse.json({
       success: true,
       message: "Service request updated successfully",
       serviceRequest
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error updating service request:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Internal server error", details: error.message }, 
+      { status: 500 }
+    )
   }
 }

@@ -1,4 +1,4 @@
-// app/admin/requests/[id]/page.tsx - CLEAN VERSION
+// app/admin/requests/[id]/page.tsx - UPDATED WITH PAYMENT MANAGEMENT
 export const dynamic = "force-dynamic";
 
 import { createServerClient } from "@/lib/supabase/server"
@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Calendar, MapPin, Mail, Phone, DollarSign, User, ArrowLeft, FileText, Clock, CheckCircle, XCircle } from "lucide-react"
 import Link from "next/link"
+import { PaymentLinkGenerator } from "@/components/admin/payment-link-generator"
 
 interface ServiceRequestDetailProps {
   params: {
@@ -107,6 +108,8 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
   }
 
   const requestType = request.request_type || 'digital'
+  const hasPayments = payments && payments.length > 0
+  const canGeneratePayment = request.status === "approved" && request.estimated_cost > 0
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -232,6 +235,17 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
               </CardContent>
             </Card>
           )}
+
+          {/* Payment Link Generator - Only show for appropriate statuses */}
+          {(request.status === "approved" || request.status === "pending") && (
+            <PaymentLinkGenerator
+              requestId={request.id}
+              currentCost={request.estimated_cost}
+              clientEmail={client?.email}
+              clientName={client?.name}
+              status={request.status}
+            />
+          )}
         </div>
 
         {/* Sidebar */}
@@ -298,7 +312,7 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
                   </div>
                 )}
 
-                {payments && payments.length > 0 && (
+                {hasPayments && (
                   <div>
                     <p className="font-medium text-foreground mb-2">Payments ({payments.length})</p>
                     {payments.map((payment: any) => (
@@ -321,8 +335,16 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
                   </div>
                 )}
 
-                {(!payments || payments.length === 0) && (
-                  <p className="text-sm text-muted-foreground">No payments recorded</p>
+                {(!hasPayments && request.status === "approved") && (
+                  <div className="text-center py-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      Ready for payment link generation
+                    </p>
+                  </div>
+                )}
+
+                {(!hasPayments && request.status === "pending") && (
+                  <p className="text-sm text-muted-foreground">No payments - approve request first</p>
                 )}
               </div>
             </CardContent>
@@ -336,11 +358,20 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
             <CardContent>
               <div className="space-y-2">
                 <Button className="w-full" asChild>
-                  <Link href={`/admin/requests/${request.id}/edit`}>Update Status</Link>
+                  <Link href={`/admin/requests/${request.id}/edit`}>Update Status & Details</Link>
                 </Button>
-                <Button variant="outline" className="w-full bg-transparent" asChild>
-                  <Link href={`/payment/${request.id}`}>View Payment</Link>
-                </Button>
+                
+                {canGeneratePayment && !hasPayments && (
+                  <Badge variant="secondary" className="w-full justify-center py-2">
+                    Payment link ready to generate above
+                  </Badge>
+                )}
+                
+                {hasPayments && (
+                  <Button variant="outline" className="w-full bg-transparent" asChild>
+                    <Link href={`/payment/${request.id}`} target="_blank">View Payment Page</Link>
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
