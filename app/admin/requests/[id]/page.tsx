@@ -1,25 +1,37 @@
-// app/admin/requests/[id]/page.tsx - FIXED VERSION
+// app/admin/requests/[id]/page.tsx
 export const dynamic = "force-dynamic";
 
 import { createServerClient } from "@/lib/supabase/server"
-import { redirect, notFound } from "next/navigation"
+import { requireAuth } from "@/lib/auth/server-auth"
+import { notFound } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { PaymentButton } from "@/components/payment-button"
-import { Calendar, MapPin, Mail, Phone, DollarSign, User, ArrowLeft, MessageSquare, FileText } from "lucide-react"
+import { Calendar, MapPin, Mail, Phone, DollarSign, User, ArrowLeft, MessageSquare, FileText, Clock, CheckCircle, XCircle } from "lucide-react"
 import Link from "next/link"
-import { requireAuth } from "@/lib/auth/server-auth"
 
-export default async function ServiceRequestDetail({ params }: { params: { id: string } }) {
-  const supabase = createServerClient()
+interface ServiceRequestDetailProps {
+  params: {
+    id: string
+  }
+}
+
+export default async function ServiceRequestDetail({ params }: ServiceRequestDetailProps) {
+  // Require authentication
   const adminUser = await requireAuth()
+  
+  const supabase = createServerClient()
+
+  console.log("=== SERVICE REQUEST DETAIL PAGE ===")
+  console.log("Request ID:", params.id)
+  console.log("Admin user:", adminUser?.email)
 
   const { data: request, error } = await supabase
     .from("service_requests")
     .select(`
       *,
       clients (
+        id,
         name,
         email,
         phone,
@@ -36,7 +48,10 @@ export default async function ServiceRequestDetail({ params }: { params: { id: s
     .eq("id", params.id)
     .single()
 
+  console.log("Database query result:", { request, error })
+
   if (error || !request) {
+    console.error("Request not found:", error)
     notFound()
   }
 
@@ -44,25 +59,36 @@ export default async function ServiceRequestDetail({ params }: { params: { id: s
     switch (status) {
       case "pending":
         return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+      case "approved":
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
       case "in_progress":
         return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
       case "completed":
         return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
       case "cancelled":
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+      case "declined":
         return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
       default:
         return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
     }
   }
 
-  const getSourceColor = (source: string) => {
-    switch (source) {
-      case "hire_us":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-      case "contact":
-        return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "pending":
+        return <Clock className="h-4 w-4" />
+      case "approved":
+        return <CheckCircle className="h-4 w-4" />
+      case "in_progress":
+        return <FileText className="h-4 w-4" />
+      case "completed":
+        return <CheckCircle className="h-4 w-4" />
+      case "cancelled":
+      case "declined":
+        return <XCircle className="h-4 w-4" />
       default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+        return <Clock className="h-4 w-4" />
     }
   }
 
@@ -79,21 +105,22 @@ export default async function ServiceRequestDetail({ params }: { params: { id: s
     }
   }
 
-  const isServiceRequest = request.request_source === 'hire_us'
-  const isContactInquiry = request.request_source === 'contact'
+  const isServiceRequest = request.request_source === 'hire_us' || !request.request_source
+  const requestType = request.request_type || 'digital'
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">
-            {isServiceRequest ? 'Service Request Details' : 'Contact Inquiry Details'}
-          </h1>
+          <h1 className="text-3xl font-bold text-foreground">Service Request Details</h1>
           <p className="text-muted-foreground mt-2">Request #{request.id.slice(0, 8)}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
-            <Link href="/admin/requests">Back to Requests</Link>
+            <Link href="/admin/requests">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Requests
+            </Link>
           </Button>
         </div>
       </div>
@@ -106,20 +133,16 @@ export default async function ServiceRequestDetail({ params }: { params: { id: s
               <div className="flex items-start justify-between">
                 <div>
                   <CardTitle className="text-xl flex items-center gap-2">
-                    {isServiceRequest ? (
-                      <FileText className="h-5 w-5" />
-                    ) : (
-                      <MessageSquare className="h-5 w-5" />
-                    )}
-                    {request.title || (isServiceRequest ? 'Service Request' : 'Contact Inquiry')}
+                    <FileText className="h-5 w-5" />
+                    {request.title || 'Service Request'}
                   </CardTitle>
                   <CardDescription className="mt-1">
-                    {isServiceRequest ? 'Submitted via Hire Us form' : 'Submitted via Contact form'} on {new Date(request.created_at).toLocaleDateString()}
+                    Submitted on {new Date(request.created_at).toLocaleDateString()}
                   </CardDescription>
                 </div>
                 <div className="flex gap-2 flex-wrap">
-                  <Badge className={getSourceColor(request.request_source)}>
-                    {isServiceRequest ? 'Service Request' : 'Contact Inquiry'}
+                  <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                    Service Request
                   </Badge>
                   {request.priority && (
                     <Badge className={getPriorityColor(request.priority)}>
@@ -127,7 +150,10 @@ export default async function ServiceRequestDetail({ params }: { params: { id: s
                     </Badge>
                   )}
                   <Badge className={getStatusColor(request.status)}>
-                    {request.status.replace("_", " ")}
+                    <span className="flex items-center gap-1">
+                      {getStatusIcon(request.status)}
+                      {request.status.replace("_", " ")}
+                    </span>
                   </Badge>
                 </div>
               </div>
@@ -135,17 +161,17 @@ export default async function ServiceRequestDetail({ params }: { params: { id: s
             <CardContent>
               <div className="space-y-4">
                 <div>
-                  <h4 className="font-medium text-foreground mb-2">
-                    {isServiceRequest ? 'Service Category' : 'Interest Area'}
-                  </h4>
-                  <p className="text-sm bg-muted/50 rounded-lg p-3">{request.service_category}</p>
+                  <h4 className="font-medium text-foreground mb-2">Service Category</h4>
+                  <p className="text-sm bg-muted/50 rounded-lg p-3">
+                    {request.service_category?.replace('_', ' ') || 'Not specified'}
+                  </p>
                 </div>
 
                 <div>
-                  <h4 className="font-medium text-foreground mb-2">
-                    {isServiceRequest ? 'Project Description' : 'Message'}
-                  </h4>
-                  <p className="text-muted-foreground leading-relaxed">{request.description}</p>
+                  <h4 className="font-medium text-foreground mb-2">Project Description</h4>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {request.description || 'No description provided'}
+                  </p>
                 </div>
 
                 {request.requirements && (
@@ -170,30 +196,28 @@ export default async function ServiceRequestDetail({ params }: { params: { id: s
                 )}
 
                 {/* Request Type and Additional Details */}
-                {isServiceRequest && (
-                  <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                    <div>
-                      <h4 className="font-medium text-foreground mb-2">Request Type</h4>
-                      <Badge variant="outline">
-                        {request.request_type === 'digital' ? 'Digital/Remote' : 'On-Site'}
-                      </Badge>
-                    </div>
-                    {request.preferred_date && (
-                      <div>
-                        <h4 className="font-medium text-foreground mb-2">Preferred Date</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(request.preferred_date).toLocaleDateString()}
-                        </p>
-                      </div>
-                    )}
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                  <div>
+                    <h4 className="font-medium text-foreground mb-2">Request Type</h4>
+                    <Badge variant="outline">
+                      {requestType === 'digital' ? 'Digital/Remote' : 'On-Site'}
+                    </Badge>
                   </div>
-                )}
+                  {request.preferred_date && (
+                    <div>
+                      <h4 className="font-medium text-foreground mb-2">Preferred Date</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(request.preferred_date).toLocaleDateString()}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
 
           {/* On-Site Service Details */}
-          {isServiceRequest && request.request_type === "on_site" && request.site_address && (
+          {requestType === "on_site" && request.site_address && (
             <Card>
               <CardHeader>
                 <CardTitle>On-Site Service Details</CardTitle>
@@ -223,17 +247,17 @@ export default async function ServiceRequestDetail({ params }: { params: { id: s
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <p className="font-medium text-foreground">{request.clients.name}</p>
-                    {request.clients.company && (
+                    <p className="font-medium text-foreground">{request.clients?.name || 'Unknown Client'}</p>
+                    {request.clients?.company && (
                       <p className="text-sm text-muted-foreground">{request.clients.company}</p>
                     )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">{request.clients.email}</p>
+                  <p className="text-muted-foreground">{request.clients?.email || 'No email'}</p>
                 </div>
-                {request.clients.phone && (
+                {request.clients?.phone && (
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-muted-foreground" />
                     <p className="text-muted-foreground">{request.clients.phone}</p>
@@ -250,50 +274,48 @@ export default async function ServiceRequestDetail({ params }: { params: { id: s
             </CardContent>
           </Card>
 
-          {/* Financial Information - Only for Service Requests */}
-          {isServiceRequest && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Financial Details</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {request.estimated_cost && (
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium text-foreground">Estimated Cost</p>
-                        <p className="text-muted-foreground">${request.estimated_cost.toLocaleString()}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {request.payments && request.payments.length > 0 && (
+          {/* Financial Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Financial Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {request.estimated_cost && (
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
                     <div>
-                      <p className="font-medium text-foreground mb-2">Payments</p>
-                      {request.payments.map((payment: any) => (
-                        <div key={payment.id} className="flex items-center justify-between p-2 border rounded">
-                          <div>
-                            <p className="text-sm font-medium">${payment.amount.toLocaleString()}</p>
-                            <p className="text-xs text-muted-foreground">{payment.payment_method}</p>
-                          </div>
-                          <Badge
-                            className={
-                              payment.payment_status === "paid"
-                                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                                : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-                            }
-                          >
-                            {payment.payment_status}
-                          </Badge>
-                        </div>
-                      ))}
+                      <p className="font-medium text-foreground">Estimated Cost</p>
+                      <p className="text-muted-foreground">${request.estimated_cost.toLocaleString()}</p>
                     </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                  </div>
+                )}
+
+                {request.payments && request.payments.length > 0 && (
+                  <div>
+                    <p className="font-medium text-foreground mb-2">Payments</p>
+                    {request.payments.map((payment: any) => (
+                      <div key={payment.id} className="flex items-center justify-between p-2 border rounded">
+                        <div>
+                          <p className="text-sm font-medium">${payment.amount.toLocaleString()}</p>
+                          <p className="text-xs text-muted-foreground">{payment.payment_method || 'N/A'}</p>
+                        </div>
+                        <Badge
+                          className={
+                            payment.payment_status === "paid"
+                              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                              : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                          }
+                        >
+                          {payment.payment_status}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Actions */}
           <Card>
@@ -305,11 +327,9 @@ export default async function ServiceRequestDetail({ params }: { params: { id: s
                 <Button className="w-full" asChild>
                   <Link href={`/admin/requests/${request.id}/edit`}>Update Status</Link>
                 </Button>
-                {isServiceRequest && (
-                  <Button variant="outline" className="w-full bg-transparent" asChild>
-                    <Link href={`/payment/${request.id}`}>View Payment</Link>
-                  </Button>
-                )}
+                <Button variant="outline" className="w-full bg-transparent" asChild>
+                  <Link href={`/payment/${request.id}`}>View Payment</Link>
+                </Button>
               </div>
             </CardContent>
           </Card>
