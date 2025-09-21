@@ -1,4 +1,4 @@
-// app/admin/requests/[id]/edit/page.tsx - Update service request status
+// app/admin/requests/[id]/edit/page.tsx - FIXED VERSION WITH CORRECT API CALLS
 "use client"
 
 import { useState, useEffect } from "react"
@@ -51,6 +51,7 @@ export default function EditServiceRequest() {
         timeline: data.timeline || "",
       })
     } catch (error: any) {
+      console.error("Error fetching request:", error)
       setError(error.message)
     } finally {
       setIsLoading(false)
@@ -77,7 +78,8 @@ export default function EditServiceRequest() {
       })
 
       if (!response.ok) {
-        throw new Error("Failed to update request")
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to update request")
       }
 
       setSuccess("Service request updated successfully!")
@@ -88,6 +90,7 @@ export default function EditServiceRequest() {
       }, 1500)
 
     } catch (error: any) {
+      console.error("Error updating request:", error)
       setError(error.message)
     } finally {
       setIsSaving(false)
@@ -159,7 +162,7 @@ export default function EditServiceRequest() {
             <CardHeader>
               <CardTitle>Request Details</CardTitle>
               <CardDescription>
-                {request.title} by {request.client?.name}
+                {request.title} by {request.clients?.name || 'Unknown Client'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">

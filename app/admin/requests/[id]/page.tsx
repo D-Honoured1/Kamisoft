@@ -1,4 +1,4 @@
-// app/admin/requests/[id]/page.tsx - FIXED VERSION WITHOUT FOREIGN KEY ISSUES
+// app/admin/requests/[id]/page.tsx - CLEAN VERSION
 export const dynamic = "force-dynamic";
 
 import { createServerClient } from "@/lib/supabase/server"
@@ -17,29 +17,21 @@ interface ServiceRequestDetailProps {
 }
 
 export default async function ServiceRequestDetail({ params }: ServiceRequestDetailProps) {
-  // Require authentication
   const adminUser = await requireAuth()
-  
   const supabase = createServerClient()
 
-  console.log("=== SERVICE REQUEST DETAIL PAGE ===")
-  console.log("Request ID:", params.id)
-
-  // First, get the service request without joins
+  // Get the service request
   const { data: request, error: requestError } = await supabase
     .from("service_requests")
     .select("*")
     .eq("id", params.id)
     .single()
 
-  console.log("Service request query:", { request, requestError })
-
   if (requestError || !request) {
-    console.error("Request not found:", requestError)
     notFound()
   }
 
-  // Get client information separately if client_id exists
+  // Get client information separately
   let client = null
   if (request.client_id) {
     const { data: clientData, error: clientError } = await supabase
@@ -51,10 +43,9 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
     if (!clientError && clientData) {
       client = clientData
     }
-    console.log("Client query:", { client: clientData, clientError })
   }
 
-  // Get payments separately if needed
+  // Get payments separately
   let payments = []
   const { data: paymentsData, error: paymentsError } = await supabase
     .from("payments")
@@ -64,7 +55,6 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
   if (!paymentsError && paymentsData) {
     payments = paymentsData
   }
-  console.log("Payments query:", { payments: paymentsData, paymentsError })
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -172,31 +162,16 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
               <div className="space-y-4">
                 <div>
                   <h4 className="font-medium text-foreground mb-2">Service Category</h4>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="text-sm">
-                      🔗 {request.service_category?.replace('_', ' ') || 'Not specified'}
-                    </Badge>
-                    {request.service_category === 'blockchain_solutions' && (
-                      <span className="text-xs text-muted-foreground">Blockchain & Web3 Development</span>
-                    )}
-                  </div>
+                  <p className="text-sm bg-muted/50 rounded-lg p-3">
+                    {request.service_category?.replace('_', ' ') || 'Not specified'}
+                  </p>
                 </div>
 
                 <div>
                   <h4 className="font-medium text-foreground mb-2">Project Description</h4>
-                  <div className="bg-muted/50 rounded-lg p-4">
-                    <p className="text-foreground leading-relaxed">
-                      {request.description || 'No description provided'}
-                    </p>
-                    {request.description?.toLowerCase().includes('blockchain') && (
-                      <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded border border-blue-200 dark:border-blue-800">
-                        <p className="text-sm text-blue-800 dark:text-blue-200">
-                          🎮 <strong>Gaming + Blockchain Project:</strong> This appears to be a blockchain gaming project. 
-                          Consider including NFT integration, smart contracts, and Web3 wallet connectivity.
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {request.description || 'No description provided'}
+                  </p>
                 </div>
 
                 {request.requirements && (
@@ -220,55 +195,22 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
                   </div>
                 )}
 
-                {/* Request Type and Additional Details */}
                 <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                   <div>
                     <h4 className="font-medium text-foreground mb-2">Request Type</h4>
                     <Badge variant="outline">
-                      {requestType === 'digital' ? '💻 Digital/Remote' : '🏢 On-Site'}
+                      {requestType === 'digital' ? 'Digital/Remote' : 'On-Site'}
                     </Badge>
                   </div>
                   {request.preferred_date && (
                     <div>
-                      <h4 className="font-medium text-foreground mb-2">Preferred Start Date</h4>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-sm font-medium">
-                          {new Date(request.preferred_date).toLocaleDateString('en-US', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })}
-                        </p>
-                      </div>
+                      <h4 className="font-medium text-foreground mb-2">Preferred Date</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(request.preferred_date).toLocaleDateString()}
+                      </p>
                     </div>
                   )}
                 </div>
-
-                {/* Project Suggestions */}
-                {request.service_category === 'blockchain_solutions' && (
-                  <div className="mt-6 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
-                    <h4 className="font-medium text-green-800 dark:text-green-200 mb-2">💡 Suggested Project Components</h4>
-                    <ul className="text-sm text-green-700 dark:text-green-300 space-y-1">
-                      <li>• Smart contract development for game mechanics</li>
-                      <li>• NFT marketplace integration</li>
-                      <li>• Token economics and reward systems</li>
-                      <li>• Web3 wallet connectivity</li>
-                      <li>• Cross-chain compatibility</li>
-                    </ul>
-                  </div>
-                )}
-
-                {/* Raw Data Debug Info */}
-                <details className="mt-6">
-                  <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
-                    Debug: Raw Request Data
-                  </summary>
-                  <pre className="mt-2 p-4 bg-muted/50 rounded text-xs overflow-x-auto">
-                    {JSON.stringify(request, null, 2)}
-                  </pre>
-                </details>
               </div>
             </CardContent>
           </Card>
@@ -332,13 +274,8 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
               ) : (
                 <div className="text-center py-4">
                   <p className="text-muted-foreground text-sm">
-                    Client ID: {request.client_id || 'Not specified'}
+                    No client information available
                   </p>
-                  {request.client_id && (
-                    <p className="text-xs text-red-600 mt-2">
-                      Client data not found - possible foreign key issue
-                    </p>
-                  )}
                 </div>
               )}
             </CardContent>
