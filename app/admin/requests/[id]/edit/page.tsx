@@ -211,14 +211,8 @@ export default function EditServiceRequest() {
                       </SelectItem>
                       <SelectItem value="approved">
                         <div className="flex items-center gap-2">
-                          <CheckCircle className="h-4 w-4 text-green-600" />
+                          <CheckCircle className="h-4 w-4 text-gray-600" />
                           Approved
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="cancelled">
-                        <div className="flex items-center gap-2">
-                          <XCircle className="h-4 w-4 text-gray-600" />
-                          Cancelled
                         </div>
                       </SelectItem>
                       <SelectItem value="declined">
