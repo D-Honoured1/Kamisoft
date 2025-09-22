@@ -1,4 +1,4 @@
-// app/api/service-requests/[id]/route.ts - FIXED VERSION
+// app/api/service-requests/[id]/route.ts - FIXED VERSION WITH CORRECT FOREIGN KEY SYNTAX
 export const dynamic = "force-dynamic"
 
 import { type NextRequest, NextResponse } from "next/server"
@@ -15,21 +15,23 @@ const supabaseAdmin = createClient(
   }
 )
 
-// FIXED: Properly handle the params parameter as a Promise
-export async function GET(
-  request: NextRequest, 
-  { params }: { params: Promise<{ id: string }> }
-) {
+interface RouteParams {
+  params: {
+    id: string
+  }
+}
+
+export async function GET(request: NextRequest, context: RouteParams) {
   try {
-    // In Next.js 15+, params is a Promise and needs to be awaited
-    const { id } = await params
+    const { id } = context.params
     console.log("Fetching service request with ID:", id)
     
+    // FIXED: Use proper foreign key relationship syntax
     const { data: serviceRequest, error } = await supabaseAdmin
       .from("service_requests")
       .select(`
         *,
-        client:clients!service_requests_client_id_fkey (
+        clients (
           id,
           name,
           email,
@@ -75,12 +77,9 @@ export async function GET(
   }
 }
 
-export async function PATCH(
-  request: NextRequest, 
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, context: RouteParams) {
   try {
-    const { id } = await params
+    const { id } = context.params
     console.log("Updating service request with ID:", id)
     
     const updates = await request.json()
@@ -111,6 +110,7 @@ export async function PATCH(
       updates.estimated_cost = cost
     }
 
+    // FIXED: Use proper foreign key relationship syntax for update
     const { data: serviceRequest, error } = await supabaseAdmin
       .from("service_requests")
       .update({
