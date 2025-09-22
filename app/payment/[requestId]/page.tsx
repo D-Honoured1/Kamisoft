@@ -1,4 +1,4 @@
-// app/payment/[requestId]/page.tsx - ENHANCED VERSION WITH FULL PAYMENT OPTION
+// app/payment/[requestId]/page.tsx - ENHANCED VERSION WITH PAYMENT TYPE SELECTION
 "use client"
 
 import { useState, useEffect } from "react"
@@ -24,7 +24,8 @@ import {
   User,
   Lock,
   Percent,
-  Tag
+  Tag,
+  Calculator
 } from "lucide-react"
 import { SERVICE_CATEGORIES } from "@/lib/constants/services"
 import { useAdminAuth } from "@/hooks/use-admin-auth"
@@ -45,6 +46,10 @@ export default function PaymentPage() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [accessDenied, setAccessDenied] = useState(false)
+
+  // Payment configuration
+  const FULL_PAYMENT_DISCOUNT_PERCENT = 10 // 10% discount for full payment
+  const SPLIT_PAYMENT_PERCENT = 50 // 50% upfront for split payment
 
   useEffect(() => {
     fetchServiceRequest()
@@ -106,9 +111,31 @@ export default function PaymentPage() {
 
     try {
       const cost = serviceRequest.estimated_cost || 0
-      const paymentAmount = selectedPaymentType === "split" 
-        ? cost * 0.5 
-        : cost * 0.9 // 10% discount for full payment
+      let paymentAmount: number
+      let paymentMetadata: any = {
+        payment_type: selectedPaymentType,
+        original_amount: cost
+      }
+
+      if (selectedPaymentType === "split") {
+        paymentAmount = cost * (SPLIT_PAYMENT_PERCENT / 100)
+        paymentMetadata = {
+          ...paymentMetadata,
+          upfront_percent: SPLIT_PAYMENT_PERCENT,
+          remaining_amount: cost - paymentAmount,
+          description: `${SPLIT_PAYMENT_PERCENT}% upfront payment`
+        }
+      } else {
+        const discountAmount = cost * (FULL_PAYMENT_DISCOUNT_PERCENT / 100)
+        paymentAmount = cost - discountAmount
+        paymentMetadata = {
+          ...paymentMetadata,
+          discount_percent: FULL_PAYMENT_DISCOUNT_PERCENT,
+          discount_amount: discountAmount,
+          savings: discountAmount,
+          description: `Full payment with ${FULL_PAYMENT_DISCOUNT_PERCENT}% discount`
+        }
+      }
 
       const response = await fetch("/api/payments/create", {
         method: "POST",
@@ -120,6 +147,7 @@ export default function PaymentPage() {
           paymentMethod: selectedPaymentMethod,
           amount: paymentAmount,
           paymentType: selectedPaymentType,
+          metadata: paymentMetadata,
         }),
       })
 
@@ -199,7 +227,7 @@ export default function PaymentPage() {
     )
   }
 
-  // Access Denied Screen (keeping the same as before)
+  // Access Denied Screen
   if (accessDenied || (error && !serviceRequest)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background to-muted/50 py-12">
@@ -249,15 +277,15 @@ export default function PaymentPage() {
 
   const serviceCategory = SERVICE_CATEGORIES[serviceRequest?.service_category as keyof typeof SERVICE_CATEGORIES]
   const totalCost = serviceRequest?.estimated_cost || 0
-  const splitAmount = totalCost * 0.5
-  const fullPaymentDiscount = totalCost * 0.1 // 10% discount
+  const splitAmount = totalCost * (SPLIT_PAYMENT_PERCENT / 100)
+  const fullPaymentDiscount = totalCost * (FULL_PAYMENT_DISCOUNT_PERCENT / 100)
   const fullPaymentAmount = totalCost - fullPaymentDiscount
 
   const currentPaymentAmount = selectedPaymentType === "split" ? splitAmount : fullPaymentAmount
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/50 py-12">
-      <div className="container max-w-5xl">
+      <div className="container max-w-6xl">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">Complete Your Payment</h1>
           <p className="text-muted-foreground">Secure payment processing for your approved service request</p>
@@ -272,7 +300,7 @@ export default function PaymentPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Order Summary */}
+          {/* Left Column: Order Summary */}
           <Card className="border-0 shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -282,6 +310,7 @@ export default function PaymentPage() {
               <CardDescription>Your request has been approved and is ready for payment</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Project Details */}
               <div className="space-y-4">
                 <div>
                   <h3 className="font-semibold text-lg">{serviceRequest?.title}</h3>
@@ -318,7 +347,10 @@ export default function PaymentPage() {
 
               {/* Payment Type Selection */}
               <div className="space-y-4">
-                <Label className="text-base font-semibold">Choose Payment Option</Label>
+                <Label className="text-base font-semibold flex items-center gap-2">
+                  <Calculator className="h-4 w-4" />
+                  Choose Payment Option
+                </Label>
                 <RadioGroup value={selectedPaymentType} onValueChange={(value) => setSelectedPaymentType(value as PaymentType)}>
                   {/* Split Payment */}
                   <Card className={`p-4 cursor-pointer transition-all hover:shadow-md border-2 ${
@@ -328,12 +360,12 @@ export default function PaymentPage() {
                       <RadioGroupItem value="split" id="split" className="mt-1" />
                       <div className="flex-1">
                         <Label htmlFor="split" className="text-base font-medium cursor-pointer">
-                          Split Payment (50/50)
+                          Split Payment ({SPLIT_PAYMENT_PERCENT}/{100 - SPLIT_PAYMENT_PERCENT})
                         </Label>
                         <div className="mt-2 space-y-1 text-sm text-muted-foreground">
                           <div>• Pay now: <span className="font-medium text-foreground">${splitAmount.toFixed(2)}</span></div>
-                          <div>• On completion: <span className="font-medium text-foreground">${splitAmount.toFixed(2)}</span></div>
-                          <div className="text-xs text-blue-600">Standard payment terms</div>
+                          <div>• On completion: <span className="font-medium text-foreground">${(totalCost - splitAmount).toFixed(2)}</span></div>
+                          <div className="text-xs text-blue-600">Standard payment terms • Work begins immediately</div>
                         </div>
                       </div>
                     </div>
@@ -352,14 +384,14 @@ export default function PaymentPage() {
                           </Label>
                           <Badge className="bg-green-100 text-green-800">
                             <Tag className="h-3 w-3 mr-1" />
-                            10% OFF
+                            {FULL_PAYMENT_DISCOUNT_PERCENT}% OFF
                           </Badge>
                         </div>
                         <div className="mt-2 space-y-1 text-sm text-muted-foreground">
                           <div>• Original: <span className="line-through">${totalCost.toFixed(2)}</span></div>
-                          <div>• Discount: <span className="text-green-600">-${fullPaymentDiscount.toFixed(2)} (10%)</span></div>
+                          <div>• Discount: <span className="text-green-600">-${fullPaymentDiscount.toFixed(2)} ({FULL_PAYMENT_DISCOUNT_PERCENT}%)</span></div>
                           <div>• Pay now: <span className="font-medium text-foreground text-base">${fullPaymentAmount.toFixed(2)}</span></div>
-                          <div className="text-xs text-green-600">Save ${fullPaymentDiscount.toFixed(2)} with full payment!</div>
+                          <div className="text-xs text-green-600">Save ${fullPaymentDiscount.toFixed(2)} • No additional payments required</div>
                         </div>
                       </div>
                     </div>
@@ -377,18 +409,16 @@ export default function PaymentPage() {
                 </div>
                 
                 {selectedPaymentType === "full" && (
-                  <>
-                    <div className="flex justify-between text-sm text-green-600">
-                      <span>Full Payment Discount (10%)</span>
-                      <span>-${fullPaymentDiscount.toFixed(2)}</span>
-                    </div>
-                  </>
+                  <div className="flex justify-between text-sm text-green-600">
+                    <span>Full Payment Discount ({FULL_PAYMENT_DISCOUNT_PERCENT}%)</span>
+                    <span>-${fullPaymentDiscount.toFixed(2)}</span>
+                  </div>
                 )}
                 
                 {selectedPaymentType === "split" && (
                   <div className="flex justify-between text-sm text-muted-foreground">
                     <span>Remaining (Upon Completion)</span>
-                    <span>${splitAmount.toFixed(2)}</span>
+                    <span>${(totalCost - splitAmount).toFixed(2)}</span>
                   </div>
                 )}
                 
@@ -399,6 +429,7 @@ export default function PaymentPage() {
                 </div>
               </div>
 
+              {/* Payment Terms Info */}
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription>
@@ -406,13 +437,14 @@ export default function PaymentPage() {
                   <ul className="mt-2 space-y-1 text-sm">
                     {selectedPaymentType === "split" ? (
                       <>
-                        <li>• 50% upfront payment to begin work</li>
-                        <li>• Remaining 50% upon project completion</li>
+                        <li>• {SPLIT_PAYMENT_PERCENT}% upfront payment to begin work</li>
+                        <li>• Remaining {100 - SPLIT_PAYMENT_PERCENT}% upon project completion</li>
                       </>
                     ) : (
                       <>
-                        <li>• Full payment with 10% discount</li>
+                        <li>• Full payment with {FULL_PAYMENT_DISCOUNT_PERCENT}% discount</li>
                         <li>• No additional payments required</li>
+                        <li>• Save ${fullPaymentDiscount.toFixed(2)} compared to split payment</li>
                       </>
                     )}
                     <li>• Work begins within 24 hours of payment</li>
@@ -423,7 +455,7 @@ export default function PaymentPage() {
             </CardContent>
           </Card>
 
-          {/* Payment Methods */}
+          {/* Right Column: Payment Methods */}
           <Card className="border-0 shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -433,6 +465,25 @@ export default function PaymentPage() {
               <CardDescription>Choose your preferred payment method</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Current Selection Summary */}
+              <div className="bg-primary/5 rounded-lg p-4 border border-primary/20">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium">Selected Payment Plan:</span>
+                  <Badge variant="default">
+                    {selectedPaymentType === "split" ? `${SPLIT_PAYMENT_PERCENT}/${100 - SPLIT_PAYMENT_PERCENT} Split` : `Full (-${FULL_PAYMENT_DISCOUNT_PERCENT}%)`}
+                  </Badge>
+                </div>
+                <div className="text-2xl font-bold text-primary">
+                  ${currentPaymentAmount.toFixed(2)}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {selectedPaymentType === "split" 
+                    ? `${SPLIT_PAYMENT_PERCENT}% of $${totalCost.toFixed(2)} total project cost`
+                    : `Full payment with $${fullPaymentDiscount.toFixed(2)} savings`
+                  }
+                </div>
+              </div>
+
               <RadioGroup
                 value={selectedPaymentMethod}
                 onValueChange={(value) => setSelectedPaymentMethod(value as PaymentMethod)}
