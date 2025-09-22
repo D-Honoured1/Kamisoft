@@ -1,4 +1,4 @@
-// components/admin/payment-link-generator.tsx - ENHANCED VERSION
+// components/admin/payment-link-generator.tsx - FIXED VERSION
 "use client"
 
 import { useState } from "react"
@@ -49,42 +49,33 @@ export function PaymentLinkGenerator({
     setError("")
 
     try {
-      // Update the service request with the estimated cost and payment options
-      const updateData = {
-        estimated_cost: cost,
-        status: "approved",
-        // Store payment options in the database
-        payment_options: {
-          split_payment: {
-            upfront_amount: splitPaymentAmount,
-            remaining_amount: cost - splitPaymentAmount,
-            type: "50_50_split"
-          },
-          full_payment: {
-            original_amount: cost,
-            discount_percent: discountPercent,
-            discount_amount: discountAmount,
-            final_amount: fullPaymentAmount,
-            type: "full_with_discount"
-          }
+      // Only update estimated_cost if it's different from current cost
+      if (cost !== currentCost) {
+        console.log("Updating estimated cost from", currentCost, "to", cost)
+        
+        const updateResponse = await fetch(`/api/service-requests/${requestId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            estimated_cost: cost
+          }),
+        })
+
+        if (!updateResponse.ok) {
+          const errorData = await updateResponse.json()
+          console.error("Failed to update estimated cost:", errorData)
+          throw new Error("Failed to update estimated cost")
         }
+        
+        console.log("Estimated cost updated successfully")
       }
 
-      const updateResponse = await fetch(`/api/service-requests/${requestId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updateData),
-      })
-
-      if (!updateResponse.ok) {
-        throw new Error("Failed to update payment options")
-      }
-
-      // Generate the payment link
+      // Generate the payment link (no complex service request updates)
       const link = `${window.location.origin}/payment/${requestId}`
       setPaymentLink(link)
 
     } catch (error: any) {
+      console.error("Error generating payment link:", error)
       setError(error.message || "Failed to generate payment link")
     } finally {
       setIsGenerating(false)
@@ -98,7 +89,7 @@ export function PaymentLinkGenerator({
   const sendEmailNotification = async () => {
     try {
       console.log("Sending payment link email to:", clientEmail)
-      alert("Payment link sent to client email")
+      alert("Payment link sent to client email (demo)")
     } catch (error) {
       console.error("Failed to send email:", error)
     }
@@ -121,7 +112,7 @@ export function PaymentLinkGenerator({
           <span className="text-sm font-medium">Request Status:</span>
           <Badge className={
             status === "approved" 
-              ? "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200" // Updated to gray
+              ? "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
               : status === "pending"
               ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
               : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
@@ -152,57 +143,100 @@ export function PaymentLinkGenerator({
             onChange={(e) => setEstimatedCost(e.target.value)}
             disabled={isGenerating}
           />
+          <p className="text-xs text-muted-foreground">
+            {cost !== currentCost && cost > 0 && (
+              <span className="text-amber-600">
+                This will update the estimated cost from ${currentCost?.toFixed(2) || '0.00'} to ${cost.toFixed(2)}
+              </span>
+            )}
+          </p>
         </div>
 
-        {/* Payment Options */}
+        {/* Payment Options Preview */}
         {cost > 0 && (
           <div className="space-y-4 p-4 border rounded-lg">
-            <Label>Payment Options</Label>
-            <RadioGroup value={paymentType} onValueChange={(value) => setPaymentType(value as "split" | "full")}>
+            <Label>Payment Options Preview</Label>
+            
+            {/* Debug info */}
+            <div className="text-xs text-muted-foreground mb-2">
+              Current selection: {paymentType}
+            </div>
+            
+            <RadioGroup 
+              value={paymentType} 
+              onValueChange={(value: string) => {
+                console.log("Admin payment type changed to:", value)
+                setPaymentType(value as "split" | "full")
+              }}
+              className="space-y-3"
+            >
               {/* Split Payment Option */}
-              <div className="flex items-start space-x-2 p-3 border rounded-lg">
-                <RadioGroupItem value="split" id="split" className="mt-1" />
-                <div className="flex-1">
-                  <Label htmlFor="split" className="font-medium cursor-pointer">
-                    Split Payment (50/50)
-                  </Label>
-                  <div className="mt-2 text-sm text-muted-foreground space-y-1">
-                    <div>• Upfront: <span className="font-medium text-foreground">${splitPaymentAmount.toFixed(2)}</span></div>
-                    <div>• On Completion: <span className="font-medium text-foreground">${(cost - splitPaymentAmount).toFixed(2)}</span></div>
-                    <div className="text-xs text-blue-600">Standard payment terms</div>
+              <div 
+                className={`p-3 border-2 rounded-lg cursor-pointer transition-all hover:shadow-sm ${
+                  paymentType === "split" ? "border-primary bg-primary/5" : "border-border"
+                }`}
+                onClick={() => {
+                  console.log("Split payment clicked")
+                  setPaymentType("split")
+                }}
+              >
+                <div className="flex items-start space-x-3">
+                  <RadioGroupItem value="split" id="admin-split" className="mt-1" />
+                  <div className="flex-1">
+                    <Label htmlFor="admin-split" className="font-medium cursor-pointer">
+                      Split Payment (50/50)
+                    </Label>
+                    <div className="mt-2 text-sm text-muted-foreground space-y-1">
+                      <div>• Upfront: <span className="font-medium text-foreground">${splitPaymentAmount.toFixed(2)}</span></div>
+                      <div>• On Completion: <span className="font-medium text-foreground">${(cost - splitPaymentAmount).toFixed(2)}</span></div>
+                      <div className="text-xs text-blue-600">Standard payment terms</div>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Full Payment Option */}
-              <div className="flex items-start space-x-2 p-3 border rounded-lg">
-                <RadioGroupItem value="full" id="full" className="mt-1" />
-                <div className="flex-1">
-                  <Label htmlFor="full" className="font-medium cursor-pointer">
-                    Full Payment (with discount)
-                  </Label>
-                  <div className="mt-2 space-y-3">
-                    {/* Discount Input */}
-                    <div className="flex items-center gap-2">
-                      <Percent className="h-4 w-4 text-muted-foreground" />
-                      <Input
-                        type="number"
-                        min="0"
-                        max="50"
-                        step="0.5"
-                        value={fullPaymentDiscount}
-                        onChange={(e) => setFullPaymentDiscount(e.target.value)}
-                        className="w-20 h-8"
-                        disabled={isGenerating}
-                      />
-                      <span className="text-sm">% discount</span>
-                    </div>
-                    
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <div>• Original Amount: <span className="line-through">${cost.toFixed(2)}</span></div>
-                      <div>• Discount ({discountPercent}%): <span className="text-green-600">-${discountAmount.toFixed(2)}</span></div>
-                      <div>• Final Amount: <span className="font-medium text-foreground text-base">${fullPaymentAmount.toFixed(2)}</span></div>
-                      <div className="text-xs text-green-600">Save ${discountAmount.toFixed(2)} with full payment!</div>
+              <div 
+                className={`p-3 border-2 rounded-lg cursor-pointer transition-all hover:shadow-sm ${
+                  paymentType === "full" ? "border-primary bg-primary/5" : "border-border"
+                }`}
+                onClick={() => {
+                  console.log("Full payment clicked")
+                  setPaymentType("full")
+                }}
+              >
+                <div className="flex items-start space-x-3">
+                  <RadioGroupItem value="full" id="admin-full" className="mt-1" />
+                  <div className="flex-1">
+                    <Label htmlFor="admin-full" className="font-medium cursor-pointer">
+                      Full Payment (with discount)
+                    </Label>
+                    <div className="mt-2 space-y-3">
+                      {/* Discount Input */}
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                        <Percent className="h-4 w-4 text-muted-foreground" />
+                        <Input
+                          type="number"
+                          min="0"
+                          max="50"
+                          step="0.5"
+                          value={fullPaymentDiscount}
+                          onChange={(e) => {
+                            e.stopPropagation()
+                            setFullPaymentDiscount(e.target.value)
+                          }}
+                          className="w-20 h-8"
+                          disabled={isGenerating}
+                        />
+                        <span className="text-sm">% discount</span>
+                      </div>
+                      
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <div>• Original Amount: <span className="line-through">${cost.toFixed(2)}</span></div>
+                        <div>• Discount ({discountPercent}%): <span className="text-green-600">-${discountAmount.toFixed(2)}</span></div>
+                        <div>• Final Amount: <span className="font-medium text-foreground text-base">${fullPaymentAmount.toFixed(2)}</span></div>
+                        <div className="text-xs text-green-600">Save ${discountAmount.toFixed(2)} with full payment!</div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -302,6 +336,18 @@ export function PaymentLinkGenerator({
                 </Button>
               </div>
             </div>
+
+            <Alert>
+              <CheckCircle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Payment Options Available:</strong>
+                <ul className="mt-2 space-y-1 text-sm">
+                  <li>• Split Payment: Client pays ${splitPaymentAmount.toFixed(2)} now, ${(cost - splitPaymentAmount).toFixed(2)} on completion</li>
+                  <li>• Full Payment: Client pays ${fullPaymentAmount.toFixed(2)} (saves ${discountAmount.toFixed(2)} with {discountPercent}% discount)</li>
+                  <li>• Client can choose their preferred option on the payment page</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
           </div>
         )}
       </CardContent>

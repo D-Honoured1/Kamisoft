@@ -1,4 +1,4 @@
-// app/payment/[requestId]/page.tsx - ENHANCED VERSION WITH PAYMENT TYPE SELECTION
+// app/payment/[requestId]/page.tsx - FIXED VERSION WITH WORKING RADIO BUTTONS
 "use client"
 
 import { useState, useEffect } from "react"
@@ -48,8 +48,8 @@ export default function PaymentPage() {
   const [accessDenied, setAccessDenied] = useState(false)
 
   // Payment configuration
-  const FULL_PAYMENT_DISCOUNT_PERCENT = 10 // 10% discount for full payment
-  const SPLIT_PAYMENT_PERCENT = 50 // 50% upfront for split payment
+  const FULL_PAYMENT_DISCOUNT_PERCENT = 10
+  const SPLIT_PAYMENT_PERCENT = 50
 
   useEffect(() => {
     fetchServiceRequest()
@@ -103,6 +103,18 @@ export default function PaymentPage() {
     }
   }
 
+  // Fixed: Proper event handling for payment type change
+  const handlePaymentTypeChange = (value: string) => {
+    console.log("Payment type changed to:", value)
+    setSelectedPaymentType(value as PaymentType)
+  }
+
+  // Fixed: Proper event handling for payment method change
+  const handlePaymentMethodChange = (value: string) => {
+    console.log("Payment method changed to:", value)
+    setSelectedPaymentMethod(value as PaymentMethod)
+  }
+
   const handlePayment = async () => {
     if (!serviceRequest) return
 
@@ -136,6 +148,14 @@ export default function PaymentPage() {
           description: `Full payment with ${FULL_PAYMENT_DISCOUNT_PERCENT}% discount`
         }
       }
+
+      console.log("Creating payment with:", {
+        requestId: serviceRequest.id,
+        paymentMethod: selectedPaymentMethod,
+        amount: paymentAmount,
+        paymentType: selectedPaymentType,
+        metadata: paymentMetadata
+      })
 
       const response = await fetch("/api/payments/create", {
         method: "POST",
@@ -329,15 +349,15 @@ export default function PaymentPage() {
                   {serviceRequest?.description}
                 </p>
 
-                {serviceRequest?.clients && (
+                {serviceRequest?.client && (
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Client:</span>
-                      <span>{serviceRequest.clients.name}</span>
+                      <span>{serviceRequest.client.name}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Email:</span>
-                      <span>{serviceRequest.clients.email}</span>
+                      <span>{serviceRequest.client.email}</span>
                     </div>
                   </div>
                 )}
@@ -345,17 +365,27 @@ export default function PaymentPage() {
 
               <Separator />
 
-              {/* Payment Type Selection */}
+              {/* FIXED: Payment Type Selection with proper event handling */}
               <div className="space-y-4">
                 <Label className="text-base font-semibold flex items-center gap-2">
                   <Calculator className="h-4 w-4" />
                   Choose Payment Option
                 </Label>
-                <RadioGroup value={selectedPaymentType} onValueChange={(value) => setSelectedPaymentType(value as PaymentType)}>
+                
+                {/* Debug info */}
+                <div className="text-xs text-muted-foreground">
+                  Current selection: {selectedPaymentType}
+                </div>
+
+                <RadioGroup 
+                  value={selectedPaymentType} 
+                  onValueChange={handlePaymentTypeChange}
+                  className="space-y-4"
+                >
                   {/* Split Payment */}
-                  <Card className={`p-4 cursor-pointer transition-all hover:shadow-md border-2 ${
+                  <div className={`border-2 rounded-lg p-4 cursor-pointer transition-all hover:shadow-md ${
                     selectedPaymentType === "split" ? "border-primary bg-primary/5" : "border-border"
-                  }`}>
+                  }`} onClick={() => handlePaymentTypeChange("split")}>
                     <div className="flex items-start space-x-3">
                       <RadioGroupItem value="split" id="split" className="mt-1" />
                       <div className="flex-1">
@@ -369,12 +399,12 @@ export default function PaymentPage() {
                         </div>
                       </div>
                     </div>
-                  </Card>
+                  </div>
 
                   {/* Full Payment */}
-                  <Card className={`p-4 cursor-pointer transition-all hover:shadow-md border-2 ${
+                  <div className={`border-2 rounded-lg p-4 cursor-pointer transition-all hover:shadow-md ${
                     selectedPaymentType === "full" ? "border-primary bg-primary/5" : "border-border"
-                  }`}>
+                  }`} onClick={() => handlePaymentTypeChange("full")}>
                     <div className="flex items-start space-x-3">
                       <RadioGroupItem value="full" id="full" className="mt-1" />
                       <div className="flex-1">
@@ -395,7 +425,7 @@ export default function PaymentPage() {
                         </div>
                       </div>
                     </div>
-                  </Card>
+                  </div>
                 </RadioGroup>
               </div>
 
@@ -428,30 +458,6 @@ export default function PaymentPage() {
                   <span className="text-primary">${currentPaymentAmount.toFixed(2)}</span>
                 </div>
               </div>
-
-              {/* Payment Terms Info */}
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  <strong>Payment Terms:</strong>
-                  <ul className="mt-2 space-y-1 text-sm">
-                    {selectedPaymentType === "split" ? (
-                      <>
-                        <li>• {SPLIT_PAYMENT_PERCENT}% upfront payment to begin work</li>
-                        <li>• Remaining {100 - SPLIT_PAYMENT_PERCENT}% upon project completion</li>
-                      </>
-                    ) : (
-                      <>
-                        <li>• Full payment with {FULL_PAYMENT_DISCOUNT_PERCENT}% discount</li>
-                        <li>• No additional payments required</li>
-                        <li>• Save ${fullPaymentDiscount.toFixed(2)} compared to split payment</li>
-                      </>
-                    )}
-                    <li>• Work begins within 24 hours of payment</li>
-                    <li>• All payments are secured with SSL encryption</li>
-                  </ul>
-                </AlertDescription>
-              </Alert>
             </CardContent>
           </Card>
 
@@ -484,19 +490,21 @@ export default function PaymentPage() {
                 </div>
               </div>
 
+              {/* FIXED: Payment Method Selection */}
               <RadioGroup
                 value={selectedPaymentMethod}
-                onValueChange={(value) => setSelectedPaymentMethod(value as PaymentMethod)}
+                onValueChange={handlePaymentMethodChange}
                 className="space-y-4"
               >
                 {paymentMethods.map((method) => {
                   const Icon = method.icon
                   return (
-                    <Card
+                    <div
                       key={method.id}
-                      className={`p-4 cursor-pointer transition-all hover:shadow-md border-2 ${
+                      className={`border-2 rounded-lg p-4 cursor-pointer transition-all hover:shadow-md ${
                         selectedPaymentMethod === method.id ? "border-primary bg-primary/5" : "border-border"
                       } ${!method.available ? "opacity-50 cursor-not-allowed" : ""}`}
+                      onClick={() => method.available && handlePaymentMethodChange(method.id)}
                     >
                       <div className="flex items-center space-x-3">
                         <RadioGroupItem value={method.id} id={method.id} disabled={!method.available} />
@@ -526,7 +534,7 @@ export default function PaymentPage() {
                           </p>
                         </div>
                       </div>
-                    </Card>
+                    </div>
                   )
                 })}
               </RadioGroup>

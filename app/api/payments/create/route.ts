@@ -1,4 +1,4 @@
-// app/api/payments/create/route.ts - UPDATED VERSION WITH PAYMENT TYPE SUPPORT
+// app/api/payments/create/route.ts - FIXED VERSION (NO SERVICE REQUEST UPDATE)
 export const dynamic = "force-dynamic"
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
@@ -7,6 +7,8 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = createServerClient()
     const { requestId, paymentMethod, amount, paymentType, metadata } = await request.json()
+
+    console.log("Payment creation request:", { requestId, paymentMethod, amount, paymentType })
 
     // Validate input
     if (!requestId || !paymentMethod || !amount || !paymentType) {
@@ -22,7 +24,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Get service request details with proper foreign key relationship
+    // Get service request details
     const { data: serviceRequest, error: requestError } = await supabase
       .from("service_requests")
       .select(`
@@ -61,24 +63,16 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Create payment record with enhanced metadata
+    // Create payment record
     const paymentData = {
       request_id: requestId,
       amount: amount,
       currency: "USD",
       payment_method: paymentMethod,
-      payment_status: "pending",
-      payment_type: paymentType,
-      metadata: {
-        ...metadata,
-        original_cost: totalCost,
-        payment_method: paymentMethod,
-        client_email: serviceRequest.clients?.email,
-        client_name: serviceRequest.clients?.name,
-        service_title: serviceRequest.title,
-        created_at: new Date().toISOString()
-      }
+      payment_status: "pending"
     }
+
+    console.log("Creating payment record:", paymentData)
 
     const { data: payment, error: paymentError } = await supabase
       .from("payments")
@@ -93,6 +87,8 @@ export async function POST(request: NextRequest) {
         details: paymentError.message 
       }, { status: 500 })
     }
+
+    console.log("Payment record created:", payment.id)
 
     let checkoutUrl = null
 
@@ -122,9 +118,12 @@ export async function POST(request: NextRequest) {
         ? "Bank transfer instructions sent to your email"
         : "Payment session created successfully",
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating payment:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ 
+      error: "Internal server error",
+      details: error.message 
+    }, { status: 500 })
   }
 }
 
@@ -145,8 +144,8 @@ async function createStripeCheckout(
 
     // Create descriptive payment description
     const paymentDescription = paymentType === "split" 
-      ? `${metadata.description} (${metadata.upfront_percent}% upfront)`
-      : `${metadata.description} (${metadata.discount_percent}% discount applied)`
+      ? `50% upfront payment for ${serviceRequest.title}`
+      : `Full payment with 10% discount for ${serviceRequest.title}`
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -156,43 +155,21 @@ async function createStripeCheckout(
           product_data: {
             name: serviceRequest.title,
             description: paymentDescription,
-            metadata: {
-              paymentType: paymentType,
-              originalAmount: metadata.original_amount?.toString() || '0',
-              ...(paymentType === 'full' && { savings: metadata.savings?.toString() || '0' }),
-              ...(paymentType === 'split' && { remainingAmount: metadata.remaining_amount?.toString() || '0' })
-            }
           },
           unit_amount: Math.round(amount * 100), // Stripe uses cents
         },
         quantity: 1,
       }],
       mode: 'payment',
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/success?payment_id=${paymentId}&session_id={CHECKOUT_SESSION_ID}&type=${paymentType}`,
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/success?payment_id=${paymentId}&type=${paymentType}`,
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/cancelled?payment_id=${paymentId}`,
       metadata: {
         paymentId: paymentId,
         requestId: serviceRequest.id,
         clientEmail: serviceRequest.clients.email,
         paymentType: paymentType,
-        originalAmount: metadata.original_amount?.toString() || '0',
-        ...(paymentType === 'full' && { 
-          discountPercent: metadata.discount_percent?.toString() || '0',
-          savings: metadata.savings?.toString() || '0'
-        }),
-        ...(paymentType === 'split' && { 
-          upfrontPercent: metadata.upfront_percent?.toString() || '0',
-          remainingAmount: metadata.remaining_amount?.toString() || '0'
-        })
       },
       customer_email: serviceRequest.clients.email,
-      payment_intent_data: {
-        metadata: {
-          paymentId: paymentId,
-          requestId: serviceRequest.id,
-          paymentType: paymentType
-        }
-      }
     })
 
     return session.url
@@ -216,8 +193,8 @@ async function createPaystackCheckout(
     }
 
     const paymentDescription = paymentType === "split" 
-      ? `${metadata.description} (${metadata.upfront_percent}% upfront)`
-      : `${metadata.description} (${metadata.discount_percent}% discount applied)`
+      ? `50% upfront payment for ${serviceRequest.title}`
+      : `Full payment with 10% discount for ${serviceRequest.title}`
 
     const response = await fetch('https://api.paystack.co/transaction/initialize', {
       method: 'POST',
@@ -227,7 +204,7 @@ async function createPaystackCheckout(
       },
       body: JSON.stringify({
         email: serviceRequest.clients.email,
-        amount: Math.round(amount * 100), // Paystack uses kobo for NGN, but since we're using USD, multiply by 100
+        amount: Math.round(amount * 100), // Paystack uses kobo
         currency: 'USD',
         reference: `KE_${paymentType}_${paymentId}_${Date.now()}`,
         callback_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/success?payment_id=${paymentId}&type=${paymentType}`,
@@ -237,17 +214,6 @@ async function createPaystackCheckout(
           clientName: serviceRequest.clients.name,
           serviceTitle: serviceRequest.title,
           paymentType: paymentType,
-          originalAmount: metadata.original_amount,
-          ...(paymentType === 'full' && {
-            discountPercent: metadata.discount_percent,
-            savings: metadata.savings,
-            description: `Full payment with ${metadata.discount_percent}% discount`
-          }),
-          ...(paymentType === 'split' && {
-            upfrontPercent: metadata.upfront_percent,
-            remainingAmount: metadata.remaining_amount,
-            description: `${metadata.upfront_percent}% upfront payment`
-          })
         },
         channels: ['card', 'bank', 'ussd', 'qr', 'mobile_money', 'bank_transfer']
       })
@@ -283,8 +249,8 @@ async function sendBankTransferInstructions(
     console.log("Sending bank transfer instructions to:", email, "for payment:", paymentId)
     
     const paymentTypeDescription = paymentType === "split" 
-      ? `${metadata.upfront_percent}% upfront payment (${metadata.remaining_amount} remaining on completion)`
-      : `Full payment with ${metadata.discount_percent}% discount (save ${metadata.savings})`
+      ? "50% upfront payment (remaining 50% due on completion)"
+      : "Full payment with 10% discount"
 
     const instructions = {
       bankName: "First Bank of Nigeria",
@@ -293,26 +259,18 @@ async function sendBankTransferInstructions(
       amount: amount,
       reference: `KE_BANK_${paymentType.toUpperCase()}_${paymentId}`,
       paymentType: paymentTypeDescription,
-      originalAmount: metadata.original_amount,
       instructions: [
         "Transfer the exact amount to the account details provided",
         "Use the reference number in your transfer description",
         "Send proof of payment to hello@kamisoftenterprises.online",
         "Payment will be verified within 24 hours",
         paymentType === 'full' 
-          ? `You're saving ${metadata.savings} with full payment!`
-          : `Remaining ${metadata.remaining_amount} due upon project completion`
+          ? "You're saving 10% with full payment!"
+          : "Remaining 50% due upon project completion"
       ]
     }
     
-    // TODO: Implement actual email sending with enhanced payment type info
-    // await sendEmail({
-    //   to: email,
-    //   subject: `Bank Transfer Instructions - ${paymentType === 'split' ? 'Split' : 'Full'} Payment ${paymentId}`,
-    //   template: 'bank-transfer-instructions',
-    //   data: instructions
-    // })
-    
+    // TODO: Implement actual email sending
     console.log("Bank transfer instructions:", instructions)
   } catch (error) {
     console.error("Failed to send bank transfer instructions:", error)
