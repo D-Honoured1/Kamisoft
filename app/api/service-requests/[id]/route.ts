@@ -15,21 +15,21 @@ const supabaseAdmin = createClient(
   }
 )
 
-interface RouteParams {
-  params: {
-    id: string
-  }
-}
-
-export async function GET(request: NextRequest, { params }: RouteParams) {
+// FIXED: Properly handle the params parameter as a Promise
+export async function GET(
+  request: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    console.log("Fetching service request with ID:", params.id)
+    // In Next.js 15+, params is a Promise and needs to be awaited
+    const { id } = await params
+    console.log("Fetching service request with ID:", id)
     
     const { data: serviceRequest, error } = await supabaseAdmin
       .from("service_requests")
       .select(`
         *,
-        client:clients (
+        client:clients!service_requests_client_id_fkey (
           id,
           name,
           email,
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           created_at
         )
       `)
-      .eq("id", params.id)
+      .eq("id", id)
       .single()
 
     if (error) {
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     if (!serviceRequest) {
-      console.log("No service request found for ID:", params.id)
+      console.log("No service request found for ID:", id)
       return NextResponse.json(
         { error: "Service request not found" }, 
         { status: 404 }
@@ -75,9 +75,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
+export async function PATCH(
+  request: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    console.log("Updating service request with ID:", params.id)
+    const { id } = await params
+    console.log("Updating service request with ID:", id)
     
     const updates = await request.json()
     console.log("Updates:", updates)
@@ -113,7 +117,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         ...updates,
         updated_at: new Date().toISOString()
       })
-      .eq("id", params.id)
+      .eq("id", id)
       .select(`
         *,
         clients (
