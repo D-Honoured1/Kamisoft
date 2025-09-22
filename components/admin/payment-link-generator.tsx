@@ -1,4 +1,4 @@
-// components/admin/payment-link-generator.tsx
+// components/admin/payment-link-generator.tsx - ENHANCED VERSION
 "use client"
 
 import { useState } from "react"
@@ -8,7 +8,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
-import { Copy, ExternalLink, Mail, DollarSign, CheckCircle } from "lucide-react"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Separator } from "@/components/ui/separator"
+import { Copy, ExternalLink, Mail, DollarSign, CheckCircle, Percent } from "lucide-react"
 
 interface PaymentLinkGeneratorProps {
   requestId: string
@@ -26,11 +28,19 @@ export function PaymentLinkGenerator({
   status 
 }: PaymentLinkGeneratorProps) {
   const [estimatedCost, setEstimatedCost] = useState(currentCost?.toString() || "")
+  const [paymentType, setPaymentType] = useState<"split" | "full">("split")
+  const [fullPaymentDiscount, setFullPaymentDiscount] = useState("10") // Default 10% discount
   const [isGenerating, setIsGenerating] = useState(false)
   const [paymentLink, setPaymentLink] = useState("")
   const [error, setError] = useState("")
 
   const canGeneratePayment = status === "approved" && estimatedCost && parseFloat(estimatedCost) > 0
+
+  const cost = parseFloat(estimatedCost) || 0
+  const discountPercent = parseFloat(fullPaymentDiscount) || 0
+  const discountAmount = cost * (discountPercent / 100)
+  const fullPaymentAmount = cost - discountAmount
+  const splitPaymentAmount = cost * 0.5
 
   const generatePaymentLink = async () => {
     if (!canGeneratePayment) return
@@ -39,26 +49,40 @@ export function PaymentLinkGenerator({
     setError("")
 
     try {
-      // First update the service request with the estimated cost
+      // Update the service request with the estimated cost and payment options
+      const updateData = {
+        estimated_cost: cost,
+        status: "approved",
+        // Store payment options in the database
+        payment_options: {
+          split_payment: {
+            upfront_amount: splitPaymentAmount,
+            remaining_amount: cost - splitPaymentAmount,
+            type: "50_50_split"
+          },
+          full_payment: {
+            original_amount: cost,
+            discount_percent: discountPercent,
+            discount_amount: discountAmount,
+            final_amount: fullPaymentAmount,
+            type: "full_with_discount"
+          }
+        }
+      }
+
       const updateResponse = await fetch(`/api/service-requests/${requestId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          estimated_cost: parseFloat(estimatedCost),
-          status: "approved" // Ensure it's approved
-        }),
+        body: JSON.stringify(updateData),
       })
 
       if (!updateResponse.ok) {
-        throw new Error("Failed to update estimated cost")
+        throw new Error("Failed to update payment options")
       }
 
       // Generate the payment link
       const link = `${window.location.origin}/payment/${requestId}`
       setPaymentLink(link)
-
-      // Optionally send email notification to client
-      // await sendPaymentLinkEmail(requestId, link)
 
     } catch (error: any) {
       setError(error.message || "Failed to generate payment link")
@@ -69,18 +93,11 @@ export function PaymentLinkGenerator({
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(paymentLink)
-    // You could add a toast notification here
   }
 
   const sendEmailNotification = async () => {
     try {
-      // This would integrate with your email service
       console.log("Sending payment link email to:", clientEmail)
-      // await fetch('/api/notifications/payment-link', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ requestId, paymentLink, clientEmail })
-      // })
       alert("Payment link sent to client email")
     } catch (error) {
       console.error("Failed to send email:", error)
@@ -95,16 +112,16 @@ export function PaymentLinkGenerator({
           Payment Link Generation
         </CardTitle>
         <CardDescription>
-          Generate secure payment link for approved service requests
+          Generate secure payment link with flexible payment options
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
         {/* Status Check */}
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">Request Status:</span>
           <Badge className={
             status === "approved" 
-              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+              ? "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200" // Updated to gray
               : status === "pending"
               ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
               : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
@@ -124,7 +141,7 @@ export function PaymentLinkGenerator({
 
         {/* Cost Input */}
         <div className="space-y-2">
-          <Label htmlFor="estimated_cost">Estimated Cost (USD) *</Label>
+          <Label htmlFor="estimated_cost">Project Cost (USD) *</Label>
           <Input
             id="estimated_cost"
             type="number"
@@ -135,10 +152,97 @@ export function PaymentLinkGenerator({
             onChange={(e) => setEstimatedCost(e.target.value)}
             disabled={isGenerating}
           />
-          <p className="text-xs text-muted-foreground">
-            Client will pay 50% upfront (${((parseFloat(estimatedCost) || 0) * 0.5).toFixed(2)})
-          </p>
         </div>
+
+        {/* Payment Options */}
+        {cost > 0 && (
+          <div className="space-y-4 p-4 border rounded-lg">
+            <Label>Payment Options</Label>
+            <RadioGroup value={paymentType} onValueChange={(value) => setPaymentType(value as "split" | "full")}>
+              {/* Split Payment Option */}
+              <div className="flex items-start space-x-2 p-3 border rounded-lg">
+                <RadioGroupItem value="split" id="split" className="mt-1" />
+                <div className="flex-1">
+                  <Label htmlFor="split" className="font-medium cursor-pointer">
+                    Split Payment (50/50)
+                  </Label>
+                  <div className="mt-2 text-sm text-muted-foreground space-y-1">
+                    <div>• Upfront: <span className="font-medium text-foreground">${splitPaymentAmount.toFixed(2)}</span></div>
+                    <div>• On Completion: <span className="font-medium text-foreground">${(cost - splitPaymentAmount).toFixed(2)}</span></div>
+                    <div className="text-xs text-blue-600">Standard payment terms</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Full Payment Option */}
+              <div className="flex items-start space-x-2 p-3 border rounded-lg">
+                <RadioGroupItem value="full" id="full" className="mt-1" />
+                <div className="flex-1">
+                  <Label htmlFor="full" className="font-medium cursor-pointer">
+                    Full Payment (with discount)
+                  </Label>
+                  <div className="mt-2 space-y-3">
+                    {/* Discount Input */}
+                    <div className="flex items-center gap-2">
+                      <Percent className="h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="number"
+                        min="0"
+                        max="50"
+                        step="0.5"
+                        value={fullPaymentDiscount}
+                        onChange={(e) => setFullPaymentDiscount(e.target.value)}
+                        className="w-20 h-8"
+                        disabled={isGenerating}
+                      />
+                      <span className="text-sm">% discount</span>
+                    </div>
+                    
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <div>• Original Amount: <span className="line-through">${cost.toFixed(2)}</span></div>
+                      <div>• Discount ({discountPercent}%): <span className="text-green-600">-${discountAmount.toFixed(2)}</span></div>
+                      <div>• Final Amount: <span className="font-medium text-foreground text-base">${fullPaymentAmount.toFixed(2)}</span></div>
+                      <div className="text-xs text-green-600">Save ${discountAmount.toFixed(2)} with full payment!</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </RadioGroup>
+          </div>
+        )}
+
+        {/* Payment Summary */}
+        {cost > 0 && (
+          <div className="bg-muted/50 rounded-lg p-4">
+            <h4 className="font-medium mb-3">Payment Summary</h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span>Selected Option:</span>
+                <span className="font-medium">
+                  {paymentType === "split" ? "Split Payment (50/50)" : `Full Payment (${discountPercent}% discount)`}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Amount Due Now:</span>
+                <span className="font-bold text-lg">
+                  ${paymentType === "split" ? splitPaymentAmount.toFixed(2) : fullPaymentAmount.toFixed(2)}
+                </span>
+              </div>
+              {paymentType === "split" && (
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Remaining (on completion):</span>
+                  <span>${(cost - splitPaymentAmount).toFixed(2)}</span>
+                </div>
+              )}
+              {paymentType === "full" && discountAmount > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span>Total Savings:</span>
+                  <span>${discountAmount.toFixed(2)}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Client Info */}
         {clientEmail && (

@@ -1,4 +1,4 @@
-// app/admin/requests/[id]/edit/page.tsx - FIXED VERSION WITH CORRECT API CALLS
+// app/admin/requests/[id]/edit/page.tsx - COMPLETE AND PROPERLY STRUCTURED
 "use client"
 
 import { useState, useEffect } from "react"
@@ -84,7 +84,6 @@ export default function EditServiceRequest() {
 
       setSuccess("Service request updated successfully!")
       
-      // Redirect back to detail page after a short delay
       setTimeout(() => {
         router.push(`/admin/requests/${requestId}`)
       }, 1500)
@@ -102,13 +101,12 @@ export default function EditServiceRequest() {
       case "pending":
         return <Clock className="h-4 w-4 text-yellow-600" />
       case "approved":
-        return <CheckCircle className="h-4 w-4 text-green-600" />
+        return <CheckCircle className="h-4 w-4 text-gray-600" /> // Changed to gray
       case "in_progress":
         return <FileText className="h-4 w-4 text-blue-600" />
       case "completed":
         return <CheckCircle className="h-4 w-4 text-green-600" />
       case "declined":
-      case "cancelled":
         return <XCircle className="h-4 w-4 text-red-600" />
       default:
         return <Clock className="h-4 w-4" />
@@ -197,6 +195,12 @@ export default function EditServiceRequest() {
                           Pending
                         </div>
                       </SelectItem>
+                      <SelectItem value="approved">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="h-4 w-4 text-gray-600" />
+                          Approved
+                        </div>
+                      </SelectItem>
                       <SelectItem value="in_progress">
                         <div className="flex items-center gap-2">
                           <FileText className="h-4 w-4 text-blue-600" />
@@ -207,12 +211,6 @@ export default function EditServiceRequest() {
                         <div className="flex items-center gap-2">
                           <CheckCircle className="h-4 w-4 text-green-600" />
                           Completed
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="approved">
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="h-4 w-4 text-gray-600" />
-                          Approved
                         </div>
                       </SelectItem>
                       <SelectItem value="declined">
@@ -336,17 +334,17 @@ export default function EditServiceRequest() {
                 </div>
                 <div>
                   <div className="flex items-center gap-2 font-medium">
+                    <CheckCircle className="h-3 w-3 text-gray-600" />
+                    Approved
+                  </div>
+                  <p className="text-muted-foreground">Request approved, ready for payment</p>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 font-medium">
                     <FileText className="h-3 w-3 text-blue-600" />
                     In Progress
                   </div>
                   <p className="text-muted-foreground">Work has started on the project</p>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 font-medium">
-                    <CheckCircle className="h-3 w-3 text-green-600" />
-                    Approved
-                  </div>
-                  <p className="text-muted-foreground">Request approved, ready to start</p>
                 </div>
                 <div>
                   <div className="flex items-center gap-2 font-medium">
