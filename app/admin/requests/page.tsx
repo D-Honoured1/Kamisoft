@@ -126,7 +126,7 @@ export default async function RequestsPage() {
                 <p className="text-2xl font-bold text-green-600">{approvedRequests}</p>
               </div>
               <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600" />
+                <CheckCircle className="h-6 w-6 text-gray-600" />
               </div>
             </div>
           </CardContent>
