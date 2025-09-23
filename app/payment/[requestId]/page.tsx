@@ -1,4 +1,4 @@
-// app/payment/[requestId]/page.tsx - UPDATED FOR NIGERIA PAYMENTS
+// app/payment/[requestId]/page.tsx - NIGERIA-FOCUSED VERSION WITH NAIRA DISPLAY
 "use client"
 
 import { useState, useEffect } from "react"
@@ -25,7 +25,9 @@ import {
   ArrowRight,
   RefreshCw,
   Smartphone,
-  Bitcoin
+  DollarSign,
+  Copy,
+  ExternalLink
 } from "lucide-react"
 import { SERVICE_CATEGORIES } from "@/lib/constants/services"
 
@@ -55,9 +57,39 @@ interface ServiceRequest {
   }>
 }
 
+interface CryptoInfo {
+  currency: string
+  network: string
+  address: string
+  amount: number
+  ngnEquivalent: string
+  qrCode: string
+  instructions: string[]
+  supportedNetworks: Array<{
+    name: string
+    fee: string
+    recommended: boolean
+  }>
+}
+
+interface BankDetails {
+  bankName: string
+  accountNumber: string
+  accountName: string
+  sortCode: string
+  amount: number
+  ngnAmount: string
+  currency: string
+  reference: string
+  instructions: string[]
+}
+
 export default function PaymentPage() {
   const params = useParams()
   const requestId = params.requestId as string
+
+  // Exchange rate - in production, fetch this from a real API
+  const [exchangeRate, setExchangeRate] = useState(1550) // NGN per USD
 
   const [serviceRequest, setServiceRequest] = useState<ServiceRequest | null>(null)
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>("paystack")
@@ -66,12 +98,16 @@ export default function PaymentPage() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [timeRemaining, setTimeRemaining] = useState<string>("")
+  const [cryptoInfo, setCryptoInfo] = useState<CryptoInfo | null>(null)
+  const [bankDetails, setBankDetails] = useState<BankDetails | null>(null)
 
   const SPLIT_PAYMENT_PERCENT = 50
   const DEFAULT_DISCOUNT_PERCENT = 10
 
   useEffect(() => {
     fetchServiceRequest()
+    // In production, fetch current exchange rate
+    fetchExchangeRate()
   }, [requestId])
 
   useEffect(() => {
@@ -96,6 +132,21 @@ export default function PaymentPage() {
     const interval = setInterval(updateTimer, 1000)
     return () => clearInterval(interval)
   }, [serviceRequest])
+
+  const fetchExchangeRate = async () => {
+    try {
+      // In production, fetch from a real exchange rate API
+      // const response = await fetch('/api/exchange-rate')
+      // const data = await response.json()
+      // setExchangeRate(data.usdToNgn)
+      
+      // For now, using fixed rate
+      setExchangeRate(1550)
+    } catch (error) {
+      console.error("Failed to fetch exchange rate:", error)
+      // Keep default rate
+    }
+  }
 
   const fetchServiceRequest = async () => {
     try {
@@ -167,6 +218,8 @@ export default function PaymentPage() {
 
     setIsProcessing(true)
     setError(null)
+    setCryptoInfo(null)
+    setBankDetails(null)
 
     try {
       const cost = serviceRequest.estimated_cost
@@ -203,15 +256,16 @@ export default function PaymentPage() {
         throw new Error(errorData.error || errorData.details || "Payment processing failed")
       }
 
-      const { checkoutUrl, message, cryptoAddress, cryptoAmount } = await response.json()
+      const result = await response.json()
 
-      if (checkoutUrl) {
-        window.location.href = checkoutUrl
-      } else if (cryptoAddress) {
-        // Handle crypto payment display
-        setCryptoPaymentInfo({ address: cryptoAddress, amount: cryptoAmount })
-      } else if (message) {
-        alert(message)
+      if (result.checkoutUrl) {
+        window.location.href = result.checkoutUrl
+      } else if (result.cryptoInfo) {
+        setCryptoInfo(result.cryptoInfo)
+      } else if (result.bankDetails) {
+        setBankDetails(result.bankDetails)
+      } else if (result.message) {
+        alert(result.message)
       }
     } catch (error: any) {
       console.error("Payment error:", error)
@@ -221,9 +275,12 @@ export default function PaymentPage() {
     }
   }
 
-  const [cryptoPaymentInfo, setCryptoPaymentInfo] = useState<{address: string, amount: number} | null>(null)
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    alert("Copied to clipboard!")
+  }
 
-  // Loading and error states remain the same...
+  // Loading and error states...
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-orange-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
@@ -316,7 +373,7 @@ export default function PaymentPage() {
           </div>
 
           <div className="grid lg:grid-cols-3 gap-8">
-            {/* Service Details - Same as before */}
+            {/* Service Details - Sidebar */}
             <div className="lg:col-span-1">
               <Card className="sticky top-8">
                 <CardHeader>
@@ -358,23 +415,34 @@ export default function PaymentPage() {
                     <h4 className="font-medium mb-2">Pricing</h4>
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-sm">Estimated Cost:</span>
-                        <span className="font-medium">₦{(totalCost * 1500).toLocaleString()}</span>
+                        <span className="text-sm">Project Cost:</span>
+                        <div className="text-right">
+                          <div className="font-medium">${totalCost.toFixed(2)}</div>
+                          <div className="text-xs text-muted-foreground">
+                            ≈ ₦{(totalCost * exchangeRate).toLocaleString()}
+                          </div>
+                        </div>
                       </div>
                       {selectedPaymentType === "full" && (
                         <>
                           <div className="flex justify-between text-green-600">
                             <span className="text-sm">Full Payment Discount ({discountPercent}%):</span>
-                            <span>-₦{(fullPaymentDiscount * 1500).toLocaleString()}</span>
+                            <div className="text-right">
+                              <div>-${fullPaymentDiscount.toFixed(2)}</div>
+                              <div className="text-xs">-₦{(fullPaymentDiscount * exchangeRate).toLocaleString()}</div>
+                            </div>
                           </div>
                           <div className="flex justify-between items-center pt-2 border-t">
                             <span className="font-medium">You Pay:</span>
                             <div className="text-right">
                               <span className="text-2xl font-bold text-green-600">
-                                ₦{(fullPaymentAmount * 1500).toLocaleString()}
+                                ${fullPaymentAmount.toFixed(2)}
                               </span>
+                              <div className="text-lg text-green-600 font-semibold">
+                                ₦{(fullPaymentAmount * exchangeRate).toLocaleString()}
+                              </div>
                               <div className="text-sm text-green-600">
-                                You save ₦{(fullPaymentDiscount * 1500).toLocaleString()}!
+                                You save ₦{(fullPaymentDiscount * exchangeRate).toLocaleString()}!
                               </div>
                             </div>
                           </div>
@@ -384,15 +452,25 @@ export default function PaymentPage() {
                         <div className="space-y-2">
                           <div className="flex justify-between text-blue-600">
                             <span className="text-sm">Upfront Payment (50%):</span>
-                            <span className="font-medium">₦{(splitAmount * 1500).toLocaleString()}</span>
+                            <div className="text-right">
+                              <div className="font-medium">${splitAmount.toFixed(2)}</div>
+                              <div className="text-sm">₦{(splitAmount * exchangeRate).toLocaleString()}</div>
+                            </div>
                           </div>
                           <div className="flex justify-between text-muted-foreground text-sm">
                             <span>Remaining (due on completion):</span>
-                            <span>₦{(splitAmount * 1500).toLocaleString()}</span>
+                            <div className="text-right">
+                              <div>${splitAmount.toFixed(2)}</div>
+                              <div>₦{(splitAmount * exchangeRate).toLocaleString()}</div>
+                            </div>
                           </div>
                         </div>
                       )}
                     </div>
+                  </div>
+
+                  <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                    Exchange rate: $1 = ₦{exchangeRate.toLocaleString()} (updated hourly)
                   </div>
                 </CardContent>
               </Card>
@@ -400,6 +478,7 @@ export default function PaymentPage() {
 
             {/* Payment Options */}
             <div className="lg:col-span-2">
+              {/* Payment Type Selection */}
               <Card className="mb-6">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -431,7 +510,10 @@ export default function PaymentPage() {
                           </div>
                           <div className="space-y-2">
                             <div className="text-2xl font-bold text-blue-600">
-                              ₦{(splitAmount * 1500).toLocaleString()}
+                              ${splitAmount.toFixed(2)}
+                            </div>
+                            <div className="text-lg font-semibold text-blue-600">
+                              ₦{(splitAmount * exchangeRate).toLocaleString()}
                             </div>
                             <div className="text-sm text-muted-foreground">
                               Pay 50% now, 50% on completion
@@ -464,10 +546,13 @@ export default function PaymentPage() {
                           </div>
                           <div className="space-y-2">
                             <div className="text-2xl font-bold text-green-600">
-                              ₦{(fullPaymentAmount * 1500).toLocaleString()}
+                              ${fullPaymentAmount.toFixed(2)}
+                            </div>
+                            <div className="text-lg font-semibold text-green-600">
+                              ₦{(fullPaymentAmount * exchangeRate).toLocaleString()}
                             </div>
                             <div className="text-sm text-green-600">
-                              You save ₦{(fullPaymentDiscount * 1500).toLocaleString()}
+                              You save ₦{(fullPaymentDiscount * exchangeRate).toLocaleString()}
                             </div>
                             <ul className="text-xs text-muted-foreground space-y-1">
                               <li>• {discountPercent}% discount applied</li>
@@ -482,7 +567,7 @@ export default function PaymentPage() {
                 </CardContent>
               </Card>
 
-              {/* Payment Methods - UPDATED FOR NIGERIA */}
+              {/* Payment Methods - NIGERIA FOCUSED */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -518,14 +603,14 @@ export default function PaymentPage() {
                     <div className="flex items-center space-x-3 p-4 border rounded-lg">
                       <RadioGroupItem value="crypto" id="crypto" />
                       <Label htmlFor="crypto" className="flex items-center gap-3 cursor-pointer flex-1">
-                        <Bitcoin className="h-5 w-5 text-orange-600" />
+                        <DollarSign className="h-5 w-5 text-orange-600" />
                         <div>
-                          <div className="font-medium">Cryptocurrency</div>
+                          <div className="font-medium">Cryptocurrency (USDT)</div>
                           <div className="text-sm text-muted-foreground">
-                            Bitcoin (BTC), USDT, Ethereum (ETH) • Global payments
+                            USDT on TRC20 network • Low fees, fast confirmation
                           </div>
                         </div>
-                        <Badge variant="secondary">New</Badge>
+                        <Badge variant="secondary">Active</Badge>
                       </Label>
                     </div>
 
@@ -537,7 +622,7 @@ export default function PaymentPage() {
                         <div>
                           <div className="font-medium">Direct Bank Transfer</div>
                           <div className="text-sm text-muted-foreground">
-                            Manual transfer to our account • 24hr verification
+                            Manual transfer to our USD account • 24hr verification
                           </div>
                         </div>
                       </Label>
@@ -548,8 +633,8 @@ export default function PaymentPage() {
                   <Alert className="mt-6">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                      <strong>Nigerian Payments:</strong> All amounts are displayed in Naira (₦) at current exchange rate. 
-                      Paystack handles currency conversion automatically for international cards.
+                      <strong>Multi-Currency Support:</strong> Pay in USD or Naira equivalent. 
+                      Paystack handles currency conversion automatically. Current rate: $1 = ₦{exchangeRate.toLocaleString()}
                     </AlertDescription>
                   </Alert>
 
@@ -569,71 +654,191 @@ export default function PaymentPage() {
                       </div>
                       <div className="flex justify-between">
                         <span>Total Project Cost:</span>
-                        <span>₦{(totalCost * 1500).toLocaleString()}</span>
+                        <div className="text-right">
+                          <div>${totalCost.toFixed(2)}</div>
+                          <div className="text-xs text-muted-foreground">₦{(totalCost * exchangeRate).toLocaleString()}</div>
+                        </div>
                       </div>
                       {selectedPaymentType === "full" && (
                         <div className="flex justify-between text-green-600">
                           <span>Discount ({discountPercent}%):</span>
-                          <span>-₦{(fullPaymentDiscount * 1500).toLocaleString()}</span>
+                          <div className="text-right">
+                            <div>-${fullPaymentDiscount.toFixed(2)}</div>
+                            <div className="text-xs">-₦{(fullPaymentDiscount * exchangeRate).toLocaleString()}</div>
+                          </div>
                         </div>
                       )}
                       <Separator />
                       <div className="flex justify-between text-lg font-bold">
                         <span>Amount to Pay:</span>
-                        <span>₦{(currentPaymentAmount * 1500).toLocaleString()}</span>
-                      </div>
-                      <div className="text-xs text-muted-foreground text-center">
-                        ≈ ${currentPaymentAmount.toFixed(2)} USD
+                        <div className="text-right">
+                          <div>${currentPaymentAmount.toFixed(2)}</div>
+                          <div className="text-base text-primary">
+                            ₦{(currentPaymentAmount * exchangeRate).toLocaleString()}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Crypto Payment Info */}
-                  {cryptoPaymentInfo && (
+                  {/* Crypto Payment Info Display */}
+                  {cryptoInfo && (
                     <div className="mt-6 p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 rounded-lg">
-                      <h4 className="font-semibold mb-2 flex items-center gap-2">
-                        <Bitcoin className="h-4 w-4" />
-                        Bitcoin Payment Address
+                      <h4 className="font-semibold mb-3 flex items-center gap-2">
+                        <DollarSign className="h-4 w-4" />
+                        USDT Payment Details
                       </h4>
-                      <div className="space-y-2">
-                        <div className="p-2 bg-white dark:bg-gray-800 rounded border font-mono text-sm break-all">
-                          {cryptoPaymentInfo.address}
+                      <div className="space-y-4">
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Payment Address</Label>
+                            <div className="flex items-center gap-2 p-2 bg-white dark:bg-gray-800 rounded border font-mono text-sm break-all">
+                              <span className="flex-1">{cryptoInfo.address}</span>
+                              <Button size="sm" variant="outline" onClick={() => copyToClipboard(cryptoInfo.address)}>
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-center">
+                            <img 
+                              src={cryptoInfo.qrCode} 
+                              alt="Payment QR Code" 
+                              className="w-32 h-32 border rounded-lg"
+                            />
+                          </div>
                         </div>
-                        <div className="flex justify-between text-sm">
-                          <span>Amount:</span>
-                          <span className="font-semibold">{cryptoPaymentInfo.amount} BTC</span>
+
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg border">
+                            <div className="font-semibold">{cryptoInfo.amount} USDT</div>
+                            <div className="text-xs text-muted-foreground">Amount</div>
+                          </div>
+                          <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg border">
+                            <div className="font-semibold">{cryptoInfo.network}</div>
+                            <div className="text-xs text-muted-foreground">Network</div>
+                          </div>
+                          <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg border">
+                            <div className="font-semibold">₦{cryptoInfo.ngnEquivalent}</div>
+                            <div className="text-xs text-muted-foreground">NGN Equivalent</div>
+                          </div>
                         </div>
-                        <p className="text-xs text-orange-700 dark:text-orange-300">
-                          Send exactly this amount to the address above. Payment will be confirmed automatically.
-                        </p>
+
+                        <Alert className="bg-blue-50 dark:bg-blue-950/20 border-blue-200">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription className="text-blue-800 dark:text-blue-200">
+                            <div className="space-y-1">
+                              {cryptoInfo.instructions.map((instruction, index) => (
+                                <div key={index} className="text-sm">• {instruction}</div>
+                              ))}
+                            </div>
+                          </AlertDescription>
+                        </Alert>
+
+                        <div className="flex gap-2">
+                          <Button variant="outline" onClick={() => window.open(`https://tronscan.org/#/address/${cryptoInfo.address}`, '_blank')}>
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            View on TronScan
+                          </Button>
+                          <Button variant="outline" onClick={() => copyToClipboard(cryptoInfo.address)}>
+                            <Copy className="mr-2 h-4 w-4" />
+                            Copy Address
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Bank Transfer Details Display */}
+                  {bankDetails && (
+                    <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 rounded-lg">
+                      <h4 className="font-semibold mb-3 flex items-center gap-2">
+                        <Building className="h-4 w-4" />
+                        Bank Transfer Details
+                      </h4>
+                      <div className="space-y-4">
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-3">
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Bank Name</Label>
+                              <div className="font-semibold">{bankDetails.bankName}</div>
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Account Name</Label>
+                              <div className="font-semibold">{bankDetails.accountName}</div>
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Account Number</Label>
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono font-semibold">{bankDetails.accountNumber}</span>
+                                <Button size="sm" variant="outline" onClick={() => copyToClipboard(bankDetails.accountNumber)}>
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="space-y-3">
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Amount</Label>
+                              <div className="font-semibold">${bankDetails.amount.toFixed(2)} USD</div>
+                              <div className="text-sm text-muted-foreground">≈ ₦{bankDetails.ngnAmount}</div>
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Reference</Label>
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono text-sm">{bankDetails.reference}</span>
+                                <Button size="sm" variant="outline" onClick={() => copyToClipboard(bankDetails.reference)}>
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <Alert className="bg-green-50 dark:bg-green-950/20 border-green-200">
+                          <CheckCircle className="h-4 w-4" />
+                          <AlertDescription className="text-green-800 dark:text-green-200">
+                            <div className="space-y-1">
+                              {bankDetails.instructions.map((instruction, index) => (
+                                <div key={index} className="text-sm">• {instruction}</div>
+                              ))}
+                            </div>
+                          </AlertDescription>
+                        </Alert>
                       </div>
                     </div>
                   )}
 
                   {/* Payment Button */}
-                  <Button
-                    onClick={handlePayment}
-                    disabled={isProcessing}
-                    className="w-full mt-6"
-                    size="lg"
-                  >
-                    {isProcessing ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                        Processing Payment...
-                      </>
-                    ) : selectedPaymentMethod === "crypto" ? (
-                      <>
-                        <Bitcoin className="mr-2 h-5 w-5" />
-                        Generate Crypto Address
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle className="mr-2 h-5 w-5" />
-                        Pay ₦{(currentPaymentAmount * 1500).toLocaleString()} with {selectedPaymentMethod.replace("_", " ").toUpperCase()}
-                      </>
-                    )}
-                  </Button>
+                  {!cryptoInfo && !bankDetails && (
+                    <Button
+                      onClick={handlePayment}
+                      disabled={isProcessing}
+                      className="w-full mt-6"
+                      size="lg"
+                    >
+                      {isProcessing ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                          Processing Payment...
+                        </>
+                      ) : selectedPaymentMethod === "crypto" ? (
+                        <>
+                          <DollarSign className="mr-2 h-5 w-5" />
+                          Generate USDT Payment
+                        </>
+                      ) : selectedPaymentMethod === "bank_transfer" ? (
+                        <>
+                          <Building className="mr-2 h-5 w-5" />
+                          Get Bank Details
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="mr-2 h-5 w-5" />
+                          Pay ₦{(currentPaymentAmount * exchangeRate).toLocaleString()} with Paystack
+                        </>
+                      )}
+                    </Button>
+                  )}
 
                   <div className="mt-4 text-center text-sm text-muted-foreground">
                     <div className="flex items-center justify-center gap-2 mb-2">
@@ -641,7 +846,7 @@ export default function PaymentPage() {
                       <span>Your payment is secured with bank-grade encryption</span>
                     </div>
                     <p>
-                      By proceeding, you agree to our terms of service and privacy policy.
+                      Exchange rate updates hourly. By proceeding, you agree to our terms of service.
                     </p>
                   </div>
                 </CardContent>
