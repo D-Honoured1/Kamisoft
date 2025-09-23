@@ -1,4 +1,59 @@
 // app/api/admin/payments/[id]/route.ts - Update specific payment
+export const dynamic = "force-dynamic"
+
+import { NextResponse } from "next/server"
+import { createClient } from "@supabase/supabase-js"
+import { getAdminUser } from "@/lib/auth/server-auth"
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+)
+
+export async function GET(req: Request, { params }: { params: { id: string } }) {
+  try {
+    // Check admin authentication
+    const adminUser = await getAdminUser()
+    if (!adminUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { data: payment, error } = await supabaseAdmin
+      .from("payments")
+      .select(`
+        *,
+        service_requests (
+          id,
+          title,
+          estimated_cost,
+          clients (
+            id,
+            name,
+            email,
+            company
+          )
+        )
+      `)
+      .eq("id", params.id)
+      .single()
+
+    if (error || !payment) {
+      return NextResponse.json({ error: "Payment not found" }, { status: 404 })
+    }
+
+    return NextResponse.json(payment)
+  } catch (error) {
+    console.error("Error fetching payment:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}
+
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   try {
     // Check admin authentication

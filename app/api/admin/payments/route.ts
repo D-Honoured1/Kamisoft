@@ -1,4 +1,4 @@
-/ app/api/admin/payments/route.ts - Get payments for a request
+// app/api/admin/payments/route.ts - Get payments for a request
 export const dynamic = "force-dynamic"
 
 import { NextResponse } from "next/server"
