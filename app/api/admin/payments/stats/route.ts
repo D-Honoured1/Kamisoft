@@ -1,4 +1,4 @@
-// app/api/admin/payments/stats/route.ts - Payment Statistics API
+// app/api/admin/payments/stats/route.ts - Payment Statistics API - FIXED
 export const dynamic = "force-dynamic"
 
 import { NextResponse } from "next/server"
@@ -34,6 +34,7 @@ export async function GET() {
         amount,
         payment_status,
         payment_method,
+        payment_type,
         created_at,
         updated_at
       `)
@@ -64,6 +65,10 @@ export async function GET() {
         paystack: 0,
         bank_transfer: 0,
         other: 0
+      },
+      paymentTypes: {
+        split: 0,
+        full: 0
       },
       monthlyTrend: [] as Array<{
         month: string,
@@ -119,6 +124,16 @@ export async function GET() {
           default:
             stats.paymentMethods.other++
         }
+
+        // Payment type counts
+        switch (payment.payment_type) {
+          case "split":
+            stats.paymentTypes.split++
+            break
+          case "full":
+            stats.paymentTypes.full++
+            break
+        }
       })
 
       // Calculate derived stats
@@ -131,4 +146,51 @@ export async function GET() {
         : 0
 
       // Generate monthly trend (last 6 months)
-      const monthlyData: { [key: string]: {
+      const monthlyData: { [key: string]: { revenue: number; count: number } } = {}
+      
+      // Initialize last 6 months
+      for (let i = 5; i >= 0; i--) {
+        const date = new Date()
+        date.setMonth(date.getMonth() - i)
+        const monthKey = date.toISOString().substring(0, 7) // YYYY-MM format
+        monthlyData[monthKey] = { revenue: 0, count: 0 }
+      }
+
+      // Populate with actual data
+      payments.forEach(payment => {
+        if (payment.payment_status === "paid" || payment.payment_status === "confirmed") {
+          const monthKey = payment.created_at.substring(0, 7)
+          if (monthlyData[monthKey]) {
+            monthlyData[monthKey].revenue += payment.amount || 0
+            monthlyData[monthKey].count += 1
+          }
+        }
+      })
+
+      // Convert to array format
+      stats.monthlyTrend = Object.entries(monthlyData).map(([month, data]) => ({
+        month,
+        revenue: data.revenue,
+        count: data.count
+      }))
+    }
+
+    console.log("Payment statistics calculated:", {
+      totalPayments: stats.totalPayments,
+      totalRevenue: stats.totalRevenue,
+      pendingAmount: stats.pendingAmount
+    })
+
+    return NextResponse.json({
+      success: true,
+      statistics: stats,
+      lastUpdated: new Date().toISOString()
+    })
+  } catch (error: any) {
+    console.error("Payment statistics error:", error)
+    return NextResponse.json({
+      error: "Failed to generate payment statistics",
+      details: error.message
+    }, { status: 500 })
+  }
+}
