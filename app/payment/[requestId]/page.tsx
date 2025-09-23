@@ -1,4 +1,4 @@
-// app/payment/[requestId]/page.tsx - SIMPLIFIED AND FIXED VERSION
+// app/payment/[requestId]/page.tsx - UPDATED FOR NIGERIA PAYMENTS
 "use client"
 
 import { useState, useEffect } from "react"
@@ -12,7 +12,6 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { 
   CreditCard, 
-  Wallet, 
   Building, 
   CheckCircle, 
   Clock, 
@@ -24,11 +23,13 @@ import {
   Tag,
   Star,
   ArrowRight,
-  RefreshCw
+  RefreshCw,
+  Smartphone,
+  Bitcoin
 } from "lucide-react"
 import { SERVICE_CATEGORIES } from "@/lib/constants/services"
 
-type PaymentMethod = "stripe" | "paystack" | "bank_transfer"
+type PaymentMethod = "paystack" | "bank_transfer" | "crypto"
 type PaymentType = "split" | "full"
 
 interface ServiceRequest {
@@ -59,7 +60,7 @@ export default function PaymentPage() {
   const requestId = params.requestId as string
 
   const [serviceRequest, setServiceRequest] = useState<ServiceRequest | null>(null)
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>("stripe")
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>("paystack")
   const [selectedPaymentType, setSelectedPaymentType] = useState<PaymentType>("split")
   const [isLoading, setIsLoading] = useState(true)
   const [isProcessing, setIsProcessing] = useState(false)
@@ -73,7 +74,6 @@ export default function PaymentPage() {
     fetchServiceRequest()
   }, [requestId])
 
-  // Timer for link expiry
   useEffect(() => {
     if (!serviceRequest?.payment_link_expiry) return
 
@@ -114,7 +114,6 @@ export default function PaymentPage() {
       
       const data = await response.json()
 
-      // Basic validation
       if (data.status !== "approved") {
         setError(`Payment not available. Request status: ${data.status}`)
         return
@@ -125,7 +124,6 @@ export default function PaymentPage() {
         return
       }
 
-      // Check if payment link has expired
       if (data.payment_link_expiry) {
         const expiryTime = new Date(data.payment_link_expiry)
         const currentTime = new Date()
@@ -136,7 +134,6 @@ export default function PaymentPage() {
         }
       }
 
-      // Check for existing successful payments
       if (data.payments?.some((p: any) => 
         p.payment_status === "paid" || 
         p.payment_status === "confirmed" || 
@@ -158,7 +155,6 @@ export default function PaymentPage() {
   const handlePayment = async () => {
     if (!serviceRequest) return
 
-    // Check expiry before processing
     if (serviceRequest.payment_link_expiry) {
       const expiryTime = new Date(serviceRequest.payment_link_expiry)
       const currentTime = new Date()
@@ -207,10 +203,13 @@ export default function PaymentPage() {
         throw new Error(errorData.error || errorData.details || "Payment processing failed")
       }
 
-      const { checkoutUrl, message } = await response.json()
+      const { checkoutUrl, message, cryptoAddress, cryptoAmount } = await response.json()
 
       if (checkoutUrl) {
         window.location.href = checkoutUrl
+      } else if (cryptoAddress) {
+        // Handle crypto payment display
+        setCryptoPaymentInfo({ address: cryptoAddress, amount: cryptoAmount })
       } else if (message) {
         alert(message)
       }
@@ -222,10 +221,12 @@ export default function PaymentPage() {
     }
   }
 
-  // Loading state
+  const [cryptoPaymentInfo, setCryptoPaymentInfo] = useState<{address: string, amount: number} | null>(null)
+
+  // Loading and error states remain the same...
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-orange-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
         <Card className="shadow-2xl border-0 bg-white/80 backdrop-blur-sm max-w-md w-full">
           <CardContent className="p-8 text-center">
             <div className="animate-spin rounded-full h-10 w-10 border-3 border-primary border-t-transparent mx-auto mb-4"></div>
@@ -237,7 +238,6 @@ export default function PaymentPage() {
     )
   }
 
-  // Error state
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 dark:from-gray-900 dark:via-red-900/20 dark:to-gray-900 flex items-center justify-center p-4">
@@ -284,7 +284,6 @@ export default function PaymentPage() {
     )
   }
 
-  // Main payment interface
   if (!serviceRequest) return null
 
   const serviceCategory = SERVICE_CATEGORIES[serviceRequest.service_category as keyof typeof SERVICE_CATEGORIES]
@@ -296,7 +295,7 @@ export default function PaymentPage() {
   const currentPaymentAmount = selectedPaymentType === "split" ? splitAmount : fullPaymentAmount
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-orange-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
@@ -317,7 +316,7 @@ export default function PaymentPage() {
           </div>
 
           <div className="grid lg:grid-cols-3 gap-8">
-            {/* Service Details */}
+            {/* Service Details - Same as before */}
             <div className="lg:col-span-1">
               <Card className="sticky top-8">
                 <CardHeader>
@@ -360,22 +359,22 @@ export default function PaymentPage() {
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-sm">Estimated Cost:</span>
-                        <span className="font-medium">${totalCost.toFixed(2)}</span>
+                        <span className="font-medium">₦{(totalCost * 1500).toLocaleString()}</span>
                       </div>
                       {selectedPaymentType === "full" && (
                         <>
                           <div className="flex justify-between text-green-600">
                             <span className="text-sm">Full Payment Discount ({discountPercent}%):</span>
-                            <span>-${fullPaymentDiscount.toFixed(2)}</span>
+                            <span>-₦{(fullPaymentDiscount * 1500).toLocaleString()}</span>
                           </div>
                           <div className="flex justify-between items-center pt-2 border-t">
                             <span className="font-medium">You Pay:</span>
                             <div className="text-right">
                               <span className="text-2xl font-bold text-green-600">
-                                ${fullPaymentAmount.toFixed(2)}
+                                ₦{(fullPaymentAmount * 1500).toLocaleString()}
                               </span>
                               <div className="text-sm text-green-600">
-                                You save ${fullPaymentDiscount.toFixed(2)}!
+                                You save ₦{(fullPaymentDiscount * 1500).toLocaleString()}!
                               </div>
                             </div>
                           </div>
@@ -385,11 +384,11 @@ export default function PaymentPage() {
                         <div className="space-y-2">
                           <div className="flex justify-between text-blue-600">
                             <span className="text-sm">Upfront Payment (50%):</span>
-                            <span className="font-medium">${splitAmount.toFixed(2)}</span>
+                            <span className="font-medium">₦{(splitAmount * 1500).toLocaleString()}</span>
                           </div>
                           <div className="flex justify-between text-muted-foreground text-sm">
                             <span>Remaining (due on completion):</span>
-                            <span>${splitAmount.toFixed(2)}</span>
+                            <span>₦{(splitAmount * 1500).toLocaleString()}</span>
                           </div>
                         </div>
                       )}
@@ -432,7 +431,7 @@ export default function PaymentPage() {
                           </div>
                           <div className="space-y-2">
                             <div className="text-2xl font-bold text-blue-600">
-                              ${splitAmount.toFixed(2)}
+                              ₦{(splitAmount * 1500).toLocaleString()}
                             </div>
                             <div className="text-sm text-muted-foreground">
                               Pay 50% now, 50% on completion
@@ -465,10 +464,10 @@ export default function PaymentPage() {
                           </div>
                           <div className="space-y-2">
                             <div className="text-2xl font-bold text-green-600">
-                              ${fullPaymentAmount.toFixed(2)}
+                              ₦{(fullPaymentAmount * 1500).toLocaleString()}
                             </div>
                             <div className="text-sm text-green-600">
-                              You save ${fullPaymentDiscount.toFixed(2)}
+                              You save ₦{(fullPaymentDiscount * 1500).toLocaleString()}
                             </div>
                             <ul className="text-xs text-muted-foreground space-y-1">
                               <li>• {discountPercent}% discount applied</li>
@@ -483,7 +482,7 @@ export default function PaymentPage() {
                 </CardContent>
               </Card>
 
-              {/* Payment Methods */}
+              {/* Payment Methods - UPDATED FOR NIGERIA */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -500,48 +499,59 @@ export default function PaymentPage() {
                     onValueChange={(value) => setSelectedPaymentMethod(value as PaymentMethod)}
                     className="space-y-4"
                   >
-                    {/* Stripe */}
-                    <div className="flex items-center space-x-3 p-4 border rounded-lg">
-                      <RadioGroupItem value="stripe" id="stripe" />
-                      <Label htmlFor="stripe" className="flex items-center gap-3 cursor-pointer flex-1">
-                        <CreditCard className="h-5 w-5 text-blue-600" />
-                        <div>
-                          <div className="font-medium">Credit/Debit Card</div>
-                          <div className="text-sm text-muted-foreground">
-                            Visa, MasterCard, American Express • Powered by Stripe
-                          </div>
-                        </div>
-                      </Label>
-                    </div>
-
-                    {/* Paystack */}
+                    {/* Paystack - PRIMARY METHOD FOR NIGERIA */}
                     <div className="flex items-center space-x-3 p-4 border rounded-lg">
                       <RadioGroupItem value="paystack" id="paystack" />
                       <Label htmlFor="paystack" className="flex items-center gap-3 cursor-pointer flex-1">
-                        <Wallet className="h-5 w-5 text-green-600" />
+                        <CreditCard className="h-5 w-5 text-green-600" />
                         <div>
-                          <div className="font-medium">Paystack</div>
+                          <div className="font-medium">Paystack - Cards & Bank Transfer</div>
                           <div className="text-sm text-muted-foreground">
-                            Cards, Bank Transfer, USSD • Nigeria & Global
+                            Visa, MasterCard, Verve, Bank Transfer, USSD • Secure Nigerian payments
                           </div>
                         </div>
+                        <Badge className="bg-green-100 text-green-800">Recommended</Badge>
                       </Label>
                     </div>
 
-                    {/* Bank Transfer */}
+                    {/* Cryptocurrency */}
+                    <div className="flex items-center space-x-3 p-4 border rounded-lg">
+                      <RadioGroupItem value="crypto" id="crypto" />
+                      <Label htmlFor="crypto" className="flex items-center gap-3 cursor-pointer flex-1">
+                        <Bitcoin className="h-5 w-5 text-orange-600" />
+                        <div>
+                          <div className="font-medium">Cryptocurrency</div>
+                          <div className="text-sm text-muted-foreground">
+                            Bitcoin (BTC), USDT, Ethereum (ETH) • Global payments
+                          </div>
+                        </div>
+                        <Badge variant="secondary">New</Badge>
+                      </Label>
+                    </div>
+
+                    {/* Manual Bank Transfer */}
                     <div className="flex items-center space-x-3 p-4 border rounded-lg">
                       <RadioGroupItem value="bank_transfer" id="bank_transfer" />
                       <Label htmlFor="bank_transfer" className="flex items-center gap-3 cursor-pointer flex-1">
-                        <Building className="h-5 w-5 text-purple-600" />
+                        <Building className="h-5 w-5 text-blue-600" />
                         <div>
-                          <div className="font-medium">Bank Transfer</div>
+                          <div className="font-medium">Direct Bank Transfer</div>
                           <div className="text-sm text-muted-foreground">
-                            Direct transfer • Instructions via email
+                            Manual transfer to our account • 24hr verification
                           </div>
                         </div>
                       </Label>
                     </div>
                   </RadioGroup>
+
+                  {/* Nigerian Currency Notice */}
+                  <Alert className="mt-6">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      <strong>Nigerian Payments:</strong> All amounts are displayed in Naira (₦) at current exchange rate. 
+                      Paystack handles currency conversion automatically for international cards.
+                    </AlertDescription>
+                  </Alert>
 
                   {/* Payment Summary */}
                   <div className="mt-8 p-6 bg-muted/30 rounded-lg">
@@ -559,21 +569,46 @@ export default function PaymentPage() {
                       </div>
                       <div className="flex justify-between">
                         <span>Total Project Cost:</span>
-                        <span>${totalCost.toFixed(2)}</span>
+                        <span>₦{(totalCost * 1500).toLocaleString()}</span>
                       </div>
                       {selectedPaymentType === "full" && (
                         <div className="flex justify-between text-green-600">
                           <span>Discount ({discountPercent}%):</span>
-                          <span>-${fullPaymentDiscount.toFixed(2)}</span>
+                          <span>-₦{(fullPaymentDiscount * 1500).toLocaleString()}</span>
                         </div>
                       )}
                       <Separator />
                       <div className="flex justify-between text-lg font-bold">
                         <span>Amount to Pay:</span>
-                        <span>${currentPaymentAmount.toFixed(2)}</span>
+                        <span>₦{(currentPaymentAmount * 1500).toLocaleString()}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground text-center">
+                        ≈ ${currentPaymentAmount.toFixed(2)} USD
                       </div>
                     </div>
                   </div>
+
+                  {/* Crypto Payment Info */}
+                  {cryptoPaymentInfo && (
+                    <div className="mt-6 p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 rounded-lg">
+                      <h4 className="font-semibold mb-2 flex items-center gap-2">
+                        <Bitcoin className="h-4 w-4" />
+                        Bitcoin Payment Address
+                      </h4>
+                      <div className="space-y-2">
+                        <div className="p-2 bg-white dark:bg-gray-800 rounded border font-mono text-sm break-all">
+                          {cryptoPaymentInfo.address}
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span>Amount:</span>
+                          <span className="font-semibold">{cryptoPaymentInfo.amount} BTC</span>
+                        </div>
+                        <p className="text-xs text-orange-700 dark:text-orange-300">
+                          Send exactly this amount to the address above. Payment will be confirmed automatically.
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Payment Button */}
                   <Button
@@ -587,10 +622,15 @@ export default function PaymentPage() {
                         <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
                         Processing Payment...
                       </>
+                    ) : selectedPaymentMethod === "crypto" ? (
+                      <>
+                        <Bitcoin className="mr-2 h-5 w-5" />
+                        Generate Crypto Address
+                      </>
                     ) : (
                       <>
                         <CheckCircle className="mr-2 h-5 w-5" />
-                        Pay ${currentPaymentAmount.toFixed(2)} with {selectedPaymentMethod.replace("_", " ").toUpperCase()}
+                        Pay ₦{(currentPaymentAmount * 1500).toLocaleString()} with {selectedPaymentMethod.replace("_", " ").toUpperCase()}
                       </>
                     )}
                   </Button>
@@ -598,7 +638,7 @@ export default function PaymentPage() {
                   <div className="mt-4 text-center text-sm text-muted-foreground">
                     <div className="flex items-center justify-center gap-2 mb-2">
                       <Shield className="h-4 w-4" />
-                      <span>Your payment is secured with 256-bit SSL encryption</span>
+                      <span>Your payment is secured with bank-grade encryption</span>
                     </div>
                     <p>
                       By proceeding, you agree to our terms of service and privacy policy.

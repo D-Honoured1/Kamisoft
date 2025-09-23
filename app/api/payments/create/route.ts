@@ -1,7 +1,10 @@
-// app/api/payments/create/route.ts - FIXED VERSION WITH PROPER STRIPE CONFIG
+// app/api/payments/create/route.ts - NIGERIA-FOCUSED VERSION
 export const dynamic = "force-dynamic"
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
+
+// Exchange rate API endpoint (you can replace with your preferred provider)
+const EXCHANGE_RATE_API = "https://api.exchangerate-api.com/v4/latest/USD"
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,6 +24,14 @@ export async function POST(request: NextRequest) {
     if (!['split', 'full'].includes(paymentType)) {
       return NextResponse.json({ 
         error: "Invalid payment type. Must be 'split' or 'full'" 
+      }, { status: 400 })
+    }
+
+    // Validate payment method (removed stripe)
+    const validPaymentMethods = ['paystack', 'bank_transfer', 'crypto']
+    if (!validPaymentMethods.includes(paymentMethod)) {
+      return NextResponse.json({ 
+        error: "Invalid payment method. Supported: paystack, bank_transfer, crypto" 
       }, { status: 400 })
     }
 
@@ -68,11 +79,11 @@ export async function POST(request: NextRequest) {
     const paymentData = {
       request_id: requestId,
       amount: amount,
-      currency: "USD",
+      currency: paymentMethod === 'crypto' ? 'USDT' : 'USD',
       payment_method: paymentMethod,
-      payment_status: "pending", // Always start as pending
-      payment_type: paymentType, // Store payment type
-      metadata: JSON.stringify(metadata) // Store metadata as JSON
+      payment_status: "pending",
+      payment_type: paymentType,
+      metadata: JSON.stringify(metadata)
     }
 
     console.log("Creating payment record:", paymentData)
@@ -94,22 +105,20 @@ export async function POST(request: NextRequest) {
     console.log("Payment record created:", payment.id)
 
     let checkoutUrl = null
+    let cryptoAddress = null
 
     // Handle different payment methods
     try {
       switch (paymentMethod) {
-        case "stripe":
-          checkoutUrl = await createStripeCheckout(payment.id, amount, serviceRequest, paymentType, metadata)
-          break
         case "paystack":
           checkoutUrl = await createPaystackCheckout(payment.id, amount, serviceRequest, paymentType, metadata)
           break
         case "bank_transfer":
-          // Send bank transfer instructions via email
           await sendBankTransferInstructions(serviceRequest.clients.email, payment.id, amount, paymentType, metadata)
           break
         case "crypto":
-          return NextResponse.json({ error: "Cryptocurrency payments not yet supported" }, { status: 400 })
+          cryptoAddress = await generateCryptoAddress(payment.id, amount, serviceRequest, paymentType)
+          break
         default:
           return NextResponse.json({ error: "Invalid payment method" }, { status: 400 })
       }
@@ -135,11 +144,11 @@ export async function POST(request: NextRequest) {
       success: true,
       paymentId: payment.id,
       checkoutUrl,
+      cryptoAddress,
       paymentType,
       amount,
-      message: paymentMethod === "bank_transfer"
-        ? "Bank transfer instructions sent to your email"
-        : "Payment session created successfully",
+      currency: paymentMethod === 'crypto' ? 'USDT' : 'USD',
+      message: getPaymentMethodMessage(paymentMethod),
     })
   } catch (error: any) {
     console.error("Error creating payment:", error)
@@ -148,72 +157,6 @@ export async function POST(request: NextRequest) {
       details: error.message,
       message: "Please try again or contact support if the problem persists"
     }, { status: 500 })
-  }
-}
-
-async function createStripeCheckout(
-  paymentId: string, 
-  amount: number, 
-  serviceRequest: any, 
-  paymentType: string,
-  metadata: any
-) {
-  try {
-    // Check if Stripe is properly configured
-    if (!process.env.STRIPE_SECRET_KEY) {
-      console.error("Stripe secret key not configured")
-      throw new Error("Payment system configuration error. Please contact support.")
-    }
-
-    // Import Stripe dynamically to avoid issues
-    const { default: Stripe } = await import('stripe')
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: '2023-10-16',
-      typescript: true,
-    })
-
-    // Create descriptive payment description
-    const paymentDescription = paymentType === "split" 
-      ? `50% upfront payment for ${serviceRequest.title}`
-      : `Full payment with discount for ${serviceRequest.title}`
-
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [{
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: serviceRequest.title,
-            description: paymentDescription,
-          },
-          unit_amount: Math.round(amount * 100), // Stripe uses cents
-        },
-        quantity: 1,
-      }],
-      mode: 'payment',
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/success?payment_id=${paymentId}&type=${paymentType}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/cancelled?payment_id=${paymentId}`,
-      metadata: {
-        paymentId: paymentId,
-        requestId: serviceRequest.id,
-        clientEmail: serviceRequest.clients.email,
-        paymentType: paymentType,
-      },
-      customer_email: serviceRequest.clients.email,
-      expires_at: Math.floor(Date.now() / 1000) + (30 * 60), // 30 minutes expiry
-    })
-
-    // Store Stripe session ID for tracking
-    const supabase = createServerClient()
-    await supabase
-      .from("payments")
-      .update({ stripe_payment_intent_id: session.id })
-      .eq("id", paymentId)
-
-    return session.url
-  } catch (error: any) {
-    console.error("Stripe checkout creation failed:", error)
-    throw new Error("Payment processing temporarily unavailable. Please try again or use a different payment method.")
   }
 }
 
@@ -242,8 +185,8 @@ async function createPaystackCheckout(
       },
       body: JSON.stringify({
         email: serviceRequest.clients.email,
-        amount: Math.round(amount * 100), // Paystack uses kobo
-        currency: 'USD',
+        amount: Math.round(amount * 100), // Paystack uses kobo for NGN, cents for USD
+        currency: 'USD', // Changed to USD since you're charging in USD
         reference: `KE_${paymentType}_${paymentId}_${Date.now()}`,
         callback_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/success?payment_id=${paymentId}&type=${paymentType}`,
         metadata: {
@@ -253,7 +196,7 @@ async function createPaystackCheckout(
           serviceTitle: serviceRequest.title,
           paymentType: paymentType,
         },
-        channels: ['card', 'bank', 'ussd', 'qr', 'mobile_money', 'bank_transfer']
+        channels: ['card', 'bank', 'ussd', 'mobile_money', 'bank_transfer'] // Nigerian payment methods
       })
     })
 
@@ -299,14 +242,14 @@ async function sendBankTransferInstructions(
 
     const instructions = {
       bankName: "First Bank of Nigeria",
-      accountNumber: "1234567890",
-      accountName: "Kamisoft Enterprises",
+      accountNumber: "3050505050", // Replace with your actual account
+      accountName: "Kamisoft Enterprises Limited",
       amount: amount,
       reference: `KE_BANK_${paymentType.toUpperCase()}_${paymentId}`,
       paymentType: paymentTypeDescription,
       instructions: [
         "Transfer the exact amount to the account details provided",
-        "Use the reference number in your transfer description",
+        "Use the reference number in your transfer description/narration",
         "Send proof of payment to hello@kamisoftenterprises.online",
         "Payment will be verified within 24 hours",
         paymentType === 'full' 
@@ -320,5 +263,62 @@ async function sendBankTransferInstructions(
   } catch (error) {
     console.error("Failed to send bank transfer instructions:", error)
     throw new Error("Failed to send payment instructions. Please contact support.")
+  }
+}
+
+async function generateCryptoAddress(
+  paymentId: string, 
+  amount: number, 
+  serviceRequest: any, 
+  paymentType: string
+) {
+  try {
+    // For now, return a static USDT address
+    // In production, you'd integrate with a crypto payment processor like:
+    // - CoinPayments, BitPay, or Coinbase Commerce
+    // - Generate unique addresses for each payment
+    
+    const cryptoInfo = {
+      currency: "USDT",
+      network: "TRC20", // Tron network (lower fees)
+      address: "TYourUSDTAddressHere123456789", // Replace with your actual USDT address
+      amount: amount,
+      qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=TYourUSDTAddressHere123456789`,
+      instructions: [
+        `Send exactly ${amount} USDT to the address above`,
+        "Use TRC20 network (Tron) for lower fees",
+        "Send transaction hash to hello@kamisoftenterprises.online",
+        "Payment will be verified within 1 hour",
+        "Do not send any other cryptocurrency to this address"
+      ]
+    }
+
+    // Store crypto info for tracking
+    const supabase = createServerClient()
+    await supabase
+      .from("payments")
+      .update({ 
+        crypto_address: cryptoInfo.address,
+        crypto_network: cryptoInfo.network 
+      })
+      .eq("id", paymentId)
+
+    return cryptoInfo
+  } catch (error) {
+    console.error("Failed to generate crypto address:", error)
+    throw new Error("Crypto payment setup failed. Please try another payment method.")
+  }
+}
+
+function getPaymentMethodMessage(method: string): string {
+  switch (method) {
+    case 'paystack':
+      return "Redirecting to Paystack for secure payment"
+    case 'bank_transfer':
+      return "Bank transfer instructions sent to your email"
+    case 'crypto':
+      return "Cryptocurrency payment address generated"
+    default:
+      return "Payment session created successfully"
   }
 }
