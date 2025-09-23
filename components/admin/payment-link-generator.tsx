@@ -1,4 +1,4 @@
-// components/admin/payment-link-generator.tsx - FIXED VERSION
+// components/admin/payment-link-generator.tsx - TASK 1: REMOVED RADIO BUTTONS
 "use client"
 
 import { useState } from "react"
@@ -8,9 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Separator } from "@/components/ui/separator"
-import { Copy, ExternalLink, Mail, DollarSign, CheckCircle, Percent } from "lucide-react"
+import { Copy, ExternalLink, Mail, DollarSign, CheckCircle, Percent, Clock } from "lucide-react"
 
 interface PaymentLinkGeneratorProps {
   requestId: string
@@ -28,10 +26,10 @@ export function PaymentLinkGenerator({
   status 
 }: PaymentLinkGeneratorProps) {
   const [estimatedCost, setEstimatedCost] = useState(currentCost?.toString() || "")
-  const [paymentType, setPaymentType] = useState<"split" | "full">("split")
-  const [fullPaymentDiscount, setFullPaymentDiscount] = useState("10") // Default 10% discount
+  const [fullPaymentDiscount, setFullPaymentDiscount] = useState("10") // Admin sets this discount
   const [isGenerating, setIsGenerating] = useState(false)
   const [paymentLink, setPaymentLink] = useState("")
+  const [linkExpiry, setLinkExpiry] = useState("")
   const [error, setError] = useState("")
 
   const canGeneratePayment = status === "approved" && estimatedCost && parseFloat(estimatedCost) > 0
@@ -49,30 +47,40 @@ export function PaymentLinkGenerator({
     setError("")
 
     try {
-      // Only update estimated_cost if it's different from current cost
+      // Update estimated_cost and discount in the database
+      const updateData: any = {}
+      
       if (cost !== currentCost) {
-        console.log("Updating estimated cost from", currentCost, "to", cost)
-        
+        updateData.estimated_cost = cost
+      }
+      
+      // Store the admin's discount setting (we'll need to add this field to the database)
+      updateData.admin_discount_percent = discountPercent
+      
+      // Add link expiry timestamp (1 hour from now)
+      const expiryTime = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+      updateData.payment_link_expiry = expiryTime.toISOString()
+      
+      if (Object.keys(updateData).length > 0) {
         const updateResponse = await fetch(`/api/service-requests/${requestId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            estimated_cost: cost
-          }),
+          body: JSON.stringify(updateData),
         })
 
         if (!updateResponse.ok) {
           const errorData = await updateResponse.json()
-          console.error("Failed to update estimated cost:", errorData)
-          throw new Error("Failed to update estimated cost")
+          console.error("Failed to update service request:", errorData)
+          throw new Error("Failed to update service request")
         }
         
-        console.log("Estimated cost updated successfully")
+        console.log("Service request updated successfully")
       }
 
-      // Generate the payment link (no complex service request updates)
+      // Generate the payment link (simple URL without sensitive data)
       const link = `${window.location.origin}/payment/${requestId}`
       setPaymentLink(link)
+      setLinkExpiry(expiryTime.toLocaleString())
 
     } catch (error: any) {
       console.error("Error generating payment link:", error)
@@ -103,7 +111,7 @@ export function PaymentLinkGenerator({
           Payment Link Generation
         </CardTitle>
         <CardDescription>
-          Generate secure payment link with flexible payment options
+          Generate secure payment link - client will choose between split or full payment
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -143,137 +151,71 @@ export function PaymentLinkGenerator({
             onChange={(e) => setEstimatedCost(e.target.value)}
             disabled={isGenerating}
           />
+          {cost !== currentCost && cost > 0 && (
+            <p className="text-xs text-amber-600">
+              This will update the estimated cost from ${currentCost?.toFixed(2) || '0.00'} to ${cost.toFixed(2)}
+            </p>
+          )}
+        </div>
+
+        {/* Discount Setting - REMOVED RADIO BUTTONS, JUST INPUT */}
+        <div className="space-y-2">
+          <Label htmlFor="discount">Full Payment Discount (%)</Label>
+          <div className="flex items-center gap-2">
+            <Input
+              id="discount"
+              type="number"
+              min="0"
+              max="50"
+              step="0.5"
+              value={fullPaymentDiscount}
+              onChange={(e) => setFullPaymentDiscount(e.target.value)}
+              className="w-24"
+              disabled={isGenerating}
+            />
+            <Percent className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">
+              discount for full payment option
+            </span>
+          </div>
           <p className="text-xs text-muted-foreground">
-            {cost !== currentCost && cost > 0 && (
-              <span className="text-amber-600">
-                This will update the estimated cost from ${currentCost?.toFixed(2) || '0.00'} to ${cost.toFixed(2)}
-              </span>
-            )}
+            Client will see both split and full payment options with this discount applied to full payment
           </p>
         </div>
 
-        {/* Payment Options Preview */}
+        {/* Payment Preview - SIMPLIFIED WITHOUT RADIO BUTTONS */}
         {cost > 0 && (
-          <div className="space-y-4 p-4 border rounded-lg">
-            <Label>Payment Options Preview</Label>
+          <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
+            <Label>Payment Options Preview (Client will see both)</Label>
             
-            {/* Debug info */}
-            <div className="text-xs text-muted-foreground mb-2">
-              Current selection: {paymentType}
-            </div>
-            
-            <RadioGroup 
-              value={paymentType} 
-              onValueChange={(value: string) => {
-                console.log("Admin payment type changed to:", value)
-                setPaymentType(value as "split" | "full")
-              }}
-              className="space-y-3"
-            >
-              {/* Split Payment Option */}
-              <div 
-                className={`p-3 border-2 rounded-lg cursor-pointer transition-all hover:shadow-sm ${
-                  paymentType === "split" ? "border-primary bg-primary/5" : "border-border"
-                }`}
-                onClick={() => {
-                  console.log("Split payment clicked")
-                  setPaymentType("split")
-                }}
-              >
-                <div className="flex items-start space-x-3">
-                  <RadioGroupItem value="split" id="admin-split" className="mt-1" />
-                  <div className="flex-1">
-                    <Label htmlFor="admin-split" className="font-medium cursor-pointer">
-                      Split Payment (50/50)
-                    </Label>
-                    <div className="mt-2 text-sm text-muted-foreground space-y-1">
-                      <div>• Upfront: <span className="font-medium text-foreground">${splitPaymentAmount.toFixed(2)}</span></div>
-                      <div>• On Completion: <span className="font-medium text-foreground">${(cost - splitPaymentAmount).toFixed(2)}</span></div>
-                      <div className="text-xs text-blue-600">Standard payment terms</div>
-                    </div>
-                  </div>
+            <div className="space-y-3">
+              {/* Split Payment Preview */}
+              <div className="p-3 border rounded-lg bg-background">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium">Split Payment (50/50)</span>
+                  <span className="text-blue-600 text-sm">Standard Option</span>
+                </div>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <div>• Upfront: <span className="font-medium text-foreground">${splitPaymentAmount.toFixed(2)}</span></div>
+                  <div>• On Completion: <span className="font-medium text-foreground">${(cost - splitPaymentAmount).toFixed(2)}</span></div>
                 </div>
               </div>
 
-              {/* Full Payment Option */}
-              <div 
-                className={`p-3 border-2 rounded-lg cursor-pointer transition-all hover:shadow-sm ${
-                  paymentType === "full" ? "border-primary bg-primary/5" : "border-border"
-                }`}
-                onClick={() => {
-                  console.log("Full payment clicked")
-                  setPaymentType("full")
-                }}
-              >
-                <div className="flex items-start space-x-3">
-                  <RadioGroupItem value="full" id="admin-full" className="mt-1" />
-                  <div className="flex-1">
-                    <Label htmlFor="admin-full" className="font-medium cursor-pointer">
-                      Full Payment (with discount)
-                    </Label>
-                    <div className="mt-2 space-y-3">
-                      {/* Discount Input */}
-                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                        <Percent className="h-4 w-4 text-muted-foreground" />
-                        <Input
-                          type="number"
-                          min="0"
-                          max="50"
-                          step="0.5"
-                          value={fullPaymentDiscount}
-                          onChange={(e) => {
-                            e.stopPropagation()
-                            setFullPaymentDiscount(e.target.value)
-                          }}
-                          className="w-20 h-8"
-                          disabled={isGenerating}
-                        />
-                        <span className="text-sm">% discount</span>
-                      </div>
-                      
-                      <div className="text-sm text-muted-foreground space-y-1">
-                        <div>• Original Amount: <span className="line-through">${cost.toFixed(2)}</span></div>
-                        <div>• Discount ({discountPercent}%): <span className="text-green-600">-${discountAmount.toFixed(2)}</span></div>
-                        <div>• Final Amount: <span className="font-medium text-foreground text-base">${fullPaymentAmount.toFixed(2)}</span></div>
-                        <div className="text-xs text-green-600">Save ${discountAmount.toFixed(2)} with full payment!</div>
-                      </div>
-                    </div>
-                  </div>
+              {/* Full Payment Preview */}
+              <div className="p-3 border rounded-lg bg-background">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium">Full Payment</span>
+                  <Badge className="bg-green-100 text-green-800 text-xs">
+                    {discountPercent}% OFF
+                  </Badge>
+                </div>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <div>• Original: <span className="line-through">${cost.toFixed(2)}</span></div>
+                  <div>• Discount: <span className="text-green-600">-${discountAmount.toFixed(2)}</span></div>
+                  <div>• Final Amount: <span className="font-medium text-foreground text-base">${fullPaymentAmount.toFixed(2)}</span></div>
+                  <div className="text-xs text-green-600">Save ${discountAmount.toFixed(2)}!</div>
                 </div>
               </div>
-            </RadioGroup>
-          </div>
-        )}
-
-        {/* Payment Summary */}
-        {cost > 0 && (
-          <div className="bg-muted/50 rounded-lg p-4">
-            <h4 className="font-medium mb-3">Payment Summary</h4>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>Selected Option:</span>
-                <span className="font-medium">
-                  {paymentType === "split" ? "Split Payment (50/50)" : `Full Payment (${discountPercent}% discount)`}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Amount Due Now:</span>
-                <span className="font-bold text-lg">
-                  ${paymentType === "split" ? splitPaymentAmount.toFixed(2) : fullPaymentAmount.toFixed(2)}
-                </span>
-              </div>
-              {paymentType === "split" && (
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Remaining (on completion):</span>
-                  <span>${(cost - splitPaymentAmount).toFixed(2)}</span>
-                </div>
-              )}
-              {paymentType === "full" && discountAmount > 0 && (
-                <div className="flex justify-between text-green-600">
-                  <span>Total Savings:</span>
-                  <span>${discountAmount.toFixed(2)}</span>
-                </div>
-              )}
             </div>
           </div>
         )}
@@ -281,7 +223,7 @@ export function PaymentLinkGenerator({
         {/* Client Info */}
         {clientEmail && (
           <div className="bg-muted/50 rounded-lg p-3 space-y-1">
-            <p className="text-sm font-medium">Payment will be sent to:</p>
+            <p className="text-sm font-medium">Payment link will be sent to:</p>
             <p className="text-sm text-muted-foreground flex items-center gap-2">
               <Mail className="h-4 w-4" />
               {clientName} ({clientEmail})
@@ -310,9 +252,17 @@ export function PaymentLinkGenerator({
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-600" />
               <span className="text-sm font-medium text-green-800 dark:text-green-200">
-                Payment Link Generated
+                Payment Link Generated Successfully
               </span>
             </div>
+
+            {/* Link Expiry Notice */}
+            <Alert className="bg-blue-50 dark:bg-blue-950/20 border-blue-200">
+              <Clock className="h-4 w-4" />
+              <AlertDescription className="text-blue-800 dark:text-blue-200">
+                <strong>Link expires:</strong> {linkExpiry} (1 hour from generation)
+              </AlertDescription>
+            </Alert>
             
             <div className="space-y-2">
               <div className="flex items-center gap-2 p-2 bg-background rounded border text-sm font-mono">
@@ -340,11 +290,12 @@ export function PaymentLinkGenerator({
             <Alert>
               <CheckCircle className="h-4 w-4" />
               <AlertDescription>
-                <strong>Payment Options Available:</strong>
+                <strong>Payment Options Available for Client:</strong>
                 <ul className="mt-2 space-y-1 text-sm">
-                  <li>• Split Payment: Client pays ${splitPaymentAmount.toFixed(2)} now, ${(cost - splitPaymentAmount).toFixed(2)} on completion</li>
-                  <li>• Full Payment: Client pays ${fullPaymentAmount.toFixed(2)} (saves ${discountAmount.toFixed(2)} with {discountPercent}% discount)</li>
-                  <li>• Client can choose their preferred option on the payment page</li>
+                  <li>• Split Payment: ${splitPaymentAmount.toFixed(2)} now, ${(cost - splitPaymentAmount).toFixed(2)} on completion</li>
+                  <li>• Full Payment: ${fullPaymentAmount.toFixed(2)} (saves ${discountAmount.toFixed(2)} with {discountPercent}% discount)</li>
+                  <li>• Client chooses their preferred option on the secure payment page</li>
+                  <li>• Link expires in 1 hour for security</li>
                 </ul>
               </AlertDescription>
             </Alert>
