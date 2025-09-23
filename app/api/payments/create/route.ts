@@ -1,4 +1,4 @@
-// app/api/payments/create/route.ts - FIXED VERSION (NO SERVICE REQUEST UPDATE)
+// app/api/payments/create/route.ts - FIXED VERSION WITH PROPER STRIPE CONFIG
 export const dynamic = "force-dynamic"
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
@@ -53,7 +53,8 @@ export async function POST(request: NextRequest) {
     if (paymentType === "split") {
       expectedAmount = totalCost * 0.5 // 50% for split payment
     } else {
-      expectedAmount = totalCost * 0.9 // 10% discount for full payment
+      const discountPercent = serviceRequest.admin_discount_percent || 10
+      expectedAmount = totalCost * (1 - discountPercent / 100) // Apply discount for full payment
     }
 
     // Allow small rounding differences
@@ -63,13 +64,15 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Create payment record
+    // Create payment record with pending status
     const paymentData = {
       request_id: requestId,
       amount: amount,
       currency: "USD",
       payment_method: paymentMethod,
-      payment_status: "pending"
+      payment_status: "pending", // Always start as pending
+      payment_type: paymentType, // Store payment type
+      metadata: JSON.stringify(metadata) // Store metadata as JSON
     }
 
     console.log("Creating payment record:", paymentData)
@@ -93,19 +96,39 @@ export async function POST(request: NextRequest) {
     let checkoutUrl = null
 
     // Handle different payment methods
-    switch (paymentMethod) {
-      case "stripe":
-        checkoutUrl = await createStripeCheckout(payment.id, amount, serviceRequest, paymentType, metadata)
-        break
-      case "paystack":
-        checkoutUrl = await createPaystackCheckout(payment.id, amount, serviceRequest, paymentType, metadata)
-        break
-      case "bank_transfer":
-        // Send bank transfer instructions via email
-        await sendBankTransferInstructions(serviceRequest.clients.email, payment.id, amount, paymentType, metadata)
-        break
-      case "crypto":
-        return NextResponse.json({ error: "Cryptocurrency payments not yet supported" }, { status: 400 })
+    try {
+      switch (paymentMethod) {
+        case "stripe":
+          checkoutUrl = await createStripeCheckout(payment.id, amount, serviceRequest, paymentType, metadata)
+          break
+        case "paystack":
+          checkoutUrl = await createPaystackCheckout(payment.id, amount, serviceRequest, paymentType, metadata)
+          break
+        case "bank_transfer":
+          // Send bank transfer instructions via email
+          await sendBankTransferInstructions(serviceRequest.clients.email, payment.id, amount, paymentType, metadata)
+          break
+        case "crypto":
+          return NextResponse.json({ error: "Cryptocurrency payments not yet supported" }, { status: 400 })
+        default:
+          return NextResponse.json({ error: "Invalid payment method" }, { status: 400 })
+      }
+    } catch (paymentMethodError: any) {
+      console.error("Payment method error:", paymentMethodError)
+      
+      // Update payment status to failed
+      await supabase
+        .from("payments")
+        .update({ 
+          payment_status: "failed",
+          error_message: paymentMethodError.message 
+        })
+        .eq("id", payment.id)
+
+      return NextResponse.json({ 
+        error: paymentMethodError.message || "Payment processing failed",
+        details: "Please try a different payment method or contact support"
+      }, { status: 500 })
     }
 
     return NextResponse.json({
@@ -122,7 +145,8 @@ export async function POST(request: NextRequest) {
     console.error("Error creating payment:", error)
     return NextResponse.json({ 
       error: "Internal server error",
-      details: error.message 
+      details: error.message,
+      message: "Please try again or contact support if the problem persists"
     }, { status: 500 })
   }
 }
@@ -135,17 +159,23 @@ async function createStripeCheckout(
   metadata: any
 ) {
   try {
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
-    
+    // Check if Stripe is properly configured
     if (!process.env.STRIPE_SECRET_KEY) {
       console.error("Stripe secret key not configured")
-      throw new Error("Payment configuration error")
+      throw new Error("Payment system configuration error. Please contact support.")
     }
+
+    // Import Stripe dynamically to avoid issues
+    const { default: Stripe } = await import('stripe')
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2023-10-16',
+      typescript: true,
+    })
 
     // Create descriptive payment description
     const paymentDescription = paymentType === "split" 
       ? `50% upfront payment for ${serviceRequest.title}`
-      : `Full payment with 10% discount for ${serviceRequest.title}`
+      : `Full payment with discount for ${serviceRequest.title}`
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -170,12 +200,20 @@ async function createStripeCheckout(
         paymentType: paymentType,
       },
       customer_email: serviceRequest.clients.email,
+      expires_at: Math.floor(Date.now() / 1000) + (30 * 60), // 30 minutes expiry
     })
 
+    // Store Stripe session ID for tracking
+    const supabase = createServerClient()
+    await supabase
+      .from("payments")
+      .update({ stripe_payment_intent_id: session.id })
+      .eq("id", paymentId)
+
     return session.url
-  } catch (error) {
+  } catch (error: any) {
     console.error("Stripe checkout creation failed:", error)
-    throw new Error("Failed to create Stripe checkout session")
+    throw new Error("Payment processing temporarily unavailable. Please try again or use a different payment method.")
   }
 }
 
@@ -189,12 +227,12 @@ async function createPaystackCheckout(
   try {
     if (!process.env.PAYSTACK_SECRET_KEY) {
       console.error("Paystack secret key not configured")
-      throw new Error("Payment configuration error")
+      throw new Error("Payment system configuration error. Please contact support.")
     }
 
     const paymentDescription = paymentType === "split" 
       ? `50% upfront payment for ${serviceRequest.title}`
-      : `Full payment with 10% discount for ${serviceRequest.title}`
+      : `Full payment with discount for ${serviceRequest.title}`
 
     const response = await fetch('https://api.paystack.co/transaction/initialize', {
       method: 'POST',
@@ -222,19 +260,26 @@ async function createPaystackCheckout(
     if (!response.ok) {
       const errorData = await response.json()
       console.error("Paystack API error:", errorData)
-      throw new Error("Failed to initialize Paystack transaction")
+      throw new Error("Payment processing temporarily unavailable. Please try again.")
     }
 
     const data = await response.json()
     
     if (!data.status || !data.data.authorization_url) {
-      throw new Error("Invalid response from Paystack")
+      throw new Error("Payment processing failed. Please try again.")
     }
 
+    // Store Paystack reference for tracking
+    const supabase = createServerClient()
+    await supabase
+      .from("payments")
+      .update({ paystack_reference: data.data.reference })
+      .eq("id", paymentId)
+
     return data.data.authorization_url
-  } catch (error) {
+  } catch (error: any) {
     console.error("Paystack checkout creation failed:", error)
-    throw new Error("Failed to create Paystack checkout session")
+    throw new Error("Payment processing temporarily unavailable. Please try again or use a different payment method.")
   }
 }
 
@@ -250,7 +295,7 @@ async function sendBankTransferInstructions(
     
     const paymentTypeDescription = paymentType === "split" 
       ? "50% upfront payment (remaining 50% due on completion)"
-      : "Full payment with 10% discount"
+      : "Full payment with discount"
 
     const instructions = {
       bankName: "First Bank of Nigeria",
@@ -265,7 +310,7 @@ async function sendBankTransferInstructions(
         "Send proof of payment to hello@kamisoftenterprises.online",
         "Payment will be verified within 24 hours",
         paymentType === 'full' 
-          ? "You're saving 10% with full payment!"
+          ? "You're saving with full payment discount!"
           : "Remaining 50% due upon project completion"
       ]
     }
@@ -274,6 +319,6 @@ async function sendBankTransferInstructions(
     console.log("Bank transfer instructions:", instructions)
   } catch (error) {
     console.error("Failed to send bank transfer instructions:", error)
-    throw new Error("Failed to send payment instructions")
+    throw new Error("Failed to send payment instructions. Please contact support.")
   }
 }
