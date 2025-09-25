@@ -2,6 +2,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
@@ -24,7 +25,6 @@ interface PaymentDeleterProps {
   amount: number
   currency: string
   paymentMethod: string
-  onDeleted: () => void
 }
 
 export function PaymentDeleter({
@@ -32,9 +32,9 @@ export function PaymentDeleter({
   paymentStatus,
   amount,
   currency,
-  paymentMethod,
-  onDeleted
+  paymentMethod
 }: PaymentDeleterProps) {
+  const router = useRouter()
   const [isDeleting, setIsDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -63,9 +63,9 @@ export function PaymentDeleter({
       const result = await response.json()
       setSuccess(true)
 
-      // Call parent callback to refresh data
+      // Refresh the page to show updated data
       setTimeout(() => {
-        onDeleted()
+        router.refresh()
         setSuccess(false)
       }, 2000)
 

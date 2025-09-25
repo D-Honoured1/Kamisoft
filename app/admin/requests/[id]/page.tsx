@@ -396,7 +396,6 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
                         amount={payment.amount}
                         currency={payment.currency || 'USD'}
                         paymentMethod={payment.payment_method}
-                        onDeleted={() => window.location.reload()}
                       />
                     ))}
                   </div>
