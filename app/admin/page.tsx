@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Users, FileText, CreditCard, Briefcase, Clock, MessageSquare } from "lucide-react"
 import Link from "next/link"
+import { formatDate } from "@/lib/utils/date-formatter"
 
 export const dynamic = "force-dynamic"
 
@@ -267,7 +268,7 @@ export default async function AdminDashboard() {
                       <h4 className="font-medium text-foreground truncate">{request.title || 'Untitled Request'}</h4>
                       <p className="text-sm text-muted-foreground truncate">{request.clients?.name || 'Unknown Client'}</p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(request.created_at).toLocaleDateString()}
+                        {formatDate(request.created_at)}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 ml-2">
@@ -303,7 +304,7 @@ export default async function AdminDashboard() {
                       <h4 className="font-medium text-foreground truncate">{inquiry.subject || 'Contact Inquiry'}</h4>
                       <p className="text-sm text-muted-foreground truncate">{inquiry.clients?.name || 'Unknown Client'}</p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(inquiry.created_at).toLocaleDateString()}
+                        {formatDate(inquiry.created_at)}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 ml-2">

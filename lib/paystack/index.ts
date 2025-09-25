@@ -1,19 +1,32 @@
-// lib/paystack/index.ts - Paystack utility functions
-import { Paystack } from 'paystack-node'
+// lib/paystack/index.ts - FIXED VERSION
+import crypto from 'crypto'
 
-export interface PaystackTransactionData {
+// Type definitions for Paystack API
+interface PaystackTransactionData {
   email: string
-  amount: number // in cents/kobo
-  currency?: 'NGN' | 'USD' | 'GHS' | 'ZAR'
-  reference?: string
+  amount: number // Amount in kobo (multiply by 100)
+  currency?: string
+  reference: string
   callback_url?: string
   metadata?: Record<string, any>
   channels?: string[]
 }
 
-export interface PaystackVerificationResponse {
+interface PaystackResponse {
   status: boolean
   message: string
+  data: any
+}
+
+interface PaystackInitializeResponse extends PaystackResponse {
+  data: {
+    authorization_url: string
+    access_code: string
+    reference: string
+  }
+}
+
+interface PaystackVerifyResponse extends PaystackResponse {
   data: {
     id: number
     domain: string
@@ -28,7 +41,9 @@ export interface PaystackVerificationResponse {
     currency: string
     ip_address: string
     metadata: Record<string, any>
-    fees_breakdown: any
+    log: any
+    fees: number
+    fees_split: any
     authorization: {
       authorization_code: string
       bin: string
@@ -40,483 +55,247 @@ export interface PaystackVerificationResponse {
       bank: string
       country_code: string
       brand: string
+      reusable: boolean
+      signature: string
     }
     customer: {
       id: number
-      first_name: string | null
-      last_name: string | null
+      first_name: string
+      last_name: string
       email: string
       customer_code: string
-      phone: string | null
+      phone: string
       metadata: Record<string, any>
       risk_action: string
     }
+    plan: any
+    split: any
+    order_id: any
+    paidAt: string
+    createdAt: string
+    requested_amount: number
+    pos_transaction_data: any
+    source: any
+    fees_breakdown: any
   }
 }
 
-interface CircuitBreakerState {
-  failures: number
-  lastFailureTime: number
-  state: 'CLOSED' | 'OPEN' | 'HALF_OPEN'
-}
-
-export class PaystackService {
-  private paystackInstance: Paystack | null = null
-  private circuitBreaker: CircuitBreakerState = {
-    failures: 0,
-    lastFailureTime: 0,
-    state: 'CLOSED'
-  }
-  private readonly FAILURE_THRESHOLD = 5
-  private readonly RECOVERY_TIMEOUT = 30000 // 30 seconds
+class PaystackService {
+  private baseUrl = 'https://api.paystack.co'
+  private secretKey: string
 
   constructor() {
-    // Don't initialize during build time
-  }
-
-  private getPaystackInstance(): Paystack {
-    if (!this.paystackInstance) {
-      const secretKey = process.env.PAYSTACK_SECRET_KEY?.trim()
-      if (!secretKey) {
-        throw new Error('PAYSTACK_SECRET_KEY environment variable is required')
-      }
-      this.paystackInstance = new Paystack(secretKey)
+    this.secretKey = process.env.PAYSTACK_SECRET_KEY || ''
+    
+    if (!this.secretKey) {
+      throw new Error('PAYSTACK_SECRET_KEY environment variable is required')
     }
-    return this.paystackInstance
-  }
-
-  private checkCircuitBreaker(): void {
-    const now = Date.now()
-
-    if (this.circuitBreaker.state === 'OPEN') {
-      if (now - this.circuitBreaker.lastFailureTime > this.RECOVERY_TIMEOUT) {
-        this.circuitBreaker.state = 'HALF_OPEN'
-      } else {
-        throw new Error('Payment service temporarily unavailable. Please try again later.')
-      }
+    
+    if (!this.secretKey.startsWith('sk_')) {
+      throw new Error('Invalid Paystack secret key format. Should start with sk_')
     }
   }
 
-  private recordSuccess(): void {
-    this.circuitBreaker.failures = 0
-    this.circuitBreaker.state = 'CLOSED'
-  }
-
-  private recordFailure(): void {
-    this.circuitBreaker.failures += 1
-    this.circuitBreaker.lastFailureTime = Date.now()
-
-    if (this.circuitBreaker.failures >= this.FAILURE_THRESHOLD) {
-      this.circuitBreaker.state = 'OPEN'
-    }
-  }
-
-  /**
-   * Initialize a transaction with retry logic and circuit breaker
-   */
-  async initializeTransaction(data: PaystackTransactionData, retries: number = 3) {
-    this.checkCircuitBreaker()
-
-    const maxRetries = retries
-    let lastError: any
-
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        const response = await this.getPaystackInstance().transaction.initialize({
-          email: data.email,
-          amount: Math.round(data.amount * 100), // Convert to kobo/cents
-          currency: data.currency || 'USD',
-          reference: data.reference,
-          callback_url: data.callback_url,
-          metadata: {
-            ...data.metadata,
-            idempotency_key: data.reference // Use reference as idempotency key
-          },
-          channels: data.channels || ['card', 'bank', 'ussd', 'mobile_money', 'bank_transfer']
-        })
-
-        this.recordSuccess()
-        return {
-          success: response.status,
-          message: response.message,
-          data: response.data,
-          authorization_url: response.data?.authorization_url,
-          access_code: response.data?.access_code,
-          reference: response.data?.reference
-        }
-      } catch (error: any) {
-        lastError = error
-        console.error(`Paystack initialization attempt ${attempt}/${maxRetries} failed:`, {
-          error: error.message,
-          reference: data.reference,
-          email: data.email,
-          amount: data.amount
-        })
-
-        if (attempt === maxRetries) {
-          this.recordFailure()
-          break
-        }
-
-        // Exponential backoff: wait 1s, 2s, 4s
-        const delay = Math.pow(2, attempt - 1) * 1000
-        await new Promise(resolve => setTimeout(resolve, delay))
-      }
+  private async makeRequest(endpoint: string, method: 'GET' | 'POST' = 'GET', data?: any): Promise<PaystackResponse> {
+    const url = `${this.baseUrl}${endpoint}`
+    
+    const requestOptions: RequestInit = {
+      method,
+      headers: {
+        'Authorization': `Bearer ${this.secretKey}`,
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
+      },
     }
 
-    // Enhanced error handling based on common Paystack errors
-    const errorMessage = this.getPaystackErrorMessage(lastError)
-    throw new Error(`Failed to initialize payment after ${maxRetries} attempts: ${errorMessage}`)
-  }
-
-  /**
-   * Verify a transaction with retry logic
-   */
-  async verifyTransaction(reference: string, retries: number = 3): Promise<PaystackVerificationResponse> {
-    const maxRetries = retries
-    let lastError: any
-
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        const response = await this.getPaystackInstance().transaction.verify(reference)
-        return response as PaystackVerificationResponse
-      } catch (error: any) {
-        lastError = error
-        console.error(`Paystack verification attempt ${attempt}/${maxRetries} failed:`, error)
-
-        if (attempt === maxRetries) {
-          break
-        }
-
-        // Shorter delay for verification retries
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt))
-      }
+    if (data && method === 'POST') {
+      requestOptions.body = JSON.stringify(data)
     }
 
-    const errorMessage = this.getPaystackErrorMessage(lastError)
-    throw new Error(`Failed to verify payment after ${maxRetries} attempts: ${errorMessage}`)
+    console.log(`🔄 Paystack API Request: ${method} ${endpoint}`)
+
+    const response = await fetch(url, requestOptions)
+    
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`❌ Paystack API Error: ${response.status}`, errorText)
+      throw new Error(`Paystack API error: ${response.status} - ${errorText}`)
+    }
+
+    const result = await response.json()
+    console.log(`✅ Paystack API Response: ${result.status ? 'Success' : 'Failed'}`, {
+      status: result.status,
+      message: result.message
+    })
+
+    return result
   }
 
-  /**
-   * Get transaction details
-   */
-  async getTransaction(transactionId: string | number) {
+  async initializeTransaction(params: {
+    email: string
+    amount: number // Amount in USD
+    currency?: string
+    reference: string
+    callback_url?: string
+    metadata?: Record<string, any>
+    channels?: string[]
+  }): Promise<{
+    success: boolean
+    message: string
+    authorization_url?: string
+    access_code?: string
+    reference?: string
+  }> {
     try {
-      const response = await this.getPaystackInstance().transaction.get(transactionId)
-      return {
-        success: response.status,
-        message: response.message,
-        data: response.data
+      console.log('🚀 Initializing Paystack transaction:', {
+        email: params.email,
+        amount: params.amount,
+        currency: params.currency || 'USD',
+        reference: params.reference
+      })
+
+      // Convert USD to kobo/cents for Paystack
+      // For USD: multiply by 100 (cents)
+      // For NGN: multiply by 100 (kobo)
+      const currency = params.currency || 'USD'
+      const amountInCents = Math.round(params.amount * 100)
+
+      const requestData: PaystackTransactionData = {
+        email: params.email,
+        amount: amountInCents,
+        currency: currency,
+        reference: params.reference,
+        callback_url: params.callback_url,
+        metadata: {
+          ...params.metadata,
+          original_amount: params.amount,
+          original_currency: currency,
+          integration_type: 'kamisoft_payment_system'
+        },
+        channels: params.channels || ['card', 'bank', 'ussd', 'mobile_money', 'bank_transfer']
+      }
+
+      const response = await this.makeRequest('/transaction/initialize', 'POST', requestData) as PaystackInitializeResponse
+
+      if (response.status && response.data) {
+        return {
+          success: true,
+          message: response.message,
+          authorization_url: response.data.authorization_url,
+          access_code: response.data.access_code,
+          reference: response.data.reference
+        }
+      } else {
+        throw new Error(response.message || 'Failed to initialize transaction')
       }
     } catch (error: any) {
-      console.error('Paystack get transaction error:', error)
-      throw new Error(`Failed to get transaction: ${error.message}`)
+      console.error('❌ Paystack initialization error:', error)
+      return {
+        success: false,
+        message: error.message || 'Transaction initialization failed'
+      }
     }
   }
 
-  /**
-   * List transactions with filters and caching
-   */
-  private static transactionCache: { [key: string]: { data: any, timestamp: number } } = {}
-  private static readonly TRANSACTION_CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+  async verifyTransaction(reference: string): Promise<PaystackVerifyResponse> {
+    try {
+      console.log('🔍 Verifying Paystack transaction:', reference)
 
-  async listTransactions(options?: {
+      const response = await this.makeRequest(`/transaction/verify/${encodeURIComponent(reference)}`) as PaystackVerifyResponse
+
+      console.log('✅ Transaction verification result:', {
+        reference,
+        status: response.data?.status,
+        amount: response.data?.amount ? (response.data.amount / 100) : null,
+        currency: response.data?.currency
+      })
+
+      return response
+    } catch (error: any) {
+      console.error('❌ Paystack verification error:', error)
+      throw error
+    }
+  }
+
+  async listTransactions(params?: {
     perPage?: number
     page?: number
     customer?: string
-    status?: 'failed' | 'success' | 'abandoned'
+    status?: string
     from?: string
     to?: string
     amount?: number
-  }) {
-    const cacheKey = JSON.stringify(options || {})
-    const cached = PaystackService.transactionCache[cacheKey]
-
-    // Use cached data if available and not expired
-    if (cached && (Date.now() - cached.timestamp) < PaystackService.TRANSACTION_CACHE_DURATION) {
-      return cached.data
-    }
-
+  }): Promise<PaystackResponse> {
     try {
-      const response = await this.getPaystackInstance().transaction.list(options)
-      const result = {
-        success: response.status,
-        message: response.message,
-        data: response.data,
-        meta: response.meta
-      }
+      const queryParams = new URLSearchParams()
+      
+      if (params?.perPage) queryParams.set('perPage', params.perPage.toString())
+      if (params?.page) queryParams.set('page', params.page.toString())
+      if (params?.customer) queryParams.set('customer', params.customer)
+      if (params?.status) queryParams.set('status', params.status)
+      if (params?.from) queryParams.set('from', params.from)
+      if (params?.to) queryParams.set('to', params.to)
+      if (params?.amount) queryParams.set('amount', (params.amount * 100).toString())
 
-      // Cache the result
-      PaystackService.transactionCache[cacheKey] = {
-        data: result,
-        timestamp: Date.now()
-      }
-
-      return result
+      const endpoint = `/transaction${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
+      return await this.makeRequest(endpoint)
     } catch (error: any) {
-      console.error('Paystack list transactions error:', error)
-      throw new Error(`Failed to list transactions: ${error.message}`)
+      console.error('❌ Error listing transactions:', error)
+      throw error
     }
   }
 
-  /**
-   * Create a customer with deduplication
-   */
-  async createCustomer(data: {
-    email: string
-    first_name?: string
-    last_name?: string
-    phone?: string
-    metadata?: Record<string, any>
-  }, retries: number = 2) {
-    let lastError: any
-
-    for (let attempt = 1; attempt <= retries; attempt++) {
-      try {
-        // First, try to get existing customer
-        try {
-          const existingCustomer = await this.getCustomer(data.email)
-          if (existingCustomer.success) {
-            return existingCustomer
-          }
-        } catch {
-          // Customer doesn't exist, continue with creation
-        }
-
-        const response = await this.getPaystackInstance().customer.create(data)
-        return {
-          success: response.status,
-          message: response.message,
-          data: response.data
-        }
-      } catch (error: any) {
-        lastError = error
-        console.error(`Paystack create customer attempt ${attempt}/${retries} failed:`, error)
-
-        if (attempt === retries) {
-          break
-        }
-
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt))
-      }
-    }
-
-    const errorMessage = this.getPaystackErrorMessage(lastError)
-    throw new Error(`Failed to create customer after ${retries} attempts: ${errorMessage}`)
-  }
-
-  /**
-   * Get customer details with retry
-   */
-  async getCustomer(emailOrCustomerCode: string, retries: number = 2) {
-    let lastError: any
-
-    for (let attempt = 1; attempt <= retries; attempt++) {
-      try {
-        const response = await this.getPaystackInstance().customer.get(emailOrCustomerCode)
-        return {
-          success: response.status,
-          message: response.message,
-          data: response.data
-        }
-      } catch (error: any) {
-        lastError = error
-        console.error(`Paystack get customer attempt ${attempt}/${retries} failed:`, error)
-
-        if (attempt === retries) {
-          break
-        }
-
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt))
-      }
-    }
-
-    const errorMessage = this.getPaystackErrorMessage(lastError)
-    throw new Error(`Failed to get customer after ${retries} attempts: ${errorMessage}`)
-  }
-
-  /**
-   * Validate webhook signature
-   */
   validateWebhookSignature(payload: string, signature: string): boolean {
     try {
-      const webhookSecret = process.env.PAYSTACK_WEBHOOK_SECRET?.trim()
-      if (!webhookSecret) {
-        console.warn('PAYSTACK_WEBHOOK_SECRET not set, skipping signature validation')
-        return true // Allow webhook if secret not configured
-      }
-
-      const crypto = require('crypto')
-      const hash = crypto
-        .createHmac('sha512', webhookSecret)
-        .update(payload)
-        .digest('hex')
-
-      return hash === signature
+      const webhookSecret = process.env.PAYSTACK_WEBHOOK_SECRET || this.secretKey
+      const hash = crypto.createHmac('sha512', webhookSecret).update(payload).digest('hex')
+      
+      const isValid = hash === signature
+      console.log('🔐 Webhook signature validation:', {
+        isValid,
+        receivedSignature: signature?.substring(0, 10) + '...',
+        computedSignature: hash?.substring(0, 10) + '...'
+      })
+      
+      return isValid
     } catch (error) {
-      console.error('Webhook signature validation error:', error)
+      console.error('❌ Webhook signature validation error:', error)
       return false
     }
   }
 
-  /**
-   * Generate payment reference with collision avoidance
-   */
-  private static usedReferences: Set<string> = new Set()
-  private static readonly MAX_REFERENCE_ATTEMPTS = 10
-
-  generateReference(prefix: string = 'KE'): string {
-    for (let attempt = 0; attempt < PaystackService.MAX_REFERENCE_ATTEMPTS; attempt++) {
-      const timestamp = Date.now() + attempt // Add attempt to ensure uniqueness
-      const random = Math.random().toString(36).substring(2, 8).toUpperCase()
-      const reference = `${prefix}_${timestamp}_${random}`
-
-      if (!PaystackService.usedReferences.has(reference)) {
-        PaystackService.usedReferences.add(reference)
-
-        // Clean up old references to prevent memory leaks (keep last 1000)
-        if (PaystackService.usedReferences.size > 1000) {
-          const referencesArray = Array.from(PaystackService.usedReferences)
-          PaystackService.usedReferences = new Set(referencesArray.slice(-500))
-        }
-
-        return reference
-      }
-    }
-
-    // Fallback - should be extremely rare
-    return `${prefix}_${Date.now()}_${crypto.randomUUID().slice(0, 8).toUpperCase()}`
+  // Helper method to convert currency amounts
+  convertToKobo(amount: number, currency: 'USD' | 'NGN' = 'USD'): number {
+    return Math.round(amount * 100)
   }
 
-  /**
-   * Get enhanced error message for Paystack errors
-   */
-  private getPaystackErrorMessage(error: any): string {
-    if (!error) return 'Unknown error occurred'
-
-    const message = error.message || error.toString()
-
-    // Common Paystack error patterns
-    if (message.includes('Invalid key')) {
-      return 'Invalid API key. Please check your Paystack configuration.'
-    }
-    if (message.includes('Invalid email')) {
-      return 'Invalid email address provided.'
-    }
-    if (message.includes('Invalid amount')) {
-      return 'Invalid payment amount. Amount must be greater than 0.'
-    }
-    if (message.includes('Network Error') || message.includes('ECONNREFUSED')) {
-      return 'Network connection error. Please check your internet connection and try again.'
-    }
-    if (message.includes('timeout')) {
-      return 'Request timeout. Please try again.'
-    }
-    if (message.includes('rate limit')) {
-      return 'Too many requests. Please wait a moment and try again.'
-    }
-
-    return message
+  convertFromKobo(amount: number, currency: 'USD' | 'NGN' = 'USD'): number {
+    return amount / 100
   }
 
-  /**
-   * Convert amount from USD to NGN (if needed) with caching
-   */
-  private static exchangeRateCache: { [key: string]: { rate: number, timestamp: number } } = {}
-  private static readonly CACHE_DURATION = 60 * 60 * 1000 // 1 hour
-
-  async convertCurrency(amountUSD: number, targetCurrency: string = 'NGN'): Promise<number> {
+  // Get current exchange rates (you'd typically call a real API for this)
+  async getExchangeRate(from: string = 'USD', to: string = 'NGN'): Promise<number> {
     try {
-      if (targetCurrency === 'USD') {
-        return amountUSD
+      // In production, you'd call a real exchange rate API
+      // For now, return a reasonable USD to NGN rate
+      if (from === 'USD' && to === 'NGN') {
+        return 1550 // $1 = ₦1,550 (update this regularly)
       }
-
-      const cacheKey = `USD_${targetCurrency}`
-      const cached = PaystackService.exchangeRateCache[cacheKey]
-
-      // Use cached rate if available and not expired
-      if (cached && (Date.now() - cached.timestamp) < PaystackService.CACHE_DURATION) {
-        return Math.round(amountUSD * cached.rate * 100) / 100
-      }
-
-      // Fallback rates (you should replace this with real-time rates)
-      const exchangeRates: Record<string, number> = {
-        NGN: 1550, // 1 USD = 1550 NGN (approximate)
-        GHS: 12,   // 1 USD = 12 GHS (approximate)
-        ZAR: 18    // 1 USD = 18 ZAR (approximate)
-      }
-
-      const rate = exchangeRates[targetCurrency] || 1
-
-      // Cache the rate
-      PaystackService.exchangeRateCache[cacheKey] = {
-        rate,
-        timestamp: Date.now()
-      }
-
-      return Math.round(amountUSD * rate * 100) / 100 // Round to 2 decimal places
+      return 1
     } catch (error) {
-      console.error('Currency conversion error:', error)
-      return amountUSD // Fallback to USD amount
+      console.error('Error fetching exchange rate:', error)
+      return 1550 // Fallback rate
     }
-  }
-
-  /**
-   * Cleanup cache for long-running processes
-   */
-  cleanupCache(): void {
-    const now = Date.now()
-
-    // Clean transaction cache
-    Object.keys(PaystackService.transactionCache).forEach(key => {
-      if (now - PaystackService.transactionCache[key].timestamp > PaystackService.TRANSACTION_CACHE_DURATION) {
-        delete PaystackService.transactionCache[key]
-      }
-    })
-
-    // Clean exchange rate cache
-    Object.keys(PaystackService.exchangeRateCache).forEach(key => {
-      if (now - PaystackService.exchangeRateCache[key].timestamp > PaystackService.CACHE_DURATION) {
-        delete PaystackService.exchangeRateCache[key]
-      }
-    })
-
-    console.log('Paystack cache cleanup completed')
   }
 }
-
-// Add crypto import for fallback reference generation
-const crypto = require('crypto')
 
 // Export singleton instance
 export const paystackService = new PaystackService()
 
-// Cleanup function for long-running processes
-export const cleanupPaystackCache = () => {
-  paystackService.cleanupCache()
-}
-
-// Export utility functions
-export const paystack_utils = {
-  formatAmount: (amount: number, currency: string = 'USD'): string => {
-    const formatter = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-      currencyDisplay: currency === 'NGN' ? 'symbol' : 'code'
-    })
-    return formatter.format(amount)
-  },
-
-  formatNairaAmount: (amount: number): string => {
-    return `₦${amount.toLocaleString('en-NG')}`
-  },
-
-  isValidEmail: (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return emailRegex.test(email)
-  },
-
-  isValidReference: (reference: string): boolean => {
-    return reference.length >= 3 && reference.length <= 100
-  }
+// Export types for use in other files
+export type { 
+  PaystackTransactionData, 
+  PaystackResponse, 
+  PaystackInitializeResponse, 
+  PaystackVerifyResponse 
 }

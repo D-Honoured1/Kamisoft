@@ -1,7 +1,7 @@
 // components/admin/payment-link-generator.tsx - TASK 1: REMOVED RADIO BUTTONS
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -31,6 +31,12 @@ export function PaymentLinkGenerator({
   const [paymentLink, setPaymentLink] = useState("")
   const [linkExpiry, setLinkExpiry] = useState("")
   const [error, setError] = useState("")
+  const [origin, setOrigin] = useState<string>("")
+
+  // Set origin after hydration to prevent mismatch
+  useEffect(() => {
+    setOrigin(window.location.origin)
+  }, [])
 
   const canGeneratePayment = status === "approved" && estimatedCost && parseFloat(estimatedCost) > 0
 
@@ -78,9 +84,9 @@ export function PaymentLinkGenerator({
       }
 
       // Generate the payment link (simple URL without sensitive data)
-      const link = `${window.location.origin}/payment/${requestId}`
+      const link = origin ? `${origin}/payment/${requestId}` : `/payment/${requestId}`
       setPaymentLink(link)
-      setLinkExpiry(expiryTime.toLocaleString())
+      setLinkExpiry(expiryTime.toISOString())
 
     } catch (error: any) {
       console.error("Error generating payment link:", error)
@@ -91,7 +97,9 @@ export function PaymentLinkGenerator({
   }
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(paymentLink)
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(paymentLink)
+    }
   }
 
   const sendEmailNotification = async () => {
