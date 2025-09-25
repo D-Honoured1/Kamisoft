@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button"
 import { Calendar, MapPin, Mail, Phone, DollarSign, User, ArrowLeft, FileText, Clock, CheckCircle, XCircle } from "lucide-react"
 import Link from "next/link"
 import { PaymentLinkGenerator } from "@/components/admin/payment-link-generator"
+import { PaymentLinkDeactivator } from "@/components/admin/payment-link-deactivator"
+import { PaymentDeleter } from "@/components/admin/payment-deleter"
 
 interface ServiceRequestDetailProps {
   params: {
@@ -323,8 +325,10 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
                         </div>
                         <Badge
                           className={
-                            payment.payment_status === "paid"
+                            payment.payment_status === "completed" || payment.payment_status === "confirmed"
                               ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                              : payment.payment_status === "failed"
+                              ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
                               : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
                           }
                         >
@@ -349,6 +353,58 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
               </div>
             </CardContent>
           </Card>
+
+          {/* Payment Link Deactivator - Show if payment link exists */}
+          {request.payment_link_expiry && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Payment Link Management</CardTitle>
+                <CardDescription>
+                  Manage active payment links for this request
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <PaymentLinkDeactivator
+                  requestId={request.id}
+                  currentStatus={request.status}
+                  paymentLinkExpiry={request.payment_link_expiry}
+                  onDeactivated={() => window.location.reload()}
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Failed/Cancelled Payments Management */}
+          {(() => {
+            const failedPayments = payments.filter((payment: any) =>
+              ['failed', 'cancelled', 'pending'].includes(payment.payment_status)
+            )
+            return failedPayments.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Failed/Cancelled Payments</CardTitle>
+                  <CardDescription>
+                    Manage and clean up failed or cancelled payment attempts
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {failedPayments.map((payment: any) => (
+                      <PaymentDeleter
+                        key={payment.id}
+                        paymentId={payment.id}
+                        paymentStatus={payment.payment_status}
+                        amount={payment.amount}
+                        currency={payment.currency || 'USD'}
+                        paymentMethod={payment.payment_method}
+                        onDeleted={() => window.location.reload()}
+                      />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })()}
 
           {/* Actions */}
           <Card>
