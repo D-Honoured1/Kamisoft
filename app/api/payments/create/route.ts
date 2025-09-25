@@ -161,68 +161,79 @@ export async function POST(request: NextRequest) {
 }
 
 async function createPaystackCheckout(
-  paymentId: string, 
-  amount: number, 
-  serviceRequest: any, 
+  paymentId: string,
+  amount: number,
+  serviceRequest: any,
   paymentType: string,
   metadata: any
 ) {
   try {
-    if (!process.env.PAYSTACK_SECRET_KEY) {
-      console.error("Paystack secret key not configured")
-      throw new Error("Payment system configuration error. Please contact support.")
-    }
+    const { paystackService } = await import('@/lib/paystack')
 
-    const paymentDescription = paymentType === "split" 
+    const paymentDescription = paymentType === "split"
       ? `50% upfront payment for ${serviceRequest.title}`
       : `Full payment with discount for ${serviceRequest.title}`
 
-    const response = await fetch('https://api.paystack.co/transaction/initialize', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-        'Content-Type': 'application/json',
+    // Generate unique reference
+    const reference = paystackService.generateReference(`KE_${paymentType.toUpperCase()}`)
+
+    // Initialize transaction using Paystack service
+    const result = await paystackService.initializeTransaction({
+      email: serviceRequest.clients.email,
+      amount: amount, // Service handles conversion to kobo/cents
+      currency: 'USD',
+      reference: reference,
+      callback_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/success?payment_id=${paymentId}&type=${paymentType}`,
+      metadata: {
+        paymentId: paymentId,
+        requestId: serviceRequest.id,
+        clientName: serviceRequest.clients.name,
+        serviceTitle: serviceRequest.title,
+        paymentType: paymentType,
+        description: paymentDescription,
+        ...metadata
       },
-      body: JSON.stringify({
-        email: serviceRequest.clients.email,
-        amount: Math.round(amount * 100), // Paystack uses kobo for NGN, cents for USD
-        currency: 'USD', // Changed to USD since you're charging in USD
-        reference: `KE_${paymentType}_${paymentId}_${Date.now()}`,
-        callback_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/success?payment_id=${paymentId}&type=${paymentType}`,
-        metadata: {
-          paymentId: paymentId,
-          requestId: serviceRequest.id,
-          clientName: serviceRequest.clients.name,
-          serviceTitle: serviceRequest.title,
-          paymentType: paymentType,
-        },
-        channels: ['card', 'bank', 'ussd', 'mobile_money', 'bank_transfer'] // Nigerian payment methods
-      })
+      channels: ['card', 'bank', 'ussd', 'mobile_money', 'bank_transfer']
     })
 
-    if (!response.ok) {
-      const errorData = await response.json()
-      console.error("Paystack API error:", errorData)
-      throw new Error("Payment processing temporarily unavailable. Please try again.")
-    }
-
-    const data = await response.json()
-    
-    if (!data.status || !data.data.authorization_url) {
-      throw new Error("Payment processing failed. Please try again.")
+    if (!result.success || !result.authorization_url) {
+      throw new Error(result.message || "Payment processing failed. Please try again.")
     }
 
     // Store Paystack reference for tracking
     const supabase = createServerClient()
-    await supabase
+    const { error: updateError } = await supabase
       .from("payments")
-      .update({ paystack_reference: data.data.reference })
+      .update({
+        paystack_reference: result.reference,
+        metadata: JSON.stringify({
+          paystack_init_data: {
+            reference: result.reference,
+            access_code: result.access_code,
+            authorization_url: result.authorization_url
+          },
+          original_metadata: metadata,
+          initialized_at: new Date().toISOString()
+        })
+      })
       .eq("id", paymentId)
 
-    return data.data.authorization_url
+    if (updateError) {
+      console.error("Error updating payment with Paystack reference:", updateError)
+      // Don't fail the payment creation for this
+    }
+
+    console.log("Paystack checkout created successfully:", {
+      paymentId,
+      reference: result.reference,
+      amount,
+      currency: 'USD'
+    })
+
+    return result.authorization_url
   } catch (error: any) {
     console.error("Paystack checkout creation failed:", error)
-    throw new Error("Payment processing temporarily unavailable. Please try again or use a different payment method.")
+    throw new Error(error.message || "Payment processing temporarily unavailable. Please try again or use a different payment method.")
   }
 }
 
