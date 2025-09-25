@@ -44,7 +44,7 @@ export function PaymentLinkDeactivator({
     setError(null)
 
     try {
-      const response = await fetch(`/api/admin/payment-links/${requestId}/deactivate`, {
+      const response = await fetch(`/api/admin/${requestId}/deactivate`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

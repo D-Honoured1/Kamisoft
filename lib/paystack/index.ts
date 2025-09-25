@@ -385,7 +385,7 @@ export class PaystackService {
     }
 
     // Fallback - should be extremely rare
-    return `${prefix}_${Date.now()}_${crypto.randomUUID().substring(0, 8).toUpperCase()}`
+    return `${prefix}_${Date.now()}_${crypto.randomUUID().slice(0, 8).toUpperCase()}`
   }
 
   /**

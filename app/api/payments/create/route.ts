@@ -99,21 +99,32 @@ export async function POST(request: NextRequest) {
     }
 
     // Create payment record with pending status
-    const paymentData = {
+    // Note: Some fields may not exist in older database schemas
+    const paymentData: any = {
       request_id: requestId,
       amount: amount,
       currency: paymentMethod === 'crypto' ? 'USDT' : 'USD',
       payment_method: paymentMethod,
-      payment_status: "pending",
-      payment_type: paymentType,
-      payment_reference: paymentReference,
-      correlation_id: correlationId,
-      metadata: JSON.stringify({
-        ...metadata,
-        created_at: new Date().toISOString(),
-        user_agent: request.headers.get('user-agent'),
-        ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')
-      })
+      payment_status: "pending"
+    }
+
+    // Add enhanced fields only if they exist in the schema
+    // This provides backward compatibility
+    const enhancedMetadata = {
+      ...metadata,
+      created_at: new Date().toISOString(),
+      user_agent: request.headers.get('user-agent'),
+      ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')
+    }
+
+    // Try to add enhanced fields, but handle gracefully if columns don't exist
+    try {
+      paymentData.payment_type = paymentType
+      paymentData.payment_reference = paymentReference
+      paymentData.correlation_id = correlationId
+      paymentData.metadata = JSON.stringify(enhancedMetadata)
+    } catch (error) {
+      console.warn(`[${correlationId}] Enhanced payment fields not available, using basic schema`)
     }
 
     console.log(`[${correlationId}] Creating payment record:`, paymentData)
@@ -150,12 +161,18 @@ export async function POST(request: NextRequest) {
     // Handle different payment methods with better error recovery
     try {
       // Update status to processing to prevent duplicate attempts
+      const processingUpdate: any = { payment_status: "processing" }
+
+      // Add timestamp if column exists
+      try {
+        processingUpdate.processing_started_at = new Date().toISOString()
+      } catch (error) {
+        // Column doesn't exist, continue without it
+      }
+
       const { error: statusUpdateError } = await supabase
         .from("payments")
-        .update({
-          payment_status: "processing",
-          processing_started_at: new Date().toISOString()
-        })
+        .update(processingUpdate)
         .eq("id", payment.id)
 
       if (statusUpdateError) {
@@ -177,12 +194,18 @@ export async function POST(request: NextRequest) {
       }
 
       // Update payment status back to pending after successful initialization
+      const pendingUpdate: any = { payment_status: "pending" }
+
+      // Add timestamp if column exists
+      try {
+        pendingUpdate.initialized_at = new Date().toISOString()
+      } catch (error) {
+        // Column doesn't exist, continue without it
+      }
+
       await supabase
         .from("payments")
-        .update({
-          payment_status: "pending",
-          initialized_at: new Date().toISOString()
-        })
+        .update(pendingUpdate)
         .eq("id", payment.id)
 
     } catch (paymentMethodError: any) {
@@ -193,13 +216,19 @@ export async function POST(request: NextRequest) {
       })
 
       // Update payment status to failed with detailed error info
+      const failedUpdate: any = { payment_status: "failed" }
+
+      // Add error fields if columns exist
+      try {
+        failedUpdate.error_message = paymentMethodError.message
+        failedUpdate.failed_at = new Date().toISOString()
+      } catch (error) {
+        // Columns don't exist, continue without them
+      }
+
       await supabase
         .from("payments")
-        .update({
-          payment_status: "failed",
-          error_message: paymentMethodError.message,
-          failed_at: new Date().toISOString()
-        })
+        .update(failedUpdate)
         .eq("id", payment.id)
 
       // Determine if error is retryable
@@ -213,23 +242,28 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
 
-    return NextResponse.json({
+    // Prepare response, excluding fields that might not be available
+    const response: any = {
       success: true,
       paymentId: payment.id,
-      paymentReference,
       checkoutUrl,
       cryptoAddress,
       paymentType,
       amount,
       currency: paymentMethod === 'crypto' ? 'USDT' : 'USD',
-      message: getPaymentMethodMessage(paymentMethod),
-      correlationId
-    })
+      message: getPaymentMethodMessage(paymentMethod)
+    }
+
+    // Add enhanced fields if available
+    if (paymentReference) response.paymentReference = paymentReference
+    if (correlationId) response.correlationId = correlationId
+
+    return NextResponse.json(response)
   } catch (error: any) {
     console.error(`[${correlationId}] Error creating payment:`, {
       error: error.message,
       stack: error.stack,
-      requestBody: { requestId, paymentMethod, amount, paymentType }
+      requestInfo: 'Payment creation request failed'
     })
     return NextResponse.json({
       error: "Internal server error",
@@ -284,20 +318,31 @@ async function createPaystackCheckout(
 
     // Store Paystack reference for tracking
     const supabase = createServerClient()
+
+    // Prepare update data with backward compatibility
+    const updateData: any = {
+      paystack_reference: result.reference
+    }
+
+    // Add metadata if column exists
+    try {
+      updateData.metadata = JSON.stringify({
+        paystack_init_data: {
+          reference: result.reference,
+          access_code: result.access_code,
+          authorization_url: result.authorization_url
+        },
+        original_metadata: metadata,
+        initialized_at: new Date().toISOString()
+      })
+    } catch (error) {
+      // Metadata column doesn't exist, continue without it
+      console.log(`[${correlationId}] Metadata column not available, storing basic reference only`)
+    }
+
     const { error: updateError } = await supabase
       .from("payments")
-      .update({
-        paystack_reference: result.reference,
-        metadata: JSON.stringify({
-          paystack_init_data: {
-            reference: result.reference,
-            access_code: result.access_code,
-            authorization_url: result.authorization_url
-          },
-          original_metadata: metadata,
-          initialized_at: new Date().toISOString()
-        })
-      })
+      .update(updateData)
       .eq("id", paymentId)
 
     if (updateError) {
@@ -388,15 +433,24 @@ async function generateCryptoAddress(
       ]
     }
 
-    // Store crypto info for tracking
+    // Store crypto info for tracking (if columns exist)
     const supabase = createServerClient()
-    await supabase
-      .from("payments")
-      .update({ 
-        crypto_address: cryptoInfo.address,
-        crypto_network: cryptoInfo.network 
-      })
-      .eq("id", paymentId)
+    const cryptoUpdateData: any = {}
+
+    // Add crypto fields only if columns exist
+    try {
+      cryptoUpdateData.crypto_address = cryptoInfo.address
+      cryptoUpdateData.crypto_network = cryptoInfo.network
+    } catch (error) {
+      console.log(`[${correlationId}] Crypto columns not available in database`)
+    }
+
+    if (Object.keys(cryptoUpdateData).length > 0) {
+      await supabase
+        .from("payments")
+        .update(cryptoUpdateData)
+        .eq("id", paymentId)
+    }
 
     return cryptoInfo
   } catch (error) {

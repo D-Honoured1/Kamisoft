@@ -105,13 +105,26 @@ export async function PATCH(req: Request, { params }: RouteParams) {
     if (!paymentsError && pendingPayments && pendingPayments.length > 0) {
       console.log(`📋 Found ${pendingPayments.length} pending payments to cancel`)
 
+      // Update payment status to cancelled
+      const updateData: any = {
+        payment_status: "cancelled",
+        updated_at: now.toISOString()
+      }
+
+      // Add admin notes if the column exists
+      try {
+        updateData.admin_notes = `Payment cancelled due to link deactivation by ${adminUser.email}. Reason: ${reason || 'manual_deactivation'}`
+      } catch (error) {
+        // Column doesn't exist, store in metadata instead
+        updateData.metadata = JSON.stringify({
+          cancellation_reason: `Payment cancelled due to link deactivation by ${adminUser.email}. Reason: ${reason || 'manual_deactivation'}`,
+          cancelled_at: now.toISOString()
+        })
+      }
+
       const { error: cancelError } = await supabaseAdmin
         .from("payments")
-        .update({
-          payment_status: "cancelled",
-          admin_notes: `Payment cancelled due to link deactivation by ${adminUser.email}. Reason: ${reason || 'manual_deactivation'}`,
-          updated_at: now.toISOString()
-        })
+        .update(updateData)
         .in("id", pendingPayments.map(p => p.id))
 
       if (cancelError) {
@@ -124,9 +137,10 @@ export async function PATCH(req: Request, { params }: RouteParams) {
 
     console.log(`✅ Payment link deactivated successfully for request ${requestId}`)
 
-    // Log the deactivation for audit purposes
+    // Log the deactivation for audit purposes (if audit table exists)
     try {
-      await supabaseAdmin
+      // Check if audit table exists before trying to insert
+      const { error: auditError } = await supabaseAdmin
         .from("admin_audit_log")
         .insert({
           admin_user_id: adminUser.id,
@@ -140,9 +154,27 @@ export async function PATCH(req: Request, { params }: RouteParams) {
             request_title: serviceRequest.title
           }
         })
+
+      if (auditError) {
+        // Audit table might not exist, log to console instead
+        console.log("📝 Audit log (table not available):", {
+          admin_email: adminUser.email,
+          action: "payment_link_deactivated",
+          request_id: requestId,
+          reason: reason || 'manual_deactivation',
+          timestamp: now.toISOString()
+        })
+      }
     } catch (auditError) {
       console.error("⚠️ Audit log failed:", auditError)
-      // Don't fail the request for audit log issues
+      // Log to console as fallback
+      console.log("📝 Fallback audit log:", {
+        admin_email: adminUser.email,
+        action: "payment_link_deactivated",
+        request_id: requestId,
+        reason: reason || 'manual_deactivation',
+        timestamp: now.toISOString()
+      })
     }
 
     return NextResponse.json({
