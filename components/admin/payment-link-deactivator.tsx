@@ -2,6 +2,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { 
@@ -22,15 +23,14 @@ interface PaymentLinkDeactivatorProps {
   requestId: string
   currentStatus: string
   paymentLinkExpiry: string | null
-  onDeactivated: () => void
 }
 
-export function PaymentLinkDeactivator({ 
-  requestId, 
-  currentStatus, 
-  paymentLinkExpiry,
-  onDeactivated 
+export function PaymentLinkDeactivator({
+  requestId,
+  currentStatus,
+  paymentLinkExpiry
 }: PaymentLinkDeactivatorProps) {
+  const router = useRouter()
   const [isDeactivating, setIsDeactivating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -63,9 +63,9 @@ export function PaymentLinkDeactivator({
       const result = await response.json()
       setSuccess(true)
       
-      // Call parent callback to refresh data
+      // Refresh the page to show updated data
       setTimeout(() => {
-        onDeactivated()
+        router.refresh()
         setSuccess(false)
       }, 2000)
 

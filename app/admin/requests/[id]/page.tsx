@@ -368,7 +368,6 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
                   requestId={request.id}
                   currentStatus={request.status}
                   paymentLinkExpiry={request.payment_link_expiry}
-                  onDeactivated={() => window.location.reload()}
                 />
               </CardContent>
             </Card>
