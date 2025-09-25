@@ -133,7 +133,7 @@ class PaystackService {
 
   async initializeTransaction(params: {
     email: string
-    amount: number // Amount in USD
+    amount: number // Amount in the specified currency
     currency?: string
     reference: string
     callback_url?: string
@@ -150,19 +150,19 @@ class PaystackService {
       console.log('🚀 Initializing Paystack transaction:', {
         email: params.email,
         amount: params.amount,
-        currency: params.currency || 'USD',
+        currency: params.currency || 'NGN',
         reference: params.reference
       })
 
-      // Convert USD to kobo/cents for Paystack
-      // For USD: multiply by 100 (cents)
+      // Convert to kobo/cents for Paystack
       // For NGN: multiply by 100 (kobo)
-      const currency = params.currency || 'USD'
-      const amountInCents = Math.round(params.amount * 100)
+      // For USD: multiply by 100 (cents) - but NGN is preferred
+      const currency = params.currency || 'NGN'
+      const amountInKobo = Math.round(params.amount * 100)
 
       const requestData: PaystackTransactionData = {
         email: params.email,
-        amount: amountInCents,
+        amount: amountInKobo,
         currency: currency,
         reference: params.reference,
         callback_url: params.callback_url,
