@@ -2,16 +2,18 @@
 export const dynamic = "force-dynamic"
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
+import crypto from "crypto"
 
-// Exchange rate API endpoint (you can replace with your preferred provider)
-const EXCHANGE_RATE_API = "https://api.exchangerate-api.com/v4/latest/USD"
+// Removed unused EXCHANGE_RATE_API - using cached rates in Paystack service
 
 export async function POST(request: NextRequest) {
+  const correlationId = crypto.randomUUID()
+
   try {
     const supabase = createServerClient()
     const { requestId, paymentMethod, amount, paymentType, metadata } = await request.json()
 
-    console.log("Payment creation request:", { requestId, paymentMethod, amount, paymentType })
+    console.log(`[${correlationId}] Payment creation request:`, { requestId, paymentMethod, amount, paymentType })
 
     // Validate input
     if (!requestId || !paymentMethod || !amount || !paymentType) {
@@ -75,6 +77,27 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
+    // Generate unique payment reference for deduplication
+    const paymentReference = `${requestId}_${paymentType}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
+    // Check for existing pending payments to prevent duplicates
+    const { data: existingPayments, error: checkError } = await supabase
+      .from("payments")
+      .select("id, payment_status")
+      .eq("request_id", requestId)
+      .eq("payment_type", paymentType)
+      .in("payment_status", ["pending", "processing"])
+
+    if (checkError) {
+      console.error(`[${correlationId}] Error checking existing payments:`, checkError)
+    } else if (existingPayments && existingPayments.length > 0) {
+      console.log(`[${correlationId}] Found existing pending payment:`, existingPayments[0].id)
+      return NextResponse.json({
+        error: "A payment for this request is already being processed. Please wait or contact support.",
+        existingPaymentId: existingPayments[0].id
+      }, { status: 409 })
+    }
+
     // Create payment record with pending status
     const paymentData = {
       request_id: requestId,
@@ -83,10 +106,17 @@ export async function POST(request: NextRequest) {
       payment_method: paymentMethod,
       payment_status: "pending",
       payment_type: paymentType,
-      metadata: JSON.stringify(metadata)
+      payment_reference: paymentReference,
+      correlation_id: correlationId,
+      metadata: JSON.stringify({
+        ...metadata,
+        created_at: new Date().toISOString(),
+        user_agent: request.headers.get('user-agent'),
+        ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')
+      })
     }
 
-    console.log("Creating payment record:", paymentData)
+    console.log(`[${correlationId}] Creating payment record:`, paymentData)
 
     const { data: payment, error: paymentError } = await supabase
       .from("payments")
@@ -95,67 +125,117 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (paymentError) {
-      console.error("Error creating payment:", paymentError)
-      return NextResponse.json({ 
+      console.error(`[${correlationId}] Error creating payment:`, paymentError)
+
+      // Handle duplicate key constraint
+      if (paymentError.code === '23505') {
+        return NextResponse.json({
+          error: "A payment with this reference already exists. Please try again.",
+          correlationId
+        }, { status: 409 })
+      }
+
+      return NextResponse.json({
         error: "Failed to create payment record",
-        details: paymentError.message 
+        details: paymentError.message,
+        correlationId
       }, { status: 500 })
     }
 
-    console.log("Payment record created:", payment.id)
+    console.log(`[${correlationId}] Payment record created:`, payment.id)
 
     let checkoutUrl = null
     let cryptoAddress = null
 
-    // Handle different payment methods
+    // Handle different payment methods with better error recovery
     try {
-      switch (paymentMethod) {
-        case "paystack":
-          checkoutUrl = await createPaystackCheckout(payment.id, amount, serviceRequest, paymentType, metadata)
-          break
-        case "bank_transfer":
-          await sendBankTransferInstructions(serviceRequest.clients.email, payment.id, amount, paymentType, metadata)
-          break
-        case "crypto":
-          cryptoAddress = await generateCryptoAddress(payment.id, amount, serviceRequest, paymentType)
-          break
-        default:
-          return NextResponse.json({ error: "Invalid payment method" }, { status: 400 })
-      }
-    } catch (paymentMethodError: any) {
-      console.error("Payment method error:", paymentMethodError)
-      
-      // Update payment status to failed
-      await supabase
+      // Update status to processing to prevent duplicate attempts
+      const { error: statusUpdateError } = await supabase
         .from("payments")
-        .update({ 
-          payment_status: "failed",
-          error_message: paymentMethodError.message 
+        .update({
+          payment_status: "processing",
+          processing_started_at: new Date().toISOString()
         })
         .eq("id", payment.id)
 
-      return NextResponse.json({ 
+      if (statusUpdateError) {
+        console.error(`[${correlationId}] Error updating payment status to processing:`, statusUpdateError)
+      }
+
+      switch (paymentMethod) {
+        case "paystack":
+          checkoutUrl = await createPaystackCheckout(payment.id, amount, serviceRequest, paymentType, metadata, correlationId, paymentReference)
+          break
+        case "bank_transfer":
+          await sendBankTransferInstructions(serviceRequest.clients.email, payment.id, amount, paymentType, metadata, correlationId)
+          break
+        case "crypto":
+          cryptoAddress = await generateCryptoAddress(payment.id, amount, serviceRequest, paymentType, correlationId)
+          break
+        default:
+          throw new Error("Invalid payment method")
+      }
+
+      // Update payment status back to pending after successful initialization
+      await supabase
+        .from("payments")
+        .update({
+          payment_status: "pending",
+          initialized_at: new Date().toISOString()
+        })
+        .eq("id", payment.id)
+
+    } catch (paymentMethodError: any) {
+      console.error(`[${correlationId}] Payment method error:`, {
+        error: paymentMethodError.message,
+        paymentId: payment.id,
+        method: paymentMethod
+      })
+
+      // Update payment status to failed with detailed error info
+      await supabase
+        .from("payments")
+        .update({
+          payment_status: "failed",
+          error_message: paymentMethodError.message,
+          failed_at: new Date().toISOString()
+        })
+        .eq("id", payment.id)
+
+      // Determine if error is retryable
+      const isRetryable = isRetryableError(paymentMethodError.message)
+
+      return NextResponse.json({
         error: paymentMethodError.message || "Payment processing failed",
-        details: "Please try a different payment method or contact support"
+        details: isRetryable ? "This is a temporary error. Please try again." : "Please try a different payment method or contact support",
+        correlationId,
+        retryable: isRetryable
       }, { status: 500 })
     }
 
     return NextResponse.json({
       success: true,
       paymentId: payment.id,
+      paymentReference,
       checkoutUrl,
       cryptoAddress,
       paymentType,
       amount,
       currency: paymentMethod === 'crypto' ? 'USDT' : 'USD',
       message: getPaymentMethodMessage(paymentMethod),
+      correlationId
     })
   } catch (error: any) {
-    console.error("Error creating payment:", error)
-    return NextResponse.json({ 
+    console.error(`[${correlationId}] Error creating payment:`, {
+      error: error.message,
+      stack: error.stack,
+      requestBody: { requestId, paymentMethod, amount, paymentType }
+    })
+    return NextResponse.json({
       error: "Internal server error",
       details: error.message,
-      message: "Please try again or contact support if the problem persists"
+      message: "Please try again or contact support if the problem persists",
+      correlationId
     }, { status: 500 })
   }
 }
@@ -165,7 +245,9 @@ async function createPaystackCheckout(
   amount: number,
   serviceRequest: any,
   paymentType: string,
-  metadata: any
+  metadata: any,
+  correlationId: string,
+  paymentReference: string
 ) {
   try {
     const { paystackService } = await import('@/lib/paystack')
@@ -174,8 +256,8 @@ async function createPaystackCheckout(
       ? `50% upfront payment for ${serviceRequest.title}`
       : `Full payment with discount for ${serviceRequest.title}`
 
-    // Generate unique reference
-    const reference = paystackService.generateReference(`KE_${paymentType.toUpperCase()}`)
+    // Use provided payment reference for consistency
+    const reference = paymentReference
 
     // Initialize transaction using Paystack service
     const result = await paystackService.initializeTransaction({
@@ -223,7 +305,7 @@ async function createPaystackCheckout(
       // Don't fail the payment creation for this
     }
 
-    console.log("Paystack checkout created successfully:", {
+    console.log(`[${correlationId}] Paystack checkout created successfully:`, {
       paymentId,
       reference: result.reference,
       amount,
@@ -232,20 +314,21 @@ async function createPaystackCheckout(
 
     return result.authorization_url
   } catch (error: any) {
-    console.error("Paystack checkout creation failed:", error)
+    console.error(`[${correlationId}] Paystack checkout creation failed:`, error)
     throw new Error(error.message || "Payment processing temporarily unavailable. Please try again or use a different payment method.")
   }
 }
 
 async function sendBankTransferInstructions(
-  email: string, 
-  paymentId: string, 
-  amount: number, 
+  email: string,
+  paymentId: string,
+  amount: number,
   paymentType: string,
-  metadata: any
+  _metadata: any, // Prefix with underscore to indicate intentionally unused
+  correlationId: string
 ) {
   try {
-    console.log("Sending bank transfer instructions to:", email, "for payment:", paymentId)
+    console.log(`[${correlationId}] Sending bank transfer instructions to:`, email, "for payment:", paymentId)
     
     const paymentTypeDescription = paymentType === "split" 
       ? "50% upfront payment (remaining 50% due on completion)"
@@ -270,18 +353,19 @@ async function sendBankTransferInstructions(
     }
     
     // TODO: Implement actual email sending
-    console.log("Bank transfer instructions:", instructions)
+    console.log(`[${correlationId}] Bank transfer instructions:`, instructions)
   } catch (error) {
-    console.error("Failed to send bank transfer instructions:", error)
+    console.error(`[${correlationId}] Failed to send bank transfer instructions:`, error)
     throw new Error("Failed to send payment instructions. Please contact support.")
   }
 }
 
 async function generateCryptoAddress(
-  paymentId: string, 
-  amount: number, 
-  serviceRequest: any, 
-  paymentType: string
+  paymentId: string,
+  amount: number,
+  _serviceRequest: any, // Prefix with underscore to indicate intentionally unused
+  _paymentType: string,  // Prefix with underscore to indicate intentionally unused
+  correlationId: string
 ) {
   try {
     // For now, return a static USDT address
@@ -316,7 +400,7 @@ async function generateCryptoAddress(
 
     return cryptoInfo
   } catch (error) {
-    console.error("Failed to generate crypto address:", error)
+    console.error(`[${correlationId}] Failed to generate crypto address:`, error)
     throw new Error("Crypto payment setup failed. Please try another payment method.")
   }
 }
@@ -332,4 +416,18 @@ function getPaymentMethodMessage(method: string): string {
     default:
       return "Payment session created successfully"
   }
+}
+
+function isRetryableError(errorMessage: string): boolean {
+  const retryablePatterns = [
+    'network',
+    'timeout',
+    'temporarily unavailable',
+    'connection',
+    'rate limit',
+    'service unavailable'
+  ]
+
+  const lowerMessage = errorMessage.toLowerCase()
+  return retryablePatterns.some(pattern => lowerMessage.includes(pattern))
 }
