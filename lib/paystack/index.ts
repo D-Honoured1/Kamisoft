@@ -1,9 +1,6 @@
 // lib/paystack/index.ts - Paystack utility functions
 import { Paystack } from 'paystack-node'
 
-// Initialize Paystack instance
-const paystack = new Paystack(process.env.PAYSTACK_SECRET_KEY || '')
-
 export interface PaystackTransactionData {
   email: string
   amount: number // in cents/kobo
@@ -58,13 +55,20 @@ export interface PaystackVerificationResponse {
 }
 
 export class PaystackService {
-  private paystackInstance: Paystack
+  private paystackInstance: Paystack | null = null
 
   constructor() {
-    if (!process.env.PAYSTACK_SECRET_KEY) {
-      throw new Error('PAYSTACK_SECRET_KEY environment variable is required')
+    // Don't initialize during build time
+  }
+
+  private getPaystackInstance(): Paystack {
+    if (!this.paystackInstance) {
+      if (!process.env.PAYSTACK_SECRET_KEY) {
+        throw new Error('PAYSTACK_SECRET_KEY environment variable is required')
+      }
+      this.paystackInstance = new Paystack(process.env.PAYSTACK_SECRET_KEY)
     }
-    this.paystackInstance = new Paystack(process.env.PAYSTACK_SECRET_KEY)
+    return this.paystackInstance
   }
 
   /**
@@ -72,7 +76,7 @@ export class PaystackService {
    */
   async initializeTransaction(data: PaystackTransactionData) {
     try {
-      const response = await this.paystackInstance.transaction.initialize({
+      const response = await this.getPaystackInstance().transaction.initialize({
         email: data.email,
         amount: Math.round(data.amount * 100), // Convert to kobo/cents
         currency: data.currency || 'USD',
@@ -101,7 +105,7 @@ export class PaystackService {
    */
   async verifyTransaction(reference: string): Promise<PaystackVerificationResponse> {
     try {
-      const response = await this.paystackInstance.transaction.verify(reference)
+      const response = await this.getPaystackInstance().transaction.verify(reference)
       return response as PaystackVerificationResponse
     } catch (error: any) {
       console.error('Paystack verification error:', error)
@@ -114,7 +118,7 @@ export class PaystackService {
    */
   async getTransaction(transactionId: string | number) {
     try {
-      const response = await this.paystackInstance.transaction.get(transactionId)
+      const response = await this.getPaystackInstance().transaction.get(transactionId)
       return {
         success: response.status,
         message: response.message,
@@ -139,7 +143,7 @@ export class PaystackService {
     amount?: number
   }) {
     try {
-      const response = await this.paystackInstance.transaction.list(options)
+      const response = await this.getPaystackInstance().transaction.list(options)
       return {
         success: response.status,
         message: response.message,
@@ -163,7 +167,7 @@ export class PaystackService {
     metadata?: Record<string, any>
   }) {
     try {
-      const response = await this.paystackInstance.customer.create(data)
+      const response = await this.getPaystackInstance().customer.create(data)
       return {
         success: response.status,
         message: response.message,
@@ -180,7 +184,7 @@ export class PaystackService {
    */
   async getCustomer(emailOrCustomerCode: string) {
     try {
-      const response = await this.paystackInstance.customer.get(emailOrCustomerCode)
+      const response = await this.getPaystackInstance().customer.get(emailOrCustomerCode)
       return {
         success: response.status,
         message: response.message,
