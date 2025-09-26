@@ -13,6 +13,7 @@ import { PaymentLinkGenerator } from "@/components/admin/payment-link-generator"
 import { PaymentLinkDeactivator } from "@/components/admin/payment-link-deactivator"
 import { PaymentDeleter } from "@/components/admin/payment-deleter"
 import { PaymentApprover } from "@/components/admin/payment-approver"
+import { CryptoPaymentVerifier } from "@/components/admin/crypto-payment-verifier"
 
 interface ServiceRequestDetailProps {
   params: {
@@ -53,7 +54,15 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
   let payments = []
   const { data: paymentsData, error: paymentsError } = await supabase
     .from("payments")
-    .select("*")
+    .select(`
+      *,
+      crypto_address,
+      crypto_network,
+      crypto_amount,
+      crypto_symbol,
+      crypto_transaction_hash,
+      crypto_confirmations
+    `)
     .eq("request_id", request.id)
 
   if (!paymentsError && paymentsData) {
@@ -400,6 +409,43 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
                         paymentMethod={payment.payment_method}
                         paymentType={payment.payment_type}
                         paystackReference={payment.paystack_reference}
+                      />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })()}
+
+          {/* Crypto Payment Verification */}
+          {(() => {
+            const cryptoPayments = payments.filter((payment: any) =>
+              payment.payment_method === 'crypto' && payment.payment_status === 'processing'
+            )
+            return cryptoPayments.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Crypto Payment Verification</CardTitle>
+                  <CardDescription>
+                    Verify blockchain transactions for crypto payments
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {cryptoPayments.map((payment: any) => (
+                      <CryptoPaymentVerifier
+                        key={payment.id}
+                        paymentId={payment.id}
+                        paymentStatus={payment.payment_status}
+                        amount={payment.amount}
+                        currency={payment.currency || 'USD'}
+                        cryptoAddress={payment.crypto_address}
+                        cryptoNetwork={payment.crypto_network}
+                        cryptoAmount={payment.crypto_amount}
+                        cryptoSymbol={payment.crypto_symbol}
+                        cryptoTransactionHash={payment.crypto_transaction_hash}
+                        paymentMethod={payment.payment_method}
+                        metadata={payment.metadata}
                       />
                     ))}
                   </div>
