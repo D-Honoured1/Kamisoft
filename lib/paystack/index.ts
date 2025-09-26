@@ -75,27 +75,6 @@ interface ExchangeRateResult {
   cached: boolean
 }
 
-// Fetch implementation that works across environments
-const fetchImpl = (() => {
-  // Check if we're in a browser or modern Node.js environment
-  if (typeof globalThis !== 'undefined' && globalThis.fetch) {
-    return globalThis.fetch.bind(globalThis)
-  }
-  
-  // Check if we're in Node.js with native fetch (Node 18+)
-  if (typeof global !== 'undefined' && global.fetch) {
-    return global.fetch.bind(global)
-  }
-  
-  // Fallback for older Node.js - you'll need to install node-fetch for this
-  try {
-    // Dynamic import for node-fetch (only if needed)
-    return require('node-fetch').default || require('node-fetch')
-  } catch {
-    throw new Error('fetch is not available. Please upgrade to Node.js 18+ or install node-fetch')
-  }
-})()
-
 export class PaystackService {
   private secretKey: string
   private baseUrl = 'https://api.paystack.co'
@@ -115,6 +94,17 @@ export class PaystackService {
     this.secretKey = secretKey
   }
 
+  // Simple fetch with timeout using Promise.race
+  private async fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 30000): Promise<Response> {
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Request timeout')), timeoutMs)
+    })
+
+    const fetchPromise = fetch(url, options)
+    
+    return Promise.race([fetchPromise, timeoutPromise])
+  }
+
   // Core API request method
   private async makeRequest(endpoint: string, method: 'GET' | 'POST' = 'GET', body?: any): Promise<PaystackResponse> {
     const url = `${this.baseUrl}${endpoint}`
@@ -122,10 +112,7 @@ export class PaystackService {
     console.log(`🔄 Paystack API: ${method} ${endpoint}`)
     
     try {
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
-      
-      const response = await fetchImpl(url, {
+      const response = await this.fetchWithTimeout(url, {
         method,
         headers: {
           'Authorization': `Bearer ${this.secretKey}`,
@@ -133,11 +120,8 @@ export class PaystackService {
           'Cache-Control': 'no-cache',
           'User-Agent': 'KamisoftPaymentSystem/1.0'
         },
-        body: body ? JSON.stringify(body) : undefined,
-        signal: controller.signal
-      })
-
-      clearTimeout(timeoutId)
+        body: body ? JSON.stringify(body) : undefined
+      }, 30000)
 
       if (!response.ok) {
         const errorText = await response.text()
@@ -154,10 +138,6 @@ export class PaystackService {
 
       return result
     } catch (error: any) {
-      if (error.name === 'AbortError') {
-        console.error('❌ Request timeout after 30 seconds')
-        throw new Error('Request timeout')
-      }
       console.error(`❌ Paystack request failed:`, error)
       throw error
     }
@@ -181,15 +161,9 @@ export class PaystackService {
     try {
       console.log(`🌐 Fetching exchange rate: ${from} → ${to}`)
       
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
-      
-      const response = await fetchImpl(`https://api.exchangerate-api.com/v4/latest/${from}`, {
-        headers: { 'User-Agent': 'KamisoftPaymentSystem/1.0' },
-        signal: controller.signal
-      })
-
-      clearTimeout(timeoutId)
+      const response = await this.fetchWithTimeout(`https://api.exchangerate-api.com/v4/latest/${from}`, {
+        headers: { 'User-Agent': 'KamisoftPaymentSystem/1.0' }
+      }, 5000)
 
       if (!response.ok) {
         throw new Error(`Exchange rate API returned ${response.status}`)
@@ -475,6 +449,64 @@ export class PaystackService {
     console.log('🧹 Exchange rate cache cleared')
   }
 }
+
+// Lazy initialization singleton to avoid environment variable issues
+let _paystackInstance: PaystackService | null = null
+
+function getPaystackInstance(): PaystackService {
+  if (!_paystackInstance) {
+    const secretKey = process.env.PAYSTACK_SECRET_KEY
+    if (!secretKey) {
+      throw new Error(
+        'PAYSTACK_SECRET_KEY environment variable is not set. ' +
+        'Please add PAYSTACK_SECRET_KEY=sk_test_... to your .env.local file'
+      )
+    }
+    _paystackInstance = new PaystackService(secretKey)
+  }
+  return _paystackInstance
+}
+
+// Export a service object with all methods
+export const paystackService = {
+  async initializeTransaction(params: Parameters<PaystackService['initializeTransaction']>[0]) {
+    return getPaystackInstance().initializeTransaction(params)
+  },
+
+  async verifyTransaction(reference: string) {
+    return getPaystackInstance().verifyTransaction(reference)
+  },
+
+  async listTransactions(params?: Parameters<PaystackService['listTransactions']>[0]) {
+    return getPaystackInstance().listTransactions(params)
+  },
+
+  validateWebhookSignature(payload: string, signature: string) {
+    return getPaystackInstance().validateWebhookSignature(payload, signature)
+  },
+
+  convertToKobo(amount: number) {
+    return getPaystackInstance().convertToKobo(amount)
+  },
+
+  convertFromKobo(amount: number) {
+    return getPaystackInstance().convertFromKobo(amount)
+  },
+
+  getSupportedChannels() {
+    return getPaystackInstance().getSupportedChannels()
+  },
+
+  getExchangeRateCacheStats() {
+    return getPaystackInstance().getExchangeRateCacheStats()
+  },
+
+  clearExchangeRateCache() {
+    return getPaystackInstance().clearExchangeRateCache()
+  }
+}
+
+
 
 // Export types for external use
 export type {

@@ -284,7 +284,7 @@ async function createPaystackCheckout(
   paymentReference: string
 ) {
   try {
-    const { paystackService } = await import('@/lib/paystack')
+    const paystackService = (await import('@/lib/paystack')).default
 
     const paymentDescription = paymentType === "split"
       ? `50% upfront payment for ${serviceRequest.title}`
