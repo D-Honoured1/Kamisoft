@@ -43,9 +43,12 @@ export function PaymentApprover({
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
-  // Only allow approval of successful/completed payments that haven't been confirmed yet
-  const approvableStatuses = ['success', 'completed']
-  const canApprove = approvableStatuses.includes(paymentStatus)
+  // Allow approval of various payment statuses:
+  // - 'success', 'completed': Paystack payments that succeeded
+  // - 'pending': Manual payments (bank transfer, crypto) awaiting admin verification
+  // - 'processing': Payments that are being processed
+  const approvableStatuses = ['success', 'completed', 'pending', 'processing']
+  const canApprove = approvableStatuses.includes(paymentStatus) && paymentStatus !== 'confirmed'
 
   const handleApprove = async () => {
     setIsApproving(true)

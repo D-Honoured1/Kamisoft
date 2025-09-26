@@ -374,22 +374,23 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
             </Card>
           )}
 
-          {/* Successful Payments Awaiting Approval */}
+          {/* Payments Awaiting Approval */}
           {(() => {
-            const successfulPayments = payments.filter((payment: any) =>
-              ['success', 'completed'].includes(payment.payment_status)
+            const approvablePayments = payments.filter((payment: any) =>
+              ['success', 'completed', 'pending', 'processing'].includes(payment.payment_status) &&
+              payment.payment_status !== 'confirmed'
             )
-            return successfulPayments.length > 0 && (
+            return approvablePayments.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Successful Payments</CardTitle>
+                  <CardTitle>Payments Awaiting Approval</CardTitle>
                   <CardDescription>
-                    Approve and confirm successful payments
+                    Approve and confirm payments (Paystack, bank transfer, crypto)
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {successfulPayments.map((payment: any) => (
+                    {approvablePayments.map((payment: any) => (
                       <PaymentApprover
                         key={payment.id}
                         paymentId={payment.id}
