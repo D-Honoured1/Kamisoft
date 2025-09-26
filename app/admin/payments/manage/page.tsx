@@ -7,10 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,7 +20,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { 
+import {
   CheckCircle,
   XCircle,
   Clock,
@@ -34,7 +32,6 @@ import {
   Wallet,
   RefreshCw,
   Eye,
-  Edit,
   Trash2,
   DollarSign
 } from "lucide-react"
@@ -67,11 +64,9 @@ export default function AdminPaymentManager() {
   const [payments, setPayments] = useState<Payment[]>([])
   const [filteredPayments, setFilteredPayments] = useState<Payment[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null)
-  const [adminNotes, setAdminNotes] = useState("")
   const [processing, setProcessing] = useState(false)
   const { toast } = useToast()
-  
+
   // Filters
   const [statusFilter, setStatusFilter] = useState("all")
   const [methodFilter, setMethodFilter] = useState("all")
@@ -89,10 +84,12 @@ export default function AdminPaymentManager() {
     try {
       setLoading(true)
       const response = await fetch('/api/admin/payments/all')
-      
+
       if (response.ok) {
         const data = await response.json()
         setPayments(data.payments || [])
+      } else {
+        throw new Error('Failed to fetch payments')
       }
     } catch (error) {
       console.error('Error fetching payments:', error)
@@ -122,7 +119,7 @@ export default function AdminPaymentManager() {
     // Search filter
     if (searchTerm) {
       const term = searchTerm.toLowerCase()
-      filtered = filtered.filter(p => 
+      filtered = filtered.filter(p =>
         p.service_requests.title.toLowerCase().includes(term) ||
         p.service_requests.clients.name.toLowerCase().includes(term) ||
         p.service_requests.clients.email.toLowerCase().includes(term) ||
@@ -134,7 +131,7 @@ export default function AdminPaymentManager() {
     setFilteredPayments(filtered)
   }
 
-  // Clear failed payment
+  // Clear failed payment using the correct delete endpoint
   const clearFailedPayment = async (paymentId: string) => {
     try {
       setProcessing(true)
@@ -164,74 +161,34 @@ export default function AdminPaymentManager() {
     }
   }
 
-  // Approve successful payment
-  const approvePayment = async (paymentId: string, notes: string = "") => {
+  // Approve successful payment using the correct approve endpoint
+  const approvePayment = async (paymentId: string) => {
     try {
       setProcessing(true)
-      const response = await fetch(`/api/admin/payments/${paymentId}`, {
-        method: 'PATCH',
+      const response = await fetch(`/api/admin/payments/${paymentId}/approve`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          payment_status: 'confirmed',
-          admin_notes: notes || `Payment approved by admin`,
-          confirmed_at: new Date().toISOString(),
-          confirmed_by: 'admin_approval'
+          paymentStatus: 'success', // or 'completed'
+          paystackReference: payments.find(p => p.id === paymentId)?.paystack_reference
         })
       })
 
       if (response.ok) {
         await fetchPayments()
-        setSelectedPayment(null)
-        setAdminNotes("")
         toast({
           title: "Success",
           description: "Payment approved successfully",
         })
       } else {
-        throw new Error('Failed to approve payment')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to approve payment')
       }
     } catch (error: any) {
       console.error('Error approving payment:', error)
       toast({
         title: "Error",
-        description: "Failed to approve payment",
-        variant: "destructive"
-      })
-    } finally {
-      setProcessing(false)
-    }
-  }
-
-  // Decline payment
-  const declinePayment = async (paymentId: string, notes: string = "") => {
-    try {
-      setProcessing(true)
-      const response = await fetch(`/api/admin/payments/${paymentId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          payment_status: 'declined',
-          admin_notes: notes || `Payment declined by admin`,
-          updated_at: new Date().toISOString()
-        })
-      })
-
-      if (response.ok) {
-        await fetchPayments()
-        setSelectedPayment(null)
-        setAdminNotes("")
-        toast({
-          title: "Success",
-          description: "Payment declined",
-        })
-      } else {
-        throw new Error('Failed to decline payment')
-      }
-    } catch (error: any) {
-      console.error('Error declining payment:', error)
-      toast({
-        title: "Error",
-        description: "Failed to decline payment",
+        description: error.message || "Failed to approve payment",
         variant: "destructive"
       })
     } finally {
@@ -242,8 +199,10 @@ export default function AdminPaymentManager() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'confirmed':
-      case 'paid':
         return <CheckCircle className="h-4 w-4 text-green-600" />
+      case 'success':
+      case 'completed':
+        return <CheckCircle className="h-4 w-4 text-blue-600" />
       case 'pending':
       case 'processing':
         return <Clock className="h-4 w-4 text-yellow-600" />
@@ -258,8 +217,10 @@ export default function AdminPaymentManager() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmed':
-      case 'paid':
         return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+      case 'success':
+      case 'completed':
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
       case 'pending':
       case 'processing':
         return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
@@ -277,6 +238,8 @@ export default function AdminPaymentManager() {
         return <Wallet className="h-4 w-4" />
       case 'bank_transfer':
         return <Building className="h-4 w-4" />
+      case 'crypto':
+        return <CreditCard className="h-4 w-4" />
       default:
         return <CreditCard className="h-4 w-4" />
     }
@@ -284,11 +247,11 @@ export default function AdminPaymentManager() {
 
   const stats = {
     total: payments.length,
-    confirmed: payments.filter(p => p.payment_status === 'confirmed' || p.payment_status === 'paid').length,
-    pending: payments.filter(p => p.payment_status === 'pending' || p.payment_status === 'processing').length,
-    failed: payments.filter(p => p.payment_status === 'failed' || p.payment_status === 'declined').length,
+    confirmed: payments.filter(p => p.payment_status === 'confirmed').length,
+    pending: payments.filter(p => ['pending', 'processing', 'success', 'completed'].includes(p.payment_status)).length,
+    failed: payments.filter(p => ['failed', 'declined'].includes(p.payment_status)).length,
     totalRevenue: payments
-      .filter(p => p.payment_status === 'confirmed' || p.payment_status === 'paid')
+      .filter(p => p.payment_status === 'confirmed')
       .reduce((sum, p) => sum + p.amount, 0)
   }
 
@@ -306,7 +269,7 @@ export default function AdminPaymentManager() {
   return (
     <div className="container mx-auto px-4 py-8">
       <DashboardHomeButton />
-      
+
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Payment Management</h1>
@@ -402,8 +365,11 @@ export default function AdminPaymentManager() {
                   <SelectItem value="all">All Statuses</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="processing">Processing</SelectItem>
+                  <SelectItem value="success">Success</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="confirmed">Confirmed</SelectItem>
                   <SelectItem value="failed">Failed</SelectItem>
+                  <SelectItem value="declined">Declined</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -418,6 +384,7 @@ export default function AdminPaymentManager() {
                   <SelectItem value="all">All Methods</SelectItem>
                   <SelectItem value="paystack">Paystack</SelectItem>
                   <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                  <SelectItem value="crypto">Crypto</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -455,7 +422,7 @@ export default function AdminPaymentManager() {
                         {payment.service_requests.clients.name} • {payment.service_requests.title}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(payment.created_at).toLocaleString()} • 
+                        {new Date(payment.created_at).toLocaleString()} •
                         {payment.paystack_reference && ` Paystack: ${payment.paystack_reference}`}
                       </p>
                     </div>
@@ -464,7 +431,7 @@ export default function AdminPaymentManager() {
                   {/* Action Buttons */}
                   <div className="flex items-center gap-2">
                     {/* Clear Failed Payment Button */}
-                    {(payment.payment_status === 'failed' || payment.payment_status === 'declined') && (
+                    {(['failed', 'declined'].includes(payment.payment_status)) && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button
@@ -473,14 +440,14 @@ export default function AdminPaymentManager() {
                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
                             disabled={processing}
                           >
-                            <XCircle className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
                             <AlertDialogTitle>Clear Failed Payment?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              This will permanently delete this failed payment record from the system. 
+                              This will permanently delete this failed payment record from the system.
                               This action cannot be undone.
                               <div className="mt-2 p-3 bg-red-50 rounded-lg">
                                 <p className="text-sm font-medium">Payment Details:</p>
@@ -505,50 +472,43 @@ export default function AdminPaymentManager() {
                     )}
 
                     {/* Approve Successful Payment */}
-                    {(payment.payment_status === 'pending' || payment.payment_status === 'processing') && (
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => approvePayment(payment.id, `Payment approved via admin dashboard on ${new Date().toLocaleString()}`)}
-                          disabled={processing}
-                          className="bg-green-600 hover:bg-green-700"
-                        >
-                          <CheckCircle className="mr-1 h-4 w-4" />
-                          Approve
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="outline"
+                    {(['success', 'completed'].includes(payment.payment_status)) && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            disabled={processing}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            <CheckCircle className="mr-1 h-4 w-4" />
+                            Approve
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Approve Payment?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will confirm the payment as valid and may update the service request status.
+                              <div className="mt-2 p-3 bg-green-50 rounded-lg">
+                                <p className="text-sm font-medium">Payment Details:</p>
+                                <p className="text-sm text-green-800">
+                                  ${payment.amount} • {payment.payment_method} • {payment.payment_status}
+                                </p>
+                              </div>
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel disabled={processing}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => approvePayment(payment.id)}
                               disabled={processing}
-                              className="border-red-200 text-red-600 hover:bg-red-50"
+                              className="bg-green-600 hover:bg-green-700"
                             >
-                              <XCircle className="mr-1 h-4 w-4" />
-                              Decline
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Decline Payment?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to decline this payment? This will mark it as declined
-                                and the client may need to retry the payment.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel disabled={processing}>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => declinePayment(payment.id, "Payment declined by admin")}
-                                disabled={processing}
-                                className="bg-red-600 hover:bg-red-700"
-                              >
-                                Decline Payment
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
+                              {processing ? "Approving..." : "Approve Payment"}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     )}
 
                     {/* View Details */}
