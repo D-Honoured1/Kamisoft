@@ -506,6 +506,8 @@ export const paystackService = {
   }
 }
 
+// Also export as default for better compatibility
+export default paystackService
 
 
 // Export types for external use
