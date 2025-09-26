@@ -1,4 +1,4 @@
-// app/api/crypto/generate/route.ts - Generate crypto payment details
+// app/api/nowpayments/generate/route.ts - Generate NOWPayments payment details
 export const dynamic = "force-dynamic"
 
 import { NextRequest, NextResponse } from "next/server"

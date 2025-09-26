@@ -1,4 +1,4 @@
-// components/crypto/crypto-payment-selector.tsx
+// components/nowpayments/nowpayments-payment-selector.tsx
 "use client"
 
 import { useState, useEffect } from "react"
@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Zap, DollarSign, Shield, ArrowRight } from "lucide-react"
 import Image from "next/image"
 
-interface CryptoCurrency {
+interface NOWPaymentsCurrency {
   id: string
   name: string
   symbol: string
@@ -21,7 +21,7 @@ interface CryptoCurrency {
   smartContract?: string
 }
 
-interface CryptoPaymentSelectorProps {
+interface NOWPaymentsPaymentSelectorProps {
   usdAmount: number
   onCurrencySelect: (currency: string) => void
   disabled?: boolean
@@ -42,12 +42,12 @@ const getCurrencyColor = (symbol: string): string => {
   return currencyColors[key] || 'bg-gray-100 text-gray-800 border-gray-200'
 }
 
-export function CryptoPaymentSelector({
+export function NOWPaymentsPaymentSelector({
   usdAmount,
   onCurrencySelect,
   disabled = false
-}: CryptoPaymentSelectorProps) {
-  const [currencies, setCurrencies] = useState<CryptoCurrency[]>([])
+}: NOWPaymentsPaymentSelectorProps) {
+  const [currencies, setCurrencies] = useState<NOWPaymentsCurrency[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedCurrency, setSelectedCurrency] = useState<string | null>(null)
@@ -59,7 +59,7 @@ export function CryptoPaymentSelector({
   const fetchCurrencies = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/crypto/generate')
+      const response = await fetch('/api/nowpayments/generate')
 
       if (!response.ok) {
         throw new Error('Failed to fetch supported cryptocurrencies')
@@ -68,7 +68,7 @@ export function CryptoPaymentSelector({
       const data = await response.json()
 
       // Filter currencies based on amount limits and show popular ones first
-      const availableCurrencies = data.currencies.filter((currency: CryptoCurrency) =>
+      const availableCurrencies = data.currencies.filter((currency: NOWPaymentsCurrency) =>
         usdAmount >= currency.minAmount && usdAmount <= currency.maxAmount
       )
 
@@ -87,7 +87,7 @@ export function CryptoPaymentSelector({
     onCurrencySelect(currencyId)
   }
 
-  const getRecommendation = (currency: CryptoCurrency): string | null => {
+  const getRecommendation = (currency: NOWPaymentsCurrency): string | null => {
     if (currency.isPopular) {
       return 'Popular choice'
     }

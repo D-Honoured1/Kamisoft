@@ -1,4 +1,4 @@
-// components/admin/crypto-payment-verifier.tsx
+// components/admin/nowpayments-payment-verifier.tsx
 "use client"
 
 import { useState } from "react"
@@ -31,7 +31,7 @@ import {
 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 
-interface CryptoPaymentVerifierProps {
+interface NOWPaymentsPaymentVerifierProps {
   paymentId: string
   paymentStatus: string
   amount: number
@@ -45,7 +45,7 @@ interface CryptoPaymentVerifierProps {
   metadata?: string
 }
 
-export function CryptoPaymentVerifier({
+export function NOWPaymentsPaymentVerifier({
   paymentId,
   paymentStatus,
   amount,
@@ -57,15 +57,15 @@ export function CryptoPaymentVerifier({
   cryptoTransactionHash,
   paymentMethod,
   metadata
-}: CryptoPaymentVerifierProps) {
+}: NOWPaymentsPaymentVerifierProps) {
   const router = useRouter()
   const [isVerifying, setIsVerifying] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const { toast } = useToast()
 
-  // Only show for crypto payments that are processing
-  const canVerify = paymentMethod === 'crypto' && paymentStatus === 'processing'
+  // Only show for NOWPayments payments that are processing
+  const canVerify = paymentMethod === 'nowpayments' && paymentStatus === 'processing'
 
   const copyToClipboard = async (text: string, label: string) => {
     try {
@@ -114,7 +114,7 @@ export function CryptoPaymentVerifier({
       <div className="p-3 bg-muted/50 rounded-lg">
         <p className="text-sm text-muted-foreground">
           {paymentMethod !== 'crypto'
-            ? "Not a crypto payment"
+            ? "Not a NOWPayments payment"
             : paymentStatus !== 'processing'
             ? `NOWPayments status: ${paymentStatus}`
             : "NOWPayments processing - waiting for confirmation"
@@ -137,7 +137,7 @@ export function CryptoPaymentVerifier({
         <Alert className="border-green-200 bg-green-50">
           <CheckCircle className="h-4 w-4 text-green-600" />
           <AlertDescription className="text-green-800">
-            Crypto payment has been verified and approved successfully.
+            NOWPayments payment has been verified and approved successfully.
           </AlertDescription>
         </Alert>
       )}
@@ -272,10 +272,10 @@ export function CryptoPaymentVerifier({
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Verify Crypto Payment?</AlertDialogTitle>
+                  <AlertDialogTitle>Verify NOWPayments Payment?</AlertDialogTitle>
                   <AlertDialogDescription className="space-y-2">
                     <p>
-                      This will mark the crypto payment as verified and confirmed.
+                      This will mark the NOWPayments payment as verified and confirmed.
                       Please ensure you have verified the transaction on the blockchain explorer.
                     </p>
                     <div className="bg-green-50 p-3 rounded-lg">
@@ -314,7 +314,7 @@ export function CryptoPaymentVerifier({
                         router.refresh()
                         toast({
                           title: "Success",
-                          description: "Crypto payment verified and approved",
+                          description: "NOWPayments payment verified and approved",
                         })
                       } catch (err: any) {
                         setError(err.message)

@@ -26,10 +26,10 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    const validPaymentMethods = ['paystack', 'bank_transfer', 'crypto']
+    const validPaymentMethods = ['paystack', 'bank_transfer', 'nowpayments']
     if (!validPaymentMethods.includes(paymentMethod)) {
-      return NextResponse.json({ 
-        error: "Invalid payment method. Supported: paystack, bank_transfer, crypto" 
+      return NextResponse.json({
+        error: "Invalid payment method. Supported: paystack, bank_transfer, nowpayments"
       }, { status: 400 })
     }
 
@@ -51,20 +51,54 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
+    // Get existing completed payments to calculate remaining balance
+    const { data: existingCompletedPayments } = await supabase
+      .from("payments")
+      .select("amount, payment_status")
+      .eq("request_id", requestId)
+      .eq("payment_status", "completed")
+
+    const totalPaid = existingCompletedPayments?.reduce((sum, payment) => sum + payment.amount, 0) || 0
+    const totalCost = serviceRequest.final_cost || serviceRequest.estimated_cost || 0
+    const remainingBalance = totalCost - totalPaid
+
     // Validate payment amount
-    const totalCost = serviceRequest.estimated_cost || 0
     let expectedAmount: number
+    let paymentSequence = 1
+    let isPartialPayment = false
 
     if (paymentType === "split") {
-      expectedAmount = totalCost * 0.5
+      isPartialPayment = true
+      // Check if this is the first or second payment
+      const completedSplitPayments = existingCompletedPayments?.filter(p => p.payment_status === "completed").length || 0
+
+      if (completedSplitPayments === 0) {
+        // First payment (50%)
+        expectedAmount = totalCost * 0.5
+        paymentSequence = 1
+      } else if (completedSplitPayments === 1) {
+        // Second payment (remaining balance)
+        expectedAmount = remainingBalance
+        paymentSequence = 2
+      } else {
+        return NextResponse.json({
+          error: "All split payments have already been completed for this request"
+        }, { status: 400 })
+      }
     } else {
-      const discountPercent = serviceRequest.admin_discount_percent || 10
-      expectedAmount = totalCost * (1 - discountPercent / 100)
+      // Full payment
+      if (totalPaid > 0) {
+        return NextResponse.json({
+          error: `Payment already exists. Remaining balance: $${remainingBalance.toFixed(2)}`
+        }, { status: 400 })
+      }
+      expectedAmount = totalCost
+      paymentSequence = 1
     }
 
     if (Math.abs(amount - expectedAmount) > 0.01) {
-      return NextResponse.json({ 
-        error: `Invalid amount. Expected ${expectedAmount.toFixed(2)} for ${paymentType} payment` 
+      return NextResponse.json({
+        error: `Invalid amount. Expected $${expectedAmount.toFixed(2)} for ${paymentType} payment (sequence ${paymentSequence})`
       }, { status: 400 })
     }
 
@@ -94,11 +128,18 @@ export async function POST(request: NextRequest) {
       payment_method: paymentMethod,
       payment_status: "pending",
       payment_type: paymentType,
+      payment_sequence: paymentSequence,
+      is_partial_payment: isPartialPayment,
+      total_amount_due: totalCost,
       payment_reference: paymentReference,
       metadata: JSON.stringify({
         ...metadata,
         business_currency: 'USD',
         business_amount: amount,
+        payment_sequence: paymentSequence,
+        is_partial_payment: isPartialPayment,
+        total_amount_due: totalCost,
+        remaining_balance_before: remainingBalance,
         note: 'USD amount converted to NGN for Paystack processing',
         created_at: new Date().toISOString()
       })
@@ -123,6 +164,21 @@ export async function POST(request: NextRequest) {
 
     console.log(`[${correlationId}] Payment record created:`, payment.id)
 
+    // Update service request payment plan if this is a split payment
+    if (paymentType === "split" && paymentSequence === 1) {
+      const { error: updateError } = await supabase
+        .from("service_requests")
+        .update({
+          payment_plan: "split",
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", requestId)
+
+      if (updateError) {
+        console.warn(`[${correlationId}] Failed to update service request payment plan:`, updateError)
+      }
+    }
+
     // Handle payment method
     let result = null
     try {
@@ -133,7 +189,7 @@ export async function POST(request: NextRequest) {
         case "bank_transfer":
           result = await createBankTransferInstructions(payment.id, amount, correlationId)
           break
-        case "crypto":
+        case "nowpayments":
           result = await createCryptoPayment(payment.id, amount, correlationId)
           break
       }

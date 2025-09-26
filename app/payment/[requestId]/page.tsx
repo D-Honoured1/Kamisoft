@@ -31,7 +31,7 @@ import {
 } from "lucide-react"
 import { SERVICE_CATEGORIES } from "@/lib/constants/services"
 
-type PaymentMethod = "paystack" | "bank_transfer" | "crypto"
+type PaymentMethod = "paystack" | "bank_transfer" | "nowpayments"
 type PaymentType = "split" | "full"
 
 interface ServiceRequest {
@@ -224,14 +224,30 @@ export default function PaymentPage() {
     try {
       const cost = serviceRequest.estimated_cost
       const discountPercent = serviceRequest.admin_discount_percent || DEFAULT_DISCOUNT_PERCENT
-      
+
+      // Calculate existing payments
+      const existingPayments = serviceRequest.payments?.filter(p => p.payment_status === 'completed') || []
+      const totalPaid = existingPayments.reduce((sum, payment) => sum + payment.amount, 0)
+      const remainingBalance = cost - totalPaid
+
       let paymentAmount: number
       let description: string
 
       if (selectedPaymentType === "split") {
-        paymentAmount = cost * (SPLIT_PAYMENT_PERCENT / 100)
-        description = `${SPLIT_PAYMENT_PERCENT}% upfront payment`
+        if (totalPaid === 0) {
+          // First payment (50%)
+          paymentAmount = cost * (SPLIT_PAYMENT_PERCENT / 100)
+          description = `${SPLIT_PAYMENT_PERCENT}% upfront payment (1 of 2)`
+        } else {
+          // Second payment (remaining balance)
+          paymentAmount = remainingBalance
+          description = `Final payment (2 of 2) - Balance: $${remainingBalance.toFixed(2)}`
+        }
       } else {
+        if (totalPaid > 0) {
+          setError(`Payment already exists. Remaining balance: $${remainingBalance.toFixed(2)}`)
+          return
+        }
         const discountAmount = cost * (discountPercent / 100)
         paymentAmount = cost - discountAmount
         description = `Full payment with ${discountPercent}% discount`
@@ -601,8 +617,8 @@ export default function PaymentPage() {
 
                     {/* Cryptocurrency */}
                     <div className="flex items-center space-x-3 p-4 border rounded-lg">
-                      <RadioGroupItem value="crypto" id="crypto" />
-                      <Label htmlFor="crypto" className="flex items-center gap-3 cursor-pointer flex-1">
+                      <RadioGroupItem value="nowpayments" id="nowpayments" />
+                      <Label htmlFor="nowpayments" className="flex items-center gap-3 cursor-pointer flex-1">
                         <DollarSign className="h-5 w-5 text-orange-600" />
                         <div>
                           <div className="font-medium">Cryptocurrency (USDT)</div>
@@ -821,7 +837,7 @@ export default function PaymentPage() {
                           <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
                           Processing Payment...
                         </>
-                      ) : selectedPaymentMethod === "crypto" ? (
+                      ) : selectedPaymentMethod === "nowpayments" ? (
                         <>
                           <DollarSign className="mr-2 h-5 w-5" />
                           Generate USDT Payment

@@ -45,7 +45,7 @@ export function PaymentApprover({
 
   // Allow approval of various payment statuses:
   // - 'success', 'completed': Paystack payments that succeeded
-  // - 'pending': Manual payments (bank transfer, crypto) awaiting admin verification
+  // - 'pending': Manual payments (bank transfer, NOWPayments) awaiting admin verification
   // - 'processing': Payments that are being processed
   const approvableStatuses = ['success', 'completed', 'pending', 'processing']
   const canApprove = approvableStatuses.includes(paymentStatus) && paymentStatus !== 'confirmed'

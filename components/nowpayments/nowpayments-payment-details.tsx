@@ -1,4 +1,4 @@
-// components/crypto/crypto-payment-details.tsx
+// components/nowpayments/nowpayments-payment-details.tsx
 "use client"
 
 import { useState, useEffect } from "react"
@@ -21,7 +21,7 @@ import {
 import { useToast } from "@/components/ui/use-toast"
 import Image from "next/image"
 
-interface CryptoPaymentDetailsProps {
+interface NOWPaymentsPaymentDetailsProps {
   paymentId: string
   payCurrency: string
   usdAmount: number
@@ -29,7 +29,7 @@ interface CryptoPaymentDetailsProps {
   onTransactionSubmitted?: () => void
 }
 
-interface CryptoDetails {
+interface NOWPaymentsDetails {
   networkId: string
   network: {
     id: string
@@ -53,14 +53,14 @@ interface CryptoDetails {
   }
 }
 
-export function CryptoPaymentDetails({
+export function NOWPaymentsPaymentDetails({
   paymentId,
   payCurrency,
   usdAmount,
   paymentReference,
   onTransactionSubmitted
-}: CryptoPaymentDetailsProps) {
-  const [cryptoDetails, setCryptoDetails] = useState<CryptoDetails | null>(null)
+}: NOWPaymentsPaymentDetailsProps) {
+  const [nowpaymentsDetails, setNowpaymentsDetails] = useState<NOWPaymentsDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [transactionHash, setTransactionHash] = useState("")
@@ -70,15 +70,15 @@ export function CryptoPaymentDetails({
   const { toast } = useToast()
 
   useEffect(() => {
-    generateCryptoDetails()
+    generateNOWPaymentsDetails()
   }, [paymentId, payCurrency, usdAmount, paymentReference])
 
-  const generateCryptoDetails = async () => {
+  const generateNOWPaymentsDetails = async () => {
     try {
       setLoading(true)
       setError(null)
 
-      const response = await fetch('/api/crypto/generate', {
+      const response = await fetch('/api/nowpayments/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -93,14 +93,14 @@ export function CryptoPaymentDetails({
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to generate crypto payment details')
+        throw new Error(errorData.error || 'Failed to generate NOWPayments payment details')
       }
 
       const data = await response.json()
-      setCryptoDetails(data.cryptoDetails)
+      setNowpaymentsDetails(data.nowpaymentsDetails)
     } catch (err: any) {
-      console.error('Error generating crypto details:', err)
-      setError(err.message || 'Failed to generate crypto payment details')
+      console.error('Error generating NOWPayments details:', err)
+      setError(err.message || 'Failed to generate NOWPayments payment details')
     } finally {
       setLoading(false)
     }
@@ -135,7 +135,7 @@ export function CryptoPaymentDetails({
     try {
       setSubmitting(true)
 
-      const response = await fetch('/api/crypto/verify', {
+      const response = await fetch('/api/nowpayments/verify', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -196,7 +196,7 @@ export function CryptoPaymentDetails({
             variant="outline"
             size="sm"
             className="ml-2"
-            onClick={generateCryptoDetails}
+            onClick={generateNOWPaymentsDetails}
           >
             Retry
           </Button>
@@ -205,7 +205,7 @@ export function CryptoPaymentDetails({
     )
   }
 
-  if (!cryptoDetails) {
+  if (!nowpaymentsDetails) {
     return (
       <Alert>
         <AlertDescription>
@@ -259,7 +259,7 @@ export function CryptoPaymentDetails({
     )
   }
 
-  const timeLeft = new Date(cryptoDetails.expiresAt).getTime() - Date.now()
+  const timeLeft = new Date(nowpaymentsDetails.expiresAt).getTime() - Date.now()
   const hoursLeft = Math.max(0, Math.floor(timeLeft / (1000 * 60 * 60)))
 
   return (
@@ -269,27 +269,27 @@ export function CryptoPaymentDetails({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Network className="h-5 w-5" />
-            {cryptoDetails.network.name} Payment
+            {nowpaymentsDetails.network.name} Payment
           </CardTitle>
           <CardDescription>
-            Send exactly {cryptoDetails.amountCrypto} {cryptoDetails.network.symbol} to complete your payment
+            Send exactly {nowpaymentsDetails.amountCrypto} {nowpaymentsDetails.network.symbol} to complete your payment
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label className="text-xs text-muted-foreground">USD Amount</Label>
-              <p className="font-semibold">${cryptoDetails.usdAmount.toFixed(2)}</p>
+              <p className="font-semibold">${nowpaymentsDetails.usdAmount.toFixed(2)}</p>
             </div>
             <div>
               <Label className="text-xs text-muted-foreground">Crypto Amount</Label>
               <p className="font-semibold">
-                {cryptoDetails.amountCrypto} {cryptoDetails.network.symbol}
+                {nowpaymentsDetails.amountCrypto} {nowpaymentsDetails.network.symbol}
               </p>
             </div>
             <div>
               <Label className="text-xs text-muted-foreground">Network Fee</Label>
-              <p className="text-sm">~${cryptoDetails.fees.networkFeeUsd}</p>
+              <p className="text-sm">~${nowpaymentsDetails.fees.networkFeeUsd}</p>
             </div>
             <div>
               <Label className="text-xs text-muted-foreground">Expires In</Label>
@@ -307,7 +307,7 @@ export function CryptoPaymentDetails({
         <CardHeader>
           <CardTitle className="text-lg">Payment Address</CardTitle>
           <CardDescription>
-            Send {cryptoDetails.network.symbol} to this address only
+            Send {nowpaymentsDetails.network.symbol} to this address only
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -315,7 +315,7 @@ export function CryptoPaymentDetails({
           <div className="flex justify-center">
             <div className="p-4 bg-white rounded-lg border">
               <Image
-                src={cryptoDetails.qrCodeUrl}
+                src={nowpaymentsDetails.qrCodeUrl}
                 alt="Payment QR Code"
                 width={200}
                 height={200}
@@ -327,18 +327,18 @@ export function CryptoPaymentDetails({
           {/* Address */}
           <div>
             <Label className="text-sm font-medium">
-              {cryptoDetails.network.network} Address
+              {nowpaymentsDetails.network.network} Address
             </Label>
             <div className="flex items-center gap-2 mt-1">
               <Input
-                value={cryptoDetails.address}
+                value={nowpaymentsDetails.address}
                 readOnly
                 className="font-mono text-sm"
               />
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => copyToClipboard(cryptoDetails.address, "Address")}
+                onClick={() => copyToClipboard(nowpaymentsDetails.address, "Address")}
               >
                 <Copy className="h-4 w-4" />
               </Button>
@@ -350,14 +350,14 @@ export function CryptoPaymentDetails({
             <Label className="text-sm font-medium">Exact Amount to Send</Label>
             <div className="flex items-center gap-2 mt-1">
               <Input
-                value={`${cryptoDetails.amountCrypto} ${cryptoDetails.network.symbol}`}
+                value={`${nowpaymentsDetails.amountCrypto} ${nowpaymentsDetails.network.symbol}`}
                 readOnly
                 className="font-mono text-sm font-bold"
               />
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => copyToClipboard(cryptoDetails.amountCrypto.toString(), "Amount")}
+                onClick={() => copyToClipboard(nowpaymentsDetails.amountCrypto.toString(), "Amount")}
               >
                 <Copy className="h-4 w-4" />
               </Button>
@@ -373,7 +373,7 @@ export function CryptoPaymentDetails({
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {cryptoDetails.instructions.map((instruction, index) => (
+            {nowpaymentsDetails.instructions.map((instruction, index) => (
               <div key={index} className="flex items-start gap-2">
                 <Badge variant="outline" className="text-xs mt-0.5">
                   {index + 1}
@@ -451,8 +451,8 @@ export function CryptoPaymentDetails({
       <Alert>
         <AlertTriangle className="h-4 w-4" />
         <AlertDescription>
-          <strong>Important:</strong> Only send {cryptoDetails.network.symbol} on the{" "}
-          {cryptoDetails.network.network} network to this address. Sending other cryptocurrencies
+          <strong>Important:</strong> Only send {nowpaymentsDetails.network.symbol} on the{" "}
+          {nowpaymentsDetails.network.network} network to this address. Sending other cryptocurrencies
           or using the wrong network will result in permanent loss of funds.
         </AlertDescription>
       </Alert>

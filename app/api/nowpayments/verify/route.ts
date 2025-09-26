@@ -1,4 +1,4 @@
-// app/api/crypto/verify/route.ts - Verify crypto payment transaction
+// app/api/nowpayments/verify/route.ts - Verify NOWPayments transaction
 export const dynamic = "force-dynamic"
 
 import { NextRequest, NextResponse } from "next/server"

@@ -13,7 +13,7 @@ import { PaymentLinkGenerator } from "@/components/admin/payment-link-generator"
 import { PaymentLinkDeactivator } from "@/components/admin/payment-link-deactivator"
 import { PaymentDeleter } from "@/components/admin/payment-deleter"
 import { PaymentApprover } from "@/components/admin/payment-approver"
-import { CryptoPaymentVerifier } from "@/components/admin/crypto-payment-verifier"
+import { NOWPaymentsPaymentVerifier } from "@/components/admin/nowpayments-payment-verifier"
 
 interface ServiceRequestDetailProps {
   params: {
@@ -324,28 +324,77 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
                   </div>
                 )}
 
+                {/* Payment Summary */}
+                {hasPayments && (() => {
+                  const completedPayments = payments.filter((p: any) => p.payment_status === 'completed')
+                  const totalPaid = completedPayments.reduce((sum: number, p: any) => sum + p.amount, 0)
+                  const estimatedCost = request.estimated_cost || 0
+                  const remainingBalance = estimatedCost - totalPaid
+                  const isPartiallyPaid = totalPaid > 0 && remainingBalance > 0
+                  const isFullyPaid = totalPaid >= estimatedCost
+
+                  return (
+                    <div className="p-3 bg-muted/50 rounded-lg">
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Total Paid</p>
+                          <p className="font-medium text-green-600">${totalPaid.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Balance Due</p>
+                          <p className={`font-medium ${isFullyPaid ? 'text-green-600' : 'text-orange-600'}`}>
+                            ${remainingBalance.toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                      {isPartiallyPaid && (
+                        <div className="mt-2">
+                          <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                            Partial Payment ({Math.round((totalPaid / estimatedCost) * 100)}% paid)
+                          </Badge>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
+
                 {hasPayments && (
                   <div>
                     <p className="font-medium text-foreground mb-2">Payments ({payments.length})</p>
-                    {payments.map((payment: any) => (
-                      <div key={payment.id} className="flex items-center justify-between p-2 border rounded mb-2">
-                        <div>
-                          <p className="text-sm font-medium">${payment.amount.toLocaleString()}</p>
-                          <p className="text-xs text-muted-foreground">{payment.payment_method || 'N/A'}</p>
+                    {payments.map((payment: any, index: number) => {
+                      const isPartialPayment = payment.is_partial_payment || payment.payment_type === 'split'
+                      const paymentSequence = payment.payment_sequence || (index + 1)
+
+                      return (
+                        <div key={payment.id} className="flex items-center justify-between p-2 border rounded mb-2">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-medium">${payment.amount.toLocaleString()}</p>
+                              {isPartialPayment && (
+                                <Badge variant="outline" className="text-xs">
+                                  Split {paymentSequence}/2
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              {payment.payment_method || 'N/A'}
+                              {payment.created_at && ` • ${new Date(payment.created_at).toLocaleDateString()}`}
+                            </p>
+                          </div>
+                          <Badge
+                            className={
+                              payment.payment_status === "completed" || payment.payment_status === "confirmed"
+                                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                : payment.payment_status === "failed"
+                                ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                                : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                            }
+                          >
+                            {payment.payment_status}
+                          </Badge>
                         </div>
-                        <Badge
-                          className={
-                            payment.payment_status === "completed" || payment.payment_status === "confirmed"
-                              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                              : payment.payment_status === "failed"
-                              ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                              : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-                          }
-                        >
-                          {payment.payment_status}
-                        </Badge>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
 
@@ -417,23 +466,23 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
             )
           })()}
 
-          {/* Crypto Payment Verification */}
+          {/* NOWPayments Payment Verification */}
           {(() => {
-            const cryptoPayments = payments.filter((payment: any) =>
-              payment.payment_method === 'crypto' && payment.payment_status === 'processing'
+            const nowpaymentsPayments = payments.filter((payment: any) =>
+              payment.payment_method === 'nowpayments' && payment.payment_status === 'processing'
             )
-            return cryptoPayments.length > 0 && (
+            return nowpaymentsPayments.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Crypto Payment Verification</CardTitle>
+                  <CardTitle>NOWPayments Payment Verification</CardTitle>
                   <CardDescription>
-                    Verify blockchain transactions for crypto payments
+                    Verify blockchain transactions for NOWPayments payments
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {cryptoPayments.map((payment: any) => (
-                      <CryptoPaymentVerifier
+                    {nowpaymentsPayments.map((payment: any) => (
+                      <NOWPaymentsPaymentVerifier
                         key={payment.id}
                         paymentId={payment.id}
                         paymentStatus={payment.payment_status}

@@ -17,7 +17,13 @@ export type RequestStatus = "pending" | "in_progress" | "completed" | "cancelled
 
 export type PaymentStatus = "pending" | "processing" | "completed" | "failed" | "refunded"
 
-export type PaymentMethod = "stripe" | "paystack" | "crypto" | "bank_transfer"
+export type PaymentMethod = "stripe" | "paystack" | "nowpayments" | "bank_transfer"
+
+export type PaymentPlan = "full" | "split"
+
+export type PartialPaymentStatus = "none" | "first_paid" | "completed"
+
+export type PaymentType = "full" | "split"
 
 export type InvoiceStatus = "draft" | "sent" | "paid" | "overdue" | "cancelled"
 
@@ -50,6 +56,10 @@ export interface ServiceRequest {
   requirements?: string
   timeline?: string
   request_source?: string
+  total_paid?: number
+  balance_due?: number
+  payment_plan?: PaymentPlan
+  partial_payment_status?: PartialPaymentStatus
   created_at: string
   updated_at: string
 
@@ -67,9 +77,19 @@ export interface Payment {
   currency: string
   payment_method: PaymentMethod
   payment_status: PaymentStatus
+  payment_type?: PaymentType
+  payment_sequence?: number
+  is_partial_payment?: boolean
+  total_amount_due?: number
+  admin_notes?: string
   stripe_payment_intent_id?: string
   paystack_reference?: string
   crypto_transaction_hash?: string
+  crypto_address?: string
+  crypto_network?: string
+  crypto_amount?: number
+  crypto_symbol?: string
+  metadata?: string
   created_at: string
   updated_at: string
 

@@ -1,7 +1,7 @@
--- Add Crypto Payment Columns Migration
--- Adds columns needed for cryptocurrency payment functionality
+-- Add NOWPayments (Crypto) Payment Columns Migration
+-- Adds columns needed for NOWPayments cryptocurrency payment functionality
 
--- Add crypto payment columns to payments table
+-- Add NOWPayments crypto payment columns to payments table
 ALTER TABLE payments
     ADD COLUMN IF NOT EXISTS crypto_address VARCHAR(255),
     ADD COLUMN IF NOT EXISTS crypto_network VARCHAR(50),
