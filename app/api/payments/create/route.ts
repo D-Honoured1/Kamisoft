@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       .eq("payment_status", "completed")
 
     const totalPaid = existingCompletedPayments?.reduce((sum, payment) => sum + payment.amount, 0) || 0
-    const totalCost = serviceRequest.final_cost || serviceRequest.estimated_cost || 0
+    const totalCost = serviceRequest.estimated_cost || 0
     const remainingBalance = totalCost - totalPaid
 
     // Validate payment amount

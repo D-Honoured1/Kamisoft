@@ -48,7 +48,7 @@ BEGIN
                 WHERE request_id = NEW.request_id
                 AND payment_status = 'completed'
             ), 0),
-            balance_due = GREATEST(0, COALESCE(final_cost, estimated_cost, 0) - COALESCE((
+            balance_due = GREATEST(0, COALESCE(estimated_cost, 0) - COALESCE((
                 SELECT SUM(amount)
                 FROM payments
                 WHERE request_id = NEW.request_id
