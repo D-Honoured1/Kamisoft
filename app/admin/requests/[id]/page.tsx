@@ -7,11 +7,12 @@ import { notFound } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Calendar, MapPin, Mail, Phone, DollarSign, User, ArrowLeft, FileText, Clock, CheckCircle, XCircle } from "lucide-react"
+import { MapPin, Mail, Phone, DollarSign, User, ArrowLeft, FileText, Clock, CheckCircle, XCircle } from "lucide-react"
 import Link from "next/link"
 import { PaymentLinkGenerator } from "@/components/admin/payment-link-generator"
 import { PaymentLinkDeactivator } from "@/components/admin/payment-link-deactivator"
 import { PaymentDeleter } from "@/components/admin/payment-deleter"
+import { PaymentApprover } from "@/components/admin/payment-approver"
 
 interface ServiceRequestDetailProps {
   params: {
@@ -20,7 +21,7 @@ interface ServiceRequestDetailProps {
 }
 
 export default async function ServiceRequestDetail({ params }: ServiceRequestDetailProps) {
-  const adminUser = await requireAuth()
+  await requireAuth()
   const supabase = createServerClient()
 
   // Get the service request
@@ -372,6 +373,39 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
               </CardContent>
             </Card>
           )}
+
+          {/* Successful Payments Awaiting Approval */}
+          {(() => {
+            const successfulPayments = payments.filter((payment: any) =>
+              ['success', 'completed'].includes(payment.payment_status)
+            )
+            return successfulPayments.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Successful Payments</CardTitle>
+                  <CardDescription>
+                    Approve and confirm successful payments
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {successfulPayments.map((payment: any) => (
+                      <PaymentApprover
+                        key={payment.id}
+                        paymentId={payment.id}
+                        paymentStatus={payment.payment_status}
+                        amount={payment.amount}
+                        currency={payment.currency || 'USD'}
+                        paymentMethod={payment.payment_method}
+                        paymentType={payment.payment_type}
+                        paystackReference={payment.paystack_reference}
+                      />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })()}
 
           {/* Failed/Cancelled Payments Management */}
           {(() => {
