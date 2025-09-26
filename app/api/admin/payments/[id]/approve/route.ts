@@ -66,11 +66,21 @@ export async function POST(req: Request, { params }: RouteParams) {
       return NextResponse.json({ error: "Payment not found" }, { status: 404 })
     }
 
-    // Only allow approval of successful/completed payments
-    const approvableStatuses = ['success', 'completed']
+    // Allow approval of various payment statuses:
+    // - 'success', 'completed': Paystack payments that succeeded
+    // - 'pending': Manual payments (bank transfer, crypto) awaiting admin verification
+    // - 'processing': Payments that are being processed
+    const approvableStatuses = ['success', 'completed', 'pending', 'processing']
     if (!approvableStatuses.includes(payment.payment_status)) {
       return NextResponse.json({
-        error: `Cannot approve payment with status '${payment.payment_status}'. Only successful/completed payments can be approved.`
+        error: `Cannot approve payment with status '${payment.payment_status}'. Only pending, processing, success, or completed payments can be approved.`
+      }, { status: 400 })
+    }
+
+    // Don't approve already confirmed payments
+    if (payment.payment_status === 'confirmed') {
+      return NextResponse.json({
+        error: "Payment is already confirmed"
       }, { status: 400 })
     }
 
@@ -243,8 +253,8 @@ export async function GET(req: Request, { params }: RouteParams) {
       return NextResponse.json({ error: "Payment not found" }, { status: 404 })
     }
 
-    const approvableStatuses = ['success', 'completed']
-    const canApprove = approvableStatuses.includes(payment.payment_status)
+    const approvableStatuses = ['success', 'completed', 'pending', 'processing']
+    const canApprove = approvableStatuses.includes(payment.payment_status) && payment.payment_status !== 'confirmed'
 
     return NextResponse.json({
       success: true,
