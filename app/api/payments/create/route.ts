@@ -1,4 +1,4 @@
-// app/api/payments/create/route.ts - FIXED USD PAYSTACK VERSION
+// app/api/payments/create/route.ts - REPLACE ENTIRE FILE WITH THIS
 export const dynamic = "force-dynamic"
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
@@ -36,10 +36,7 @@ export async function POST(request: NextRequest) {
     // Get service request details
     const { data: serviceRequest, error: requestError } = await supabase
       .from("service_requests")
-      .select(`
-        *,
-        clients (*)
-      `)
+      .select(`*, clients (*)`)
       .eq("id", requestId)
       .single()
 
@@ -89,21 +86,21 @@ export async function POST(request: NextRequest) {
       }, { status: 409 })
     }
 
-    // Create payment record
-    const paymentData: any = {
+    // Create payment record - Store USD amount for business consistency
+    const paymentData = {
       request_id: requestId,
-      amount: amount,
-      currency: 'USD', // Keep as USD
+      amount: amount, // Store USD amount in database
+      currency: 'USD', // Your business currency
       payment_method: paymentMethod,
       payment_status: "pending",
       payment_type: paymentType,
       payment_reference: paymentReference,
-      correlation_id: correlationId,
       metadata: JSON.stringify({
         ...metadata,
-        created_at: new Date().toISOString(),
-        user_agent: request.headers.get('user-agent'),
-        ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')
+        business_currency: 'USD',
+        business_amount: amount,
+        note: 'USD amount converted to NGN for Paystack processing',
+        created_at: new Date().toISOString()
       })
     }
 
@@ -119,50 +116,40 @@ export async function POST(request: NextRequest) {
       console.error(`[${correlationId}] Error creating payment:`, paymentError)
       return NextResponse.json({
         error: "Failed to create payment record",
-        details: paymentError.message
+        details: paymentError.message,
+        correlationId
       }, { status: 500 })
     }
 
     console.log(`[${correlationId}] Payment record created:`, payment.id)
 
+    // Handle payment method
     let result = null
-
-    // Handle different payment methods
     try {
       switch (paymentMethod) {
         case "paystack":
           result = await createPaystackCheckout(payment.id, amount, serviceRequest, paymentType, paymentReference, correlationId)
           break
         case "bank_transfer":
-          result = await createBankTransferInstructions(payment.id, amount, serviceRequest, paymentType, correlationId)
+          result = await createBankTransferInstructions(payment.id, amount, correlationId)
           break
         case "crypto":
-          result = await createCryptoPayment(payment.id, amount, serviceRequest, paymentType, correlationId)
+          result = await createCryptoPayment(payment.id, amount, correlationId)
           break
-        default:
-          throw new Error("Invalid payment method")
       }
-
-      // Update payment status to pending
-      await supabase
-        .from("payments")
-        .update({ payment_status: "pending" })
-        .eq("id", payment.id)
-
-    } catch (paymentMethodError: any) {
-      console.error(`[${correlationId}] Payment method error:`, paymentMethodError)
-
-      // Update payment as failed
+    } catch (error: any) {
+      console.error(`[${correlationId}] Payment method error:`, error)
+      
       await supabase
         .from("payments")
         .update({ 
-          payment_status: "failed",
-          error_message: paymentMethodError.message
+          payment_status: "failed", 
+          error_message: error.message 
         })
         .eq("id", payment.id)
 
       return NextResponse.json({
-        error: paymentMethodError.message || "Payment processing failed",
+        error: error.message || "Payment processing failed",
         correlationId
       }, { status: 500 })
     }
@@ -171,12 +158,18 @@ export async function POST(request: NextRequest) {
       success: true,
       paymentId: payment.id,
       paymentReference,
+      // Return both currencies for frontend display
+      displayAmount: amount, // USD (what customer sees as price)
+      displayCurrency: 'USD',
+      paymentAmount: result?.ngnAmount, // NGN (what they actually pay)
+      paymentCurrency: 'NGN',
+      exchangeRate: result?.exchangeRate,
       correlationId,
       ...result
     })
 
   } catch (error: any) {
-    console.error(`[${correlationId}] Error creating payment:`, error)
+    console.error(`[${correlationId}] Payment creation error:`, error)
     return NextResponse.json({
       error: "Internal server error",
       details: error.message,
@@ -185,53 +178,81 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Simplified Paystack checkout creation that sends USD directly
 async function createPaystackCheckout(
   paymentId: string,
-  amount: number,
+  usdAmount: number,
   serviceRequest: any,
   paymentType: string,
   paymentReference: string,
   correlationId: string
 ) {
   try {
-    console.log(`[${correlationId}] Creating Paystack checkout for USD amount:`, amount)
-
     const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY
     if (!paystackSecretKey) {
       throw new Error("Paystack secret key not configured")
     }
 
-    const paymentDescription = paymentType === "split"
-      ? `50% upfront payment for ${serviceRequest.title}`
-      : `Full payment with discount for ${serviceRequest.title}`
+    console.log(`[${correlationId}] Converting $${usdAmount} USD to NGN for Paystack`)
 
-    // Create Paystack transaction - send USD directly to Paystack
+    // Step 1: Get current USD to NGN exchange rate
+    let exchangeRate = 1550 // Fallback rate
+    
+    try {
+      // Use a reliable exchange rate API
+      const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD', {
+        signal: AbortSignal.timeout(5000)
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.rates?.NGN) {
+          exchangeRate = data.rates.NGN
+          console.log(`[${correlationId}] ✅ Current rate: 1 USD = ${exchangeRate} NGN`)
+        }
+      }
+    } catch (rateError) {
+      console.log(`[${correlationId}] ⚠️ Using fallback rate: ${exchangeRate}`)
+    }
+
+    // Step 2: Convert USD to NGN
+    const ngnAmount = Math.round(usdAmount * exchangeRate)
+    console.log(`[${correlationId}] Conversion: $${usdAmount} USD = ₦${ngnAmount.toLocaleString()} NGN`)
+
+    // Step 3: Send NGN amount to Paystack
+    const paymentDescription = paymentType === "split"
+      ? `50% upfront payment for ${serviceRequest.title} ($${usdAmount} USD)`
+      : `Full payment for ${serviceRequest.title} ($${usdAmount} USD)`
+
     const requestData = {
       email: serviceRequest.clients.email,
-      amount: Math.round(amount * 100), // Convert to cents (not kobo since we're using USD)
-      currency: 'USD', // Explicitly set to USD
+      amount: ngnAmount * 100, // Convert NGN to kobo
+      currency: 'NGN', // This is what your Paystack account accepts
       reference: paymentReference,
       callback_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/success?payment_id=${paymentId}&type=${paymentType}`,
       metadata: {
-        paymentId: paymentId,
+        paymentId,
         requestId: serviceRequest.id,
         clientName: serviceRequest.clients.name,
         serviceTitle: serviceRequest.title,
-        paymentType: paymentType,
+        paymentType,
         description: paymentDescription,
-        currency: 'USD'
+        // Keep track of original USD amount
+        original_amount_usd: usdAmount,
+        ngn_amount: ngnAmount,
+        exchange_rate: exchangeRate,
+        conversion_timestamp: new Date().toISOString()
       },
       channels: ['card', 'bank', 'ussd', 'mobile_money', 'bank_transfer']
     }
 
-    console.log(`[${correlationId}] Paystack request:`, {
-      email: requestData.email,
-      amount: requestData.amount,
+    console.log(`[${correlationId}] Sending to Paystack:`, {
+      amount: `₦${ngnAmount.toLocaleString()}`,
+      amountInKobo: requestData.amount,
       currency: requestData.currency,
-      reference: requestData.reference
+      originalUSD: usdAmount
     })
 
+    // Step 4: Call Paystack API
     const response = await fetch('https://api.paystack.co/transaction/initialize', {
       method: 'POST',
       headers: {
@@ -243,16 +264,13 @@ async function createPaystackCheckout(
 
     const responseData = await response.json()
 
-    console.log(`[${correlationId}] Paystack response:`, {
-      status: responseData.status,
-      message: responseData.message
-    })
-
     if (!response.ok || !responseData.status) {
-      throw new Error(responseData.message || `Paystack API error: ${response.status}`)
+      throw new Error(responseData.message || "Paystack initialization failed")
     }
 
-    // Store Paystack reference
+    console.log(`[${correlationId}] ✅ Paystack accepted NGN payment`)
+
+    // Step 5: Update payment record with conversion details
     const supabase = createServerClient()
     await supabase
       .from("payments")
@@ -260,46 +278,64 @@ async function createPaystackCheckout(
         paystack_reference: responseData.data.reference,
         metadata: JSON.stringify({
           paystack_data: responseData.data,
-          original_amount: amount,
-          currency: 'USD'
+          original_amount_usd: usdAmount,
+          charged_amount_ngn: ngnAmount,
+          exchange_rate: exchangeRate,
+          conversion_method: 'pre_conversion',
+          display_currency: 'USD',
+          payment_currency: 'NGN'
         })
       })
       .eq("id", paymentId)
 
-    console.log(`[${correlationId}] Paystack checkout URL generated:`, responseData.data.authorization_url)
-
     return {
       checkoutUrl: responseData.data.authorization_url,
-      amount: amount,
-      currency: 'USD'
+      message: `Pay ₦${ngnAmount.toLocaleString()} (${usdAmount} USD equivalent)`,
+      usdAmount: usdAmount,
+      ngnAmount: ngnAmount,
+      exchangeRate: exchangeRate
     }
 
   } catch (error: any) {
     console.error(`[${correlationId}] Paystack error:`, error)
-    throw new Error(error.message || "Paystack payment processing failed")
+    throw new Error(error.message || "Payment processing failed")
   }
 }
 
 async function createBankTransferInstructions(
   paymentId: string,
-  amount: number,
-  serviceRequest: any,
-  paymentType: string,
+  usdAmount: number,
   correlationId: string
 ) {
   try {
-    console.log(`[${correlationId}] Creating bank transfer instructions`)
+    // Get current exchange rate for bank transfer
+    let exchangeRate = 1550
+    try {
+      const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.rates?.NGN) {
+          exchangeRate = data.rates.NGN
+        }
+      }
+    } catch (error) {
+      console.log(`[${correlationId}] Using fallback rate for bank transfer`)
+    }
+
+    const ngnAmount = Math.round(usdAmount * exchangeRate)
 
     const instructions = {
       bankName: "First Bank of Nigeria",
-      accountNumber: "3050505050",
+      accountNumber: "3050505050", 
       accountName: "Kamisoft Enterprises Limited",
-      amount: amount,
-      currency: "USD",
-      reference: `KE_${paymentType.toUpperCase()}_${paymentId.slice(0, 8)}`,
+      usdAmount: usdAmount,
+      ngnAmount: ngnAmount,
+      exchangeRate: exchangeRate,
+      reference: `KE_BANK_${paymentId.slice(0, 8)}`,
       instructions: [
-        `Transfer exactly $${amount.toFixed(2)} USD to the account above`,
-        "Use the reference number in your transfer description",
+        `Transfer ₦${ngnAmount.toLocaleString()} NGN (equivalent to $${usdAmount} USD)`,
+        `Exchange rate: 1 USD = ₦${exchangeRate}`,
+        "Use the reference number in your transfer description", 
         "Send proof of payment to hello@kamisoftenterprises.online",
         "Payment will be verified within 24 hours"
       ]
@@ -307,7 +343,9 @@ async function createBankTransferInstructions(
 
     return {
       bankDetails: instructions,
-      message: "Bank transfer instructions generated"
+      message: "Bank transfer instructions generated",
+      ngnAmount: ngnAmount,
+      exchangeRate: exchangeRate
     }
   } catch (error: any) {
     console.error(`[${correlationId}] Bank transfer error:`, error)
@@ -317,30 +355,26 @@ async function createBankTransferInstructions(
 
 async function createCryptoPayment(
   paymentId: string,
-  amount: number,
-  serviceRequest: any,
-  paymentType: string,
+  usdAmount: number,
   correlationId: string
 ) {
   try {
-    console.log(`[${correlationId}] Creating crypto payment`)
-
     const cryptoInfo = {
       currency: "USDT",
-      network: "TRC20",
+      network: "TRC20", 
       address: "TYourUSDTAddressHere123456789", // Replace with your actual address
-      amount: amount,
+      amount: usdAmount, // Crypto stays in USD
       qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=TYourUSDTAddressHere123456789`,
       instructions: [
-        `Send exactly ${amount} USDT to the address above`,
+        `Send exactly ${usdAmount} USDT to the address above`,
         "Use TRC20 network (Tron) for lower fees",
-        "Send transaction hash to hello@kamisoftenterprises.online",
+        "Send transaction hash to hello@kamisoftenterprises.online", 
         "Payment will be verified within 1 hour"
       ]
     }
 
     return {
-      cryptoInfo: cryptoInfo,
+      cryptoInfo,
       message: "Crypto payment address generated"
     }
   } catch (error: any) {
