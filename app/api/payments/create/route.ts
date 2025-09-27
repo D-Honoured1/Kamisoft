@@ -449,59 +449,77 @@ async function createCryptoPayment(
   try {
     console.log(`[${correlationId}] Creating crypto payment via NOWPayments integration`)
 
-    // Default to USDT for crypto payments (most popular stablecoin)
-    const payCurrency = 'USDT'
+    // Default to USDT TRC20 for crypto payments (most popular stablecoin)
+    const payCurrency = 'usdttrc20'
     const paymentReference = `KE_CRYPTO_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
 
-    // Call NOWPayments generate endpoint
-    const nowpaymentsResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/nowpayments/generate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        paymentId,
-        payCurrency,
+    // Call NOWPayments generate endpoint directly using the service
+    // Instead of making HTTP call to ourselves, use the NOWPayments service directly
+    const { nowPaymentsService } = await import('@/lib/nowpayments')
+
+    try {
+      const paymentDetails = await nowPaymentsService.generatePaymentDetails(
         usdAmount,
-        paymentReference
-      })
-    })
+        payCurrency,
+        paymentId,
+        `Payment for $${usdAmount} - ${paymentReference}`
+      )
 
-    if (!nowpaymentsResponse.ok) {
-      const errorData = await nowpaymentsResponse.json()
-      throw new Error(errorData.error || 'NOWPayments integration failed')
-    }
+      // Update payment record with NOWPayments details
+      const supabase = createServerClient()
+      await supabase
+        .from("payments")
+        .update({
+          crypto_address: paymentDetails.payAddress,
+          crypto_network: paymentDetails.network,
+          crypto_amount: paymentDetails.payAmount,
+          crypto_symbol: paymentDetails.payCurrency,
+          metadata: JSON.stringify({
+            nowpayments_payment_id: paymentDetails.paymentId,
+            nowpayments_details: paymentDetails,
+            generated_at: new Date().toISOString(),
+            correlation_id: correlationId
+          }),
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", paymentId)
 
-    const nowpaymentsResult = await nowpaymentsResponse.json()
+      console.log(`[${correlationId}] ✅ NOWPayments crypto payment created successfully`)
 
-    if (!nowpaymentsResult.success) {
-      throw new Error(nowpaymentsResult.error || 'NOWPayments payment creation failed')
-    }
+      // Return crypto info in the expected format for the frontend
+      return {
+        cryptoInfo: {
+          currency: paymentDetails.payCurrency,
+          network: paymentDetails.network,
+          address: paymentDetails.payAddress,
+          amount: paymentDetails.payAmount,
+          ngnEquivalent: (usdAmount * 1550).toLocaleString(), // Convert USD to NGN for display
+          qrCode: paymentDetails.qrCodeUrl,
+          instructions: [
+            `Send exactly ${paymentDetails.payAmount} ${paymentDetails.payCurrency} to the address above`,
+            `Network: ${paymentDetails.network}`,
+            `Reference: ${paymentReference}`,
+            'Payment will be automatically detected by NOWPayments',
+            'No need to submit transaction hash manually',
+            'Payment confirmation usually takes 5-30 minutes'
+          ],
+          supportedNetworks: [{
+            name: paymentDetails.network,
+            fee: "Low fees",
+            recommended: true
+          }]
+        },
+        message: `NOWPayments crypto payment created for ${paymentDetails.payCurrency}`,
+        nowpaymentsId: paymentDetails.paymentId,
+        paymentReference,
+        // Add missing properties for compatibility with the main response format
+        ngnAmount: null, // Crypto payments don't use NGN
+        exchangeRate: 1 // Crypto payments use USD directly
+      }
 
-    console.log(`[${correlationId}] ✅ NOWPayments crypto payment created successfully`)
-
-    // Return crypto info in the expected format for the frontend
-    return {
-      cryptoInfo: {
-        currency: nowpaymentsResult.cryptoDetails.network.symbol,
-        network: nowpaymentsResult.cryptoDetails.network.network,
-        address: nowpaymentsResult.cryptoDetails.address,
-        amount: nowpaymentsResult.cryptoDetails.amountCrypto,
-        ngnEquivalent: (usdAmount * 1550).toLocaleString(), // Convert USD to NGN for display
-        qrCode: nowpaymentsResult.cryptoDetails.qrCodeUrl,
-        instructions: nowpaymentsResult.cryptoDetails.instructions,
-        supportedNetworks: [{
-          name: nowpaymentsResult.cryptoDetails.network.network,
-          fee: "Low fees",
-          recommended: true
-        }]
-      },
-      message: `NOWPayments crypto payment created for ${nowpaymentsResult.cryptoDetails.network.symbol}`,
-      nowpaymentsId: nowpaymentsResult.nowpaymentsId,
-      paymentReference,
-      // Add missing properties for compatibility with the main response format
-      ngnAmount: null, // Crypto payments don't use NGN
-      exchangeRate: 1 // Crypto payments use USD directly
+    } catch (nowpaymentsError: any) {
+      console.error(`[${correlationId}] NOWPayments service error:`, nowpaymentsError)
+      throw new Error(nowpaymentsError.message || "Failed to generate crypto payment via NOWPayments")
     }
 
   } catch (error: any) {
