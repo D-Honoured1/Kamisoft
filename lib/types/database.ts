@@ -60,6 +60,7 @@ export interface ServiceRequest {
   balance_due?: number
   payment_plan?: PaymentPlan
   partial_payment_status?: PartialPaymentStatus
+  admin_discount_percent?: number
   created_at: string
   updated_at: string
 

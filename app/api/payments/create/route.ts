@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       .from("payments")
       .select("amount, payment_status")
       .eq("request_id", requestId)
-      .eq("payment_status", "completed")
+      .in("payment_status", ["completed", "confirmed"])
 
     const totalPaid = existingCompletedPayments?.reduce((sum, payment) => sum + payment.amount, 0) || 0
     const totalCost = serviceRequest.estimated_cost || 0
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     if (paymentType === "split") {
       isPartialPayment = true
       // Check if this is the first or second payment
-      const completedSplitPayments = existingCompletedPayments?.filter(p => p.payment_status === "completed").length || 0
+      const completedSplitPayments = existingCompletedPayments?.length || 0
 
       if (completedSplitPayments === 0) {
         // First payment (50%)
@@ -86,14 +86,20 @@ export async function POST(request: NextRequest) {
         }, { status: 400 })
       }
     } else {
-      // Full payment
+      // Full payment with discount
       if (totalPaid > 0) {
         return NextResponse.json({
           error: `Payment already exists. Remaining balance: $${remainingBalance.toFixed(2)}`
         }, { status: 400 })
       }
-      expectedAmount = totalCost
+
+      // Apply discount for full payment
+      const discountPercent = serviceRequest.admin_discount_percent || 10.0
+      const discountAmount = totalCost * (discountPercent / 100)
+      expectedAmount = totalCost - discountAmount
       paymentSequence = 1
+
+      console.log(`[${correlationId}] Full payment discount applied: ${discountPercent}% (${discountAmount.toFixed(2)}) = $${expectedAmount.toFixed(2)}`)
     }
 
     if (Math.abs(amount - expectedAmount) > 0.01) {
@@ -140,6 +146,12 @@ export async function POST(request: NextRequest) {
         is_partial_payment: isPartialPayment,
         total_amount_due: totalCost,
         remaining_balance_before: remainingBalance,
+        discount_applied: paymentType === 'full' ? {
+          discount_percent: serviceRequest.admin_discount_percent || 10.0,
+          discount_amount: paymentType === 'full' ? totalCost * ((serviceRequest.admin_discount_percent || 10.0) / 100) : 0,
+          original_amount: totalCost,
+          discounted_amount: amount
+        } : null,
         note: 'USD amount converted to NGN for Paystack processing',
         created_at: new Date().toISOString()
       })
@@ -217,9 +229,9 @@ export async function POST(request: NextRequest) {
       // Return both currencies for frontend display
       displayAmount: amount, // USD (what customer sees as price)
       displayCurrency: 'USD',
-      paymentAmount: result?.ngnAmount, // NGN (what they actually pay)
-      paymentCurrency: 'NGN',
-      exchangeRate: result?.exchangeRate,
+      paymentAmount: result?.ngnAmount || amount, // NGN (what they actually pay) or USD for crypto
+      paymentCurrency: result?.ngnAmount ? 'NGN' : 'USD',
+      exchangeRate: result?.exchangeRate || 1,
       correlationId,
       ...result
     })
@@ -430,7 +442,7 @@ async function createBankTransferInstructions(
 }
 
 async function createCryptoPayment(
-  paymentId: string,
+  _paymentId: string,
   usdAmount: number,
   correlationId: string
 ) {
