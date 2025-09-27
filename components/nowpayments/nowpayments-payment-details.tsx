@@ -99,7 +99,6 @@ export function NOWPaymentsPaymentDetails({
       const data = await response.json()
       setNowpaymentsDetails(data.nowpaymentsDetails)
     } catch (err: any) {
-      console.error('Error generating NOWPayments details:', err)
       setError(err.message || 'Failed to generate NOWPayments payment details')
     } finally {
       setLoading(false)
@@ -164,7 +163,6 @@ export function NOWPaymentsPaymentDetails({
       onTransactionSubmitted?.()
 
     } catch (err: any) {
-      console.error('Error submitting transaction:', err)
       toast({
         title: "Submission Failed",
         description: err.message || 'Failed to submit transaction hash',

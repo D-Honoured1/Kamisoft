@@ -18,8 +18,6 @@ const supabaseAdmin = createClient(
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    console.log("=== CONTACT FORM SUBMISSION ===")
-    console.log("Received data:", JSON.stringify(body, null, 2))
 
     const { name, email, phone, company, service, subject, message } = body
 
@@ -30,7 +28,6 @@ export async function POST(req: Request) {
       if (!email) missingFields.push('email')
       if (!message) missingFields.push('message')
       
-      console.log("Missing required fields:", missingFields)
       return NextResponse.json(
         { error: `Missing required fields: ${missingFields.join(', ')}` },
         { status: 400 }
@@ -39,7 +36,6 @@ export async function POST(req: Request) {
 
     // Step 1: Create or update client
     let clientId: string
-    console.log("Step 1: Looking for existing client with email:", email.toLowerCase().trim())
     
     try {
       const { data: existingClient, error: clientSearchError } = await supabaseAdmin
@@ -49,12 +45,10 @@ export async function POST(req: Request) {
         .maybeSingle()
 
       if (clientSearchError) {
-        console.error("Error searching for client:", clientSearchError)
         throw new Error(`Client search failed: ${clientSearchError.message}`)
       }
 
       if (existingClient) {
-        console.log("Found existing client:", existingClient.id)
         clientId = existingClient.id
         
         // Update existing client
@@ -71,12 +65,9 @@ export async function POST(req: Request) {
           .eq("id", clientId)
 
         if (updateError) {
-          console.error("Error updating client:", updateError)
           throw new Error(`Failed to update client: ${updateError.message}`)
         }
-        console.log("Client updated successfully")
       } else {
-        console.log("Creating new client")
         
         // Create new client
         const newClientData = {
@@ -93,16 +84,13 @@ export async function POST(req: Request) {
           .single()
 
         if (clientError) {
-          console.error("Error creating client:", clientError)
           throw new Error(`Failed to create client: ${clientError.message}`)
         }
 
         clientId = newClient.id
-        console.log("New client created with ID:", clientId)
       }
 
     } catch (clientError: any) {
-      console.error("Client operation failed:", clientError)
       return NextResponse.json(
         { error: `Client operation failed: ${clientError.message}` },
         { status: 500 }
@@ -110,7 +98,6 @@ export async function POST(req: Request) {
     }
 
     // Step 2: Create contact inquiry (separate from service requests)
-    console.log("Step 2: Creating contact inquiry")
     
     const contactInquiryData = {
       client_id: clientId,
@@ -120,7 +107,6 @@ export async function POST(req: Request) {
       status: "pending",
     }
 
-    console.log("Contact inquiry data:", JSON.stringify(contactInquiryData, null, 2))
 
     try {
       const { data: inquiry, error: inquiryError } = await supabaseAdmin
@@ -130,15 +116,9 @@ export async function POST(req: Request) {
         .single()
 
       if (inquiryError) {
-        console.error("Contact inquiry creation error:", {
-          message: inquiryError.message,
-          code: inquiryError.code,
-          details: inquiryError.details
-        })
         throw new Error(`Failed to create contact inquiry: ${inquiryError.message}`)
       }
 
-      console.log("Contact inquiry created successfully:", inquiry.id)
 
       return NextResponse.json({
         success: true,
@@ -147,7 +127,6 @@ export async function POST(req: Request) {
       })
 
     } catch (inquiryCreationError: any) {
-      console.error("Contact inquiry creation failed:", inquiryCreationError)
       return NextResponse.json(
         { error: `Contact inquiry creation failed: ${inquiryCreationError.message}` },
         { status: 500 }
@@ -155,11 +134,6 @@ export async function POST(req: Request) {
     }
 
   } catch (error: any) {
-    console.error("=== CONTACT FORM API ERROR ===")
-    console.error("Error details:", {
-      message: error.message,
-      stack: error.stack
-    })
     
     return NextResponse.json(
       { error: error.message || "Internal server error" },

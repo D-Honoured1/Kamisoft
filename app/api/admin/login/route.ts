@@ -20,7 +20,6 @@ const supabaseAdmin = createClient(
 export async function POST(req: Request) {
   try {
     const { email, password } = await req.json()
-    console.log("Login attempt for email:", email)
     
     if (!email || !password) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 })
@@ -34,15 +33,12 @@ export async function POST(req: Request) {
       .eq("is_active", true)
       .maybeSingle()
 
-    console.log("Database query result:", { adminUser: adminUser ? "found" : "not found", error })
 
     if (error) {
-      console.error("Database error:", error)
       return NextResponse.json({ error: "Database error" }, { status: 500 })
     }
 
     if (!adminUser) {
-      console.log("No admin user found for email:", email)
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
     }
 
@@ -52,19 +48,15 @@ export async function POST(req: Request) {
     // First try plain text comparison (for existing users)
     if (password === adminUser.password) {
       passwordMatch = true
-      console.log("Plain text password match")
     } else {
       // If it doesn't match, try hashed password (for future implementation)
       // For now, we'll just use plain text
-      console.log("Password does not match")
     }
 
     if (!passwordMatch) {
-      console.log("Invalid password for user:", email)
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
     }
 
-    console.log("Login successful for user:", email)
 
     // Update last login
     const { error: updateError } = await supabaseAdmin
@@ -73,7 +65,6 @@ export async function POST(req: Request) {
       .eq("id", adminUser.id)
 
     if (updateError) {
-      console.warn("Failed to update last login:", updateError)
     }
 
     // Create JWT token
@@ -114,7 +105,6 @@ export async function POST(req: Request) {
 
     return response
   } catch (error: any) {
-    console.error("Login error:", error)
     return NextResponse.json({ 
       error: "Internal server error", 
       details: process.env.NODE_ENV === 'development' ? error.message : undefined 

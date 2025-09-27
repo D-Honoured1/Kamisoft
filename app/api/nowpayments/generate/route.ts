@@ -18,12 +18,6 @@ export async function POST(request: NextRequest) {
       paymentReference
     } = await request.json()
 
-    console.log(`[${correlationId}] NOWPayments generation request:`, {
-      paymentId,
-      payCurrency,
-      usdAmount,
-      paymentReference
-    })
 
     // Validate required fields
     if (!paymentId || !payCurrency || !usdAmount || !paymentReference) {
@@ -48,7 +42,6 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (paymentError || !payment) {
-      console.error(`[${correlationId}] Payment not found:`, paymentError)
       return NextResponse.json({ error: "Payment not found" }, { status: 404 })
     }
 
@@ -93,21 +86,12 @@ export async function POST(request: NextRequest) {
         .eq("id", paymentId)
 
       if (updateError) {
-        console.error(`[${correlationId}] Error updating payment with NOWPayments details:`, updateError)
         return NextResponse.json({
           error: "Failed to save crypto payment details",
           details: updateError.message
         }, { status: 500 })
       }
 
-      console.log(`[${correlationId}] NOWPayments payment generated successfully:`, {
-        paymentId,
-        nowpaymentsId: paymentDetails.paymentId,
-        currency: paymentDetails.payCurrency,
-        amount: `${paymentDetails.payAmount} ${paymentDetails.payCurrency}`,
-        usdValue: `$${usdAmount}`,
-        address: paymentDetails.payAddress.substring(0, 10) + '...'
-      })
 
       return NextResponse.json({
         success: true,
@@ -146,7 +130,6 @@ export async function POST(request: NextRequest) {
       })
 
     } catch (nowpaymentsError: any) {
-      console.error(`[${correlationId}] NOWPayments service error:`, nowpaymentsError)
       return NextResponse.json({
         error: "Failed to generate crypto payment details",
         details: nowpaymentsError.message,
@@ -155,7 +138,6 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error: any) {
-    console.error(`[${correlationId}] NOWPayments generation error:`, error)
     return NextResponse.json({
       error: "Internal server error",
       details: error.message,
@@ -210,7 +192,6 @@ export async function GET() {
       totalAvailable: currencies.length
     })
   } catch (error: any) {
-    console.error("Error fetching NOWPayments currencies:", error)
 
     // Return fallback currencies when service is unavailable
     const fallbackCurrencies = [

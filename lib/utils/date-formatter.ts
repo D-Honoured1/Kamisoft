@@ -19,7 +19,6 @@ export function formatDate(
     // Use explicit locale to ensure consistency
     return new Intl.DateTimeFormat('en-US', options).format(dateObj)
   } catch (error) {
-    console.warn('Date formatting error:', error)
     return 'Invalid Date'
   }
 }
@@ -46,7 +45,6 @@ export function formatDateTime(
       timeZone: 'UTC' // Use UTC to prevent timezone mismatches
     }).format(dateObj)
   } catch (error) {
-    console.warn('DateTime formatting error:', error)
     return 'Invalid Date'
   }
 }
@@ -70,7 +68,6 @@ export function formatRelativeDate(date: string | Date): string {
 
     return `${Math.floor(diffInDays / 365)} years ago`
   } catch (error) {
-    console.warn('Relative date formatting error:', error)
     return 'Unknown date'
   }
 }

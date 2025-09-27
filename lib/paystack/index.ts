@@ -109,7 +109,6 @@ export class PaystackService {
   private async makeRequest(endpoint: string, method: 'GET' | 'POST' = 'GET', body?: any): Promise<PaystackResponse> {
     const url = `${this.baseUrl}${endpoint}`
     
-    console.log(`🔄 Paystack API: ${method} ${endpoint}`)
     
     try {
       const response = await this.fetchWithTimeout(url, {
@@ -125,20 +124,14 @@ export class PaystackService {
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error(`❌ Paystack API Error: ${response.status}`, errorText)
         throw new Error(`Paystack API error: ${response.status} - ${errorText}`)
       }
 
       const result = await response.json()
       
-      console.log(`✅ Paystack API Response: ${result.status ? 'Success' : 'Failed'}`, {
-        status: result.status,
-        message: result.message
-      })
 
       return result
     } catch (error: any) {
-      console.error(`❌ Paystack request failed:`, error)
       throw error
     }
   }
@@ -159,7 +152,6 @@ export class PaystackService {
 
     // Fetch fresh rate
     try {
-      console.log(`🌐 Fetching exchange rate: ${from} → ${to}`)
 
       // Use the same API configuration as other services
       const apiKey = process.env.EXCHANGE_RATE_API_KEY
@@ -192,7 +184,6 @@ export class PaystackService {
         source: apiKey ? 'ExchangeRate-API-Authenticated' : 'ExchangeRate-API-Free'
       })
 
-      console.log(`✅ Got exchange rate: 1 ${from} = ${rate} ${to}`)
       
       return {
         rate,
@@ -200,7 +191,6 @@ export class PaystackService {
         cached: false
       }
     } catch (error: any) {
-      console.warn(`⚠️ Exchange rate API failed:`, error.message)
       
       return {
         rate: this.defaultExchangeRate,
@@ -231,12 +221,6 @@ export class PaystackService {
     exchange_source?: string
   }> {
     try {
-      console.log('🚀 Initializing Paystack transaction:', {
-        email: params.email,
-        amount: params.amount,
-        currency: params.currency || 'USD',
-        reference: params.reference
-      })
 
       const originalCurrency = params.currency || 'USD'
       let finalAmount = params.amount
@@ -245,14 +229,12 @@ export class PaystackService {
 
       // Handle currency conversion for non-NGN currencies
       if (originalCurrency !== 'NGN') {
-        console.log(`💱 Converting ${originalCurrency} to NGN for Paystack`)
         
         const rateResult = await this.fetchExchangeRate(originalCurrency, 'NGN')
         exchangeRate = rateResult.rate
         exchangeSource = rateResult.source
         finalAmount = params.amount * exchangeRate
 
-        console.log(`💰 Conversion: ${params.amount} ${originalCurrency} = ${finalAmount.toFixed(2)} NGN (rate: ${exchangeRate}, source: ${exchangeSource})`)
       }
 
       // Convert to kobo for Paystack API
@@ -301,7 +283,6 @@ export class PaystackService {
         throw new Error(response.message || 'Failed to initialize transaction')
       }
     } catch (error: any) {
-      console.error('❌ Paystack initialization error:', error)
       return {
         success: false,
         message: error.message || 'Transaction initialization failed'
@@ -316,17 +297,10 @@ export class PaystackService {
     message: string
   }> {
     try {
-      console.log('🔍 Verifying transaction:', reference)
 
       const response = await this.makeRequest(`/transaction/verify/${encodeURIComponent(reference)}`) as PaystackVerifyResponse
 
       if (response.status && response.data) {
-        console.log('✅ Transaction verified:', {
-          reference: response.data.reference,
-          status: response.data.status,
-          amount: response.data.amount / 100,
-          currency: response.data.currency
-        })
 
         return {
           success: true,
@@ -340,7 +314,6 @@ export class PaystackService {
         }
       }
     } catch (error: any) {
-      console.error('❌ Transaction verification error:', error)
       return {
         success: false,
         message: error.message || 'Verification request failed'
@@ -391,7 +364,6 @@ export class PaystackService {
         }
       }
     } catch (error: any) {
-      console.error('❌ Error listing transactions:', error)
       return {
         success: false,
         message: error.message || 'Failed to list transactions'
@@ -407,15 +379,9 @@ export class PaystackService {
       
       const isValid = hash === signature
       
-      console.log('🔐 Webhook signature validation:', {
-        isValid,
-        receivedSignature: signature?.substring(0, 10) + '...',
-        computedSignature: hash?.substring(0, 10) + '...'
-      })
       
       return isValid
     } catch (error) {
-      console.error('❌ Webhook signature validation error:', error)
       return false
     }
   }
@@ -454,7 +420,6 @@ export class PaystackService {
   // Clear exchange rate cache
   clearExchangeRateCache(): void {
     this.exchangeRateCache.clear()
-    console.log('🧹 Exchange rate cache cleared')
   }
 }
 

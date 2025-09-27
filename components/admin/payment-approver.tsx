@@ -81,7 +81,6 @@ export function PaymentApprover({
       }, 2000)
 
     } catch (err: any) {
-      console.error('Error approving payment:', err)
       setError(err.message || 'Failed to approve payment')
     } finally {
       setIsApproving(false)

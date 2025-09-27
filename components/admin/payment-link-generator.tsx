@@ -76,11 +76,9 @@ export function PaymentLinkGenerator({
 
         if (!updateResponse.ok) {
           const errorData = await updateResponse.json()
-          console.error("Failed to update service request:", errorData)
           throw new Error("Failed to update service request")
         }
         
-        console.log("Service request updated successfully")
       }
 
       // Generate the payment link (simple URL without sensitive data)
@@ -89,7 +87,6 @@ export function PaymentLinkGenerator({
       setLinkExpiry(expiryTime.toISOString())
 
     } catch (error: any) {
-      console.error("Error generating payment link:", error)
       setError(error.message || "Failed to generate payment link")
     } finally {
       setIsGenerating(false)
@@ -104,10 +101,8 @@ export function PaymentLinkGenerator({
 
   const sendEmailNotification = async () => {
     try {
-      console.log("Sending payment link email to:", clientEmail)
       alert("Payment link sent to client email (demo)")
     } catch (error) {
-      console.error("Failed to send email:", error)
     }
   }
 

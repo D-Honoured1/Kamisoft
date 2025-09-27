@@ -70,7 +70,6 @@ export function PaymentDeleter({
       }, 2000)
 
     } catch (err: any) {
-      console.error('Error deleting payment:', err)
       setError(err.message || 'Failed to delete payment')
     } finally {
       setIsDeleting(false)

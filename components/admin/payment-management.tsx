@@ -64,7 +64,6 @@ export function PaymentManagement({ requestId, estimatedCost }: PaymentManagemen
         setPayments(data.payments || [])
       }
     } catch (error) {
-      console.error("Error fetching payments:", error)
     } finally {
       setLoading(false)
     }
@@ -92,7 +91,6 @@ export function PaymentManagement({ requestId, estimatedCost }: PaymentManagemen
       await fetchPayments()
       setAdminNotes({ ...adminNotes, [paymentId]: "" })
     } catch (error) {
-      console.error("Error updating payment:", error)
       alert("Failed to update payment status")
     } finally {
       setProcessingPayment(null)

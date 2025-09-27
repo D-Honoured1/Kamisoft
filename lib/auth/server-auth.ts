@@ -34,7 +34,6 @@ export async function getAdminUser(): Promise<AdminUser | null> {
       role: decoded.role,
     }
   } catch (error) {
-    console.error("Auth verification error:", error)
     return null
   }
 }
@@ -43,7 +42,6 @@ export async function requireAuth(): Promise<AdminUser> {
   const adminUser = await getAdminUser()
   
   if (!adminUser) {
-    console.log("No admin user found, redirecting to login")
     redirect("/admin/login")
   }
   

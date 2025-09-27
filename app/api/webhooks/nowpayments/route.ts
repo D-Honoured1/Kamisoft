@@ -42,21 +42,15 @@ export async function POST(request: NextRequest) {
     const body = await request.text()
     const signature = request.headers.get('x-nowpayments-sig')
 
-    console.log(`[${correlationId}] NOWPayments IPN received:`, {
-      hasSignature: !!signature,
-      bodyLength: body.length
-    })
 
     // Validate webhook signature if secret is configured
     const webhookSecret = process.env.NOWPAYMENTS_IPN_SECRET
     if (webhookSecret && signature) {
       const isValid = nowPaymentsService.validateWebhookSignature(body, signature, webhookSecret)
       if (!isValid) {
-        console.error(`[${correlationId}] Invalid webhook signature`)
         return NextResponse.json({ error: "Invalid signature" }, { status: 401 })
       }
     } else if (webhookSecret) {
-      console.warn(`[${correlationId}] Webhook secret configured but no signature provided`)
     }
 
     // Parse the IPN data
@@ -64,23 +58,12 @@ export async function POST(request: NextRequest) {
     try {
       ipnData = JSON.parse(body)
     } catch (parseError) {
-      console.error(`[${correlationId}] Failed to parse IPN data:`, parseError)
       return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
     }
 
-    console.log(`[${correlationId}] NOWPayments IPN data:`, {
-      payment_id: ipnData.payment_id,
-      payment_status: ipnData.payment_status,
-      order_id: ipnData.order_id,
-      pay_currency: ipnData.pay_currency,
-      price_amount: ipnData.price_amount,
-      pay_amount: ipnData.pay_amount,
-      actually_paid: ipnData.actually_paid
-    })
 
     // Find the payment in our database using order_id (which is our payment ID)
     if (!ipnData.order_id) {
-      console.error(`[${correlationId}] No order_id in IPN data`)
       return NextResponse.json({ error: "Missing order_id" }, { status: 400 })
     }
 
@@ -101,7 +84,6 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (paymentError || !payment) {
-      console.error(`[${correlationId}] Payment not found for order_id ${ipnData.order_id}:`, paymentError)
       return NextResponse.json({ error: "Payment not found" }, { status: 404 })
     }
 
@@ -145,7 +127,6 @@ export async function POST(request: NextRequest) {
         newPaymentStatus = 'failed'
         break
       default:
-        console.warn(`[${correlationId}] Unknown NOWPayments status: ${ipnData.payment_status}`)
         break
     }
 
@@ -162,7 +143,6 @@ export async function POST(request: NextRequest) {
       .eq("id", ipnData.order_id)
 
     if (updateError) {
-      console.error(`[${correlationId}] Error updating payment:`, updateError)
       return NextResponse.json({
         error: "Failed to update payment",
         details: updateError.message
@@ -180,21 +160,11 @@ export async function POST(request: NextRequest) {
         .eq("id", payment.request_id)
 
       if (requestUpdateError) {
-        console.error(`[${correlationId}] Error updating service request:`, requestUpdateError)
         // Don't fail the webhook for this error, just log it
       } else {
-        console.log(`[${correlationId}] Service request ${payment.request_id} marked as confirmed`)
       }
     }
 
-    console.log(`[${correlationId}] NOWPayments IPN processed successfully:`, {
-      payment_id: ipnData.payment_id,
-      order_id: ipnData.order_id,
-      old_status: payment.payment_status,
-      new_status: newPaymentStatus,
-      nowpayments_status: ipnData.payment_status,
-      service_request_updated: updateServiceRequest
-    })
 
     // Return success response
     return NextResponse.json({
@@ -206,7 +176,6 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error(`[${correlationId}] NOWPayments IPN error:`, error)
     return NextResponse.json({
       error: "Internal server error",
       details: error.message,

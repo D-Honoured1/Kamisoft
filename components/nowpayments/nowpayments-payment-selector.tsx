@@ -69,7 +69,6 @@ export function NOWPaymentsPaymentSelector({
 
       const data = await response.json()
 
-      console.log('NOWPayments currencies response:', data)
 
       // Ensure we have currencies array
       if (!data.success || !Array.isArray(data.currencies)) {
@@ -91,10 +90,8 @@ export function NOWPaymentsPaymentSelector({
         usdAmount <= currency.maxAmount
       )
 
-      console.log('Available currencies for amount $' + usdAmount + ':', availableCurrencies)
       setCurrencies(availableCurrencies)
     } catch (err: any) {
-      console.error('Error fetching cryptocurrencies:', err)
       setError(err.message || 'Failed to load crypto payment options')
     } finally {
       setLoading(false)

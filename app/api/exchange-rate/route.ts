@@ -33,42 +33,30 @@ export async function GET() {
       // Use free exchange rate API first
       const freeApiUrl = 'https://api.exchangerate-api.com/v4/latest/USD'
 
-      console.log(`🌐 Fetching live exchange rate from: free API`)
 
       const response = await fetch(freeApiUrl, {
         signal: AbortSignal.timeout(5000)
       })
 
-      console.log(`📡 Exchange rate API response status: ${response.status}`)
 
       if (response.ok) {
         const data = await response.json()
-        console.log(`📊 Exchange rate API data:`, {
-          hasRates: !!data.rates,
-          ngnFromRates: data.rates?.NGN
-        })
 
         const ngnRate = data.rates?.NGN
         if (ngnRate && ngnRate > 0) {
           exchangeRate = ngnRate
           source = 'exchangerate-api-free'
-          console.log(`✅ Exchange rate updated: 1 USD = ${exchangeRate} NGN (${source})`)
         } else {
-          console.error(`❌ No valid NGN rate found in API response`)
           throw new Error('No NGN rate in response')
         }
       } else {
-        console.error(`❌ Exchange rate API failed with status: ${response.status}`)
         const errorText = await response.text()
-        console.error(`❌ Error response:`, errorText)
         throw new Error(`API returned ${response.status}`)
       }
     } catch (apiError: any) {
-      console.error(`❌ Exchange rate API error:`, apiError.message)
 
       // Try alternative free API
       try {
-        console.log(`🔄 Trying alternative free API...`)
         const altResponse = await fetch('https://api.fxratesapi.com/latest?base=USD&symbols=NGN', {
           signal: AbortSignal.timeout(5000)
         })
@@ -79,7 +67,6 @@ export async function GET() {
           if (ngnRate && ngnRate > 0) {
             exchangeRate = ngnRate
             source = 'fxratesapi-free'
-            console.log(`✅ Exchange rate updated from alternative API: 1 USD = ${exchangeRate} NGN`)
           } else {
             throw new Error('No NGN rate in alternative API')
           }
@@ -87,7 +74,6 @@ export async function GET() {
           throw new Error(`Alternative API returned ${altResponse.status}`)
         }
       } catch (altError: any) {
-        console.error(`❌ Alternative exchange rate API also failed:`, altError.message)
         throw new Error('All exchange rate APIs unavailable')
       }
     }
@@ -112,7 +98,6 @@ export async function GET() {
     }
 
   } catch (error: any) {
-    console.error("Exchange rate API error:", error)
 
     return NextResponse.json({
       success: false,

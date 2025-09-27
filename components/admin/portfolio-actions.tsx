@@ -39,7 +39,6 @@ export function PortfolioActions({ projectId, projectTitle }: PortfolioActionsPr
       // Refresh the page to show updated list
       router.refresh()
     } catch (error) {
-      console.error("Error deleting project:", error)
       alert("Failed to delete project. Please try again.")
     } finally {
       setIsDeleting(false)

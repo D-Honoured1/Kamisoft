@@ -11,7 +11,6 @@ export async function POST(request: NextRequest) {
     const supabase = createServerClient()
     const { requestId, paymentMethod, amount, paymentType, metadata } = await request.json()
 
-    console.log(`[${correlationId}] Payment creation request:`, { requestId, paymentMethod, amount, paymentType })
 
     // Validate input
     if (!requestId || !paymentMethod || !amount || !paymentType) {
@@ -41,7 +40,6 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (requestError || !serviceRequest) {
-      console.error("Service request fetch error:", requestError)
       return NextResponse.json({ error: "Service request not found" }, { status: 404 })
     }
 
@@ -99,7 +97,6 @@ export async function POST(request: NextRequest) {
       expectedAmount = totalCost - discountAmount
       paymentSequence = 1
 
-      console.log(`[${correlationId}] Full payment discount applied: ${discountPercent}% (${discountAmount.toFixed(2)}) = $${expectedAmount.toFixed(2)}`)
     }
 
     if (Math.abs(amount - expectedAmount) > 0.01) {
@@ -159,7 +156,6 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    console.log(`[${correlationId}] Creating payment record:`, paymentData)
 
     const { data: payment, error: paymentError } = await supabase
       .from("payments")
@@ -168,7 +164,6 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (paymentError) {
-      console.error(`[${correlationId}] Error creating payment:`, paymentError)
       return NextResponse.json({
         error: "Failed to create payment record",
         details: paymentError.message,
@@ -176,7 +171,6 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
 
-    console.log(`[${correlationId}] Payment record created:`, payment.id)
 
     // Update service request payment plan if this is a split payment
     if (paymentType === "split" && paymentSequence === 1) {
@@ -189,7 +183,6 @@ export async function POST(request: NextRequest) {
         .eq("id", requestId)
 
       if (updateError) {
-        console.warn(`[${correlationId}] Failed to update service request payment plan:`, updateError)
       }
     }
 
@@ -208,7 +201,6 @@ export async function POST(request: NextRequest) {
           break
       }
     } catch (error: any) {
-      console.error(`[${correlationId}] Payment method error:`, error)
       
       await supabase
         .from("payments")
@@ -239,7 +231,6 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error(`[${correlationId}] Payment creation error:`, error)
     return NextResponse.json({
       error: "Internal server error",
       details: error.message,
@@ -262,7 +253,6 @@ async function createPaystackCheckout(
       throw new Error("Paystack secret key not configured")
     }
 
-    console.log(`[${correlationId}] Converting $${usdAmount} USD to NGN for Paystack`)
 
     // Step 1: Get current USD to NGN exchange rate from environment-configured source
     const fallbackRate = parseFloat(process.env.EXCHANGE_RATE_FALLBACK_USD_TO_NGN || '1550')
@@ -284,16 +274,13 @@ async function createPaystackCheckout(
         const ngnRate = data.conversion_rates?.NGN || data.rates?.NGN
         if (ngnRate) {
           exchangeRate = ngnRate
-          console.log(`[${correlationId}] ✅ Current rate: 1 USD = ${exchangeRate} NGN (API: ${apiKey ? 'authenticated' : 'free'})`)
         }
       }
     } catch (rateError) {
-      console.log(`[${correlationId}] ⚠️ Exchange rate API failed, using environment fallback rate: ${exchangeRate}`)
     }
 
     // Step 2: Convert USD to NGN
     const ngnAmount = Math.round(usdAmount * exchangeRate)
-    console.log(`[${correlationId}] Conversion: $${usdAmount} USD = ₦${ngnAmount.toLocaleString()} NGN`)
 
     // Step 3: Send NGN amount to Paystack
     const paymentDescription = paymentType === "split"
@@ -322,12 +309,6 @@ async function createPaystackCheckout(
       channels: ['card', 'bank', 'ussd', 'mobile_money', 'bank_transfer']
     }
 
-    console.log(`[${correlationId}] Sending to Paystack:`, {
-      amount: `₦${ngnAmount.toLocaleString()}`,
-      amountInKobo: requestData.amount,
-      currency: requestData.currency,
-      originalUSD: usdAmount
-    })
 
     // Step 4: Call Paystack API
     const response = await fetch('https://api.paystack.co/transaction/initialize', {
@@ -345,7 +326,6 @@ async function createPaystackCheckout(
       throw new Error(responseData.message || "Paystack initialization failed")
     }
 
-    console.log(`[${correlationId}] ✅ Paystack accepted NGN payment`)
 
     // Step 5: Update payment record with conversion details
     const supabase = createServerClient()
@@ -374,7 +354,6 @@ async function createPaystackCheckout(
     }
 
   } catch (error: any) {
-    console.error(`[${correlationId}] Paystack error:`, error)
     throw new Error(error.message || "Payment processing failed")
   }
 }
@@ -405,11 +384,9 @@ async function createBankTransferInstructions(
         const ngnRate = data.conversion_rates?.NGN || data.rates?.NGN
         if (ngnRate) {
           exchangeRate = ngnRate
-          console.log(`[${correlationId}] ✅ Bank transfer rate: 1 USD = ${exchangeRate} NGN`)
         }
       }
     } catch (error) {
-      console.log(`[${correlationId}] ⚠️ Using environment fallback rate for bank transfer: ${exchangeRate}`)
     }
 
     const ngnAmount = Math.round(usdAmount * exchangeRate)
@@ -438,7 +415,6 @@ async function createBankTransferInstructions(
       exchangeRate: exchangeRate
     }
   } catch (error: any) {
-    console.error(`[${correlationId}] Bank transfer error:`, error)
     throw new Error("Failed to generate bank transfer instructions")
   }
 }
@@ -449,7 +425,6 @@ async function createCryptoPayment(
   correlationId: string
 ) {
   try {
-    console.log(`[${correlationId}] Creating crypto payment via NOWPayments integration`)
 
     // Default to USDT TRC20 for crypto payments (most popular stablecoin)
     const payCurrency = 'usdttrc20'
@@ -486,7 +461,6 @@ async function createCryptoPayment(
         })
         .eq("id", paymentId)
 
-      console.log(`[${correlationId}] ✅ NOWPayments crypto payment created successfully`)
 
       // Return crypto info in the expected format for the frontend
       return {
@@ -520,12 +494,10 @@ async function createCryptoPayment(
       }
 
     } catch (nowpaymentsError: any) {
-      console.error(`[${correlationId}] NOWPayments service error:`, nowpaymentsError)
       throw new Error(nowpaymentsError.message || "Failed to generate crypto payment via NOWPayments")
     }
 
   } catch (error: any) {
-    console.error(`[${correlationId}] Crypto payment error:`, error)
     throw new Error(error.message || "Failed to generate crypto payment via NOWPayments")
   }
 }

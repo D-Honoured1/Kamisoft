@@ -7,7 +7,6 @@ export async function POST(request: NextRequest) {
   try {
     const { reference, paymentId } = await request.json()
 
-    console.log('Payment verification request:', { reference, paymentId })
 
     // Validate input
     if (!reference) {
@@ -34,7 +33,6 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (paymentError || !paymentData) {
-        console.error('Payment record not found:', paymentError)
         return NextResponse.json({
           error: 'Payment record not found'
         }, { status: 404 })
@@ -56,7 +54,6 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (paymentError || !paymentData) {
-        console.error('Payment record not found by reference:', paymentError)
         return NextResponse.json({
           error: 'Payment record not found'
         }, { status: 404 })
@@ -85,13 +82,6 @@ export async function POST(request: NextRequest) {
     try {
       const verification = await paystackService.verifyTransaction(reference)
 
-      console.log('Paystack verification response:', {
-        status: verification.status,
-        reference: verification.data.reference,
-        amount: verification.data.amount,
-        currency: verification.data.currency,
-        paymentStatus: verification.data.status
-      })
 
       if (!verification.status || verification.data.status !== 'success') {
         // Payment failed or pending
@@ -142,13 +132,11 @@ export async function POST(request: NextRequest) {
         .eq('id', payment.id)
 
       if (updateError) {
-        console.error('Error updating payment:', updateError)
         return NextResponse.json({
           error: 'Failed to update payment record'
         }, { status: 500 })
       }
 
-      console.log('Payment confirmed:', payment.id)
 
       // Update service request status if applicable
       if (payment.service_requests) {
@@ -163,9 +151,7 @@ export async function POST(request: NextRequest) {
           .eq('id', payment.service_requests.id)
 
         if (serviceUpdateError) {
-          console.error('Error updating service request status:', serviceUpdateError)
         } else {
-          console.log('Service request status updated:', payment.service_requests.id, '→', newStatus)
         }
       }
 
@@ -191,7 +177,6 @@ export async function POST(request: NextRequest) {
       })
 
     } catch (verificationError: any) {
-      console.error('Paystack verification failed:', verificationError)
 
       // Update payment as failed
       await supabase
@@ -212,7 +197,6 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error: any) {
-    console.error('Payment verification error:', error)
     return NextResponse.json({
       error: 'Internal server error',
       details: error.message
@@ -286,7 +270,6 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('Payment lookup error:', error)
     return NextResponse.json({
       error: 'Internal server error',
       details: error.message

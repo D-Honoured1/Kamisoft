@@ -70,7 +70,6 @@ export function PaymentLinkDeactivator({
       }, 2000)
 
     } catch (err: any) {
-      console.error('Error deactivating payment link:', err)
       setError(err.message || 'Failed to deactivate payment link')
     } finally {
       setIsDeactivating(false)
