@@ -59,7 +59,9 @@ export function NOWPaymentsPaymentSelector({
   const fetchCurrencies = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/nowpayments/generate')
+      const response = await fetch('/api/nowpayments/generate', {
+        method: 'GET'
+      })
 
       if (!response.ok) {
         throw new Error('Failed to fetch supported cryptocurrencies')
@@ -67,11 +69,19 @@ export function NOWPaymentsPaymentSelector({
 
       const data = await response.json()
 
+      console.log('NOWPayments currencies response:', data)
+
+      // Ensure we have currencies array
+      if (!data.success || !Array.isArray(data.currencies)) {
+        throw new Error('Invalid response format from crypto payment service')
+      }
+
       // Filter currencies based on amount limits and show popular ones first
       const availableCurrencies = data.currencies.filter((currency: NOWPaymentsCurrency) =>
         usdAmount >= currency.minAmount && usdAmount <= currency.maxAmount
       )
 
+      console.log('Available currencies for amount $' + usdAmount + ':', availableCurrencies)
       setCurrencies(availableCurrencies)
     } catch (err: any) {
       console.error('Error fetching cryptocurrencies:', err)
@@ -149,8 +159,30 @@ export function NOWPaymentsPaymentSelector({
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {currencies.map((currency) => {
+      {loading && (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin mr-2" />
+          <span>Loading available cryptocurrencies...</span>
+        </div>
+      )}
+
+      {error && (
+        <Alert className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {!loading && !error && currencies.length === 0 && (
+        <Alert className="mb-4">
+          <AlertDescription>
+            No cryptocurrencies available for amount ${usdAmount.toFixed(2)}. Please try a different amount.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {!loading && !error && currencies.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {currencies.map((currency) => {
           const isSelected = selectedCurrency === currency.id
           const recommendation = getRecommendation(currency)
 
@@ -243,7 +275,8 @@ export function NOWPaymentsPaymentSelector({
             </Card>
           )
         })}
-      </div>
+        </div>
+      )}
 
       <div className="bg-muted/50 p-4 rounded-lg">
         <h4 className="font-medium text-sm mb-2">Payment Process:</h4>

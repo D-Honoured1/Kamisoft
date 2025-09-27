@@ -38,21 +38,39 @@ export async function GET() {
         ? `https://v6.exchangerate-api.com/v6/${apiKey}/latest/USD`
         : 'https://api.exchangerate-api.com/v4/latest/USD'
 
+      console.log(`🌐 Fetching live exchange rate from: ${apiKey ? 'authenticated API' : 'free API'}`)
+
       const response = await fetch(apiUrl, {
         signal: AbortSignal.timeout(5000)
       })
 
+      console.log(`📡 Exchange rate API response status: ${response.status}`)
+
       if (response.ok) {
         const data = await response.json()
+        console.log(`📊 Exchange rate API data:`, {
+          hasConversionRates: !!data.conversion_rates,
+          hasRates: !!data.rates,
+          ngnFromConversion: data.conversion_rates?.NGN,
+          ngnFromRates: data.rates?.NGN
+        })
+
         const ngnRate = data.conversion_rates?.NGN || data.rates?.NGN
         if (ngnRate && ngnRate > 0) {
           exchangeRate = ngnRate
           source = apiKey ? 'exchangerate-api-authenticated' : 'exchangerate-api-free'
           console.log(`✅ Exchange rate updated: 1 USD = ${exchangeRate} NGN (${source})`)
+        } else {
+          console.error(`❌ No valid NGN rate found in API response`)
         }
+      } else {
+        console.error(`❌ Exchange rate API failed with status: ${response.status}`)
+        const errorText = await response.text()
+        console.error(`❌ Error response:`, errorText)
       }
-    } catch (apiError) {
-      console.warn(`⚠️ Exchange rate API failed, using fallback: ${fallbackRate}`)
+    } catch (apiError: any) {
+      console.error(`❌ Exchange rate API error:`, apiError.message)
+      console.warn(`⚠️ Using fallback rate: ${fallbackRate}`)
     }
 
     // Update cache

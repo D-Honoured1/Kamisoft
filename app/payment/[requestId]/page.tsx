@@ -653,8 +653,7 @@ export default function PaymentPage() {
                   <Alert className="mt-6">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                      <strong>Multi-Currency Support:</strong> Pay in USD or Naira equivalent. 
-                      Paystack handles currency conversion automatically. Current rate: $1 = ₦{exchangeRate.toLocaleString()}
+                      Secure payment processing through Paystack. Current rate: $1 = ₦{exchangeRate.toLocaleString()}
                     </AlertDescription>
                   </Alert>
 
