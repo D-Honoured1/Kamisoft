@@ -125,3 +125,45 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Add this to your globals.css file */
+
+/* Ensure container has proper horizontal spacing */
+.container {
+  padding-left: 1rem; /* 16px */
+  padding-right: 1rem; /* 16px */
+}
+
+/* For larger screens, increase padding */
+@media (min-width: 640px) {
+  .container {
+    padding-left: 1.5rem; /* 24px */
+    padding-right: 1.5rem; /* 24px */
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    padding-left: 2rem; /* 32px */
+    padding-right: 2rem; /* 32px */
+  }
+}
+
+/* Alternative: Add margin to body if the issue is with the entire layout */
+body {
+  margin: 0;
+  padding: 0;
+}
+
+/* Ensure main content doesn't touch edges */
+main {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  main {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
