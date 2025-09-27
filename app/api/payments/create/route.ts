@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate unique payment reference
-    const paymentReference = `KE_${paymentType.toUpperCase()}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    const paymentReference = `KE_${paymentType.toUpperCase()}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
 
     // Check for existing pending payments
     const { data: existingPayments } = await supabase
@@ -442,26 +442,70 @@ async function createBankTransferInstructions(
 }
 
 async function createCryptoPayment(
-  _paymentId: string,
+  paymentId: string,
   usdAmount: number,
   correlationId: string
 ) {
   try {
-    // This function should redirect to NOWPayments for proper crypto handling
-    console.log(`[${correlationId}] Redirecting crypto payment to NOWPayments integration`)
+    console.log(`[${correlationId}] Creating crypto payment via NOWPayments integration`)
 
+    // Default to USDT for crypto payments (most popular stablecoin)
+    const payCurrency = 'USDT'
+    const paymentReference = `KE_CRYPTO_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
+
+    // Call NOWPayments generate endpoint
+    const nowpaymentsResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/nowpayments/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        paymentId,
+        payCurrency,
+        usdAmount,
+        paymentReference
+      })
+    })
+
+    if (!nowpaymentsResponse.ok) {
+      const errorData = await nowpaymentsResponse.json()
+      throw new Error(errorData.error || 'NOWPayments integration failed')
+    }
+
+    const nowpaymentsResult = await nowpaymentsResponse.json()
+
+    if (!nowpaymentsResult.success) {
+      throw new Error(nowpaymentsResult.error || 'NOWPayments payment creation failed')
+    }
+
+    console.log(`[${correlationId}] ✅ NOWPayments crypto payment created successfully`)
+
+    // Return crypto info in the expected format for the frontend
     return {
       cryptoInfo: {
-        currency: "USDT",
-        network: "TRC20",
-        amount: usdAmount,
-        message: "Please use the NOWPayments integration for secure crypto payments",
-        redirectToNowPayments: true
+        currency: nowpaymentsResult.cryptoDetails.network.symbol,
+        network: nowpaymentsResult.cryptoDetails.network.network,
+        address: nowpaymentsResult.cryptoDetails.address,
+        amount: nowpaymentsResult.cryptoDetails.amountCrypto,
+        ngnEquivalent: (usdAmount * 1550).toLocaleString(), // Convert USD to NGN for display
+        qrCode: nowpaymentsResult.cryptoDetails.qrCodeUrl,
+        instructions: nowpaymentsResult.cryptoDetails.instructions,
+        supportedNetworks: [{
+          name: nowpaymentsResult.cryptoDetails.network.network,
+          fee: "Low fees",
+          recommended: true
+        }]
       },
-      message: "Crypto payment should use NOWPayments integration"
+      message: `NOWPayments crypto payment created for ${nowpaymentsResult.cryptoDetails.network.symbol}`,
+      nowpaymentsId: nowpaymentsResult.nowpaymentsId,
+      paymentReference,
+      // Add missing properties for compatibility with the main response format
+      ngnAmount: null, // Crypto payments don't use NGN
+      exchangeRate: 1 // Crypto payments use USD directly
     }
+
   } catch (error: any) {
     console.error(`[${correlationId}] Crypto payment error:`, error)
-    throw new Error("Failed to generate crypto payment - use NOWPayments integration")
+    throw new Error(error.message || "Failed to generate crypto payment via NOWPayments")
   }
 }
