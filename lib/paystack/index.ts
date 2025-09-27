@@ -80,7 +80,7 @@ export class PaystackService {
   private baseUrl = 'https://api.paystack.co'
   private exchangeRateCache = new Map<string, { rate: number; timestamp: number; source: string }>()
   private cacheTimeout = 5 * 60 * 1000 // 5 minutes
-  private defaultExchangeRate = 1550 // USD to NGN fallback
+  private defaultExchangeRate = parseFloat(process.env.EXCHANGE_RATE_FALLBACK_USD_TO_NGN || '1550') // USD to NGN fallback from environment
 
   constructor(secretKey: string) {
     if (!secretKey) {
@@ -160,8 +160,14 @@ export class PaystackService {
     // Fetch fresh rate
     try {
       console.log(`🌐 Fetching exchange rate: ${from} → ${to}`)
-      
-      const response = await this.fetchWithTimeout(`https://api.exchangerate-api.com/v4/latest/${from}`, {
+
+      // Use the same API configuration as other services
+      const apiKey = process.env.EXCHANGE_RATE_API_KEY
+      const apiUrl = apiKey
+        ? `https://v6.exchangerate-api.com/v6/${apiKey}/latest/${from}`
+        : `https://api.exchangerate-api.com/v4/latest/${from}`
+
+      const response = await this.fetchWithTimeout(apiUrl, {
         headers: { 'User-Agent': 'KamisoftPaymentSystem/1.0' }
       }, 5000)
 
@@ -170,25 +176,27 @@ export class PaystackService {
       }
 
       const data = await response.json()
-      
-      if (!data.rates || !data.rates[to]) {
+
+      // Handle both v4 and v6 API response formats
+      const rates = data.conversion_rates || data.rates
+      if (!rates || !rates[to]) {
         throw new Error(`Rate for ${to} not found`)
       }
 
-      const rate = data.rates[to]
+      const rate = rates[to]
       
       // Cache the result
       this.exchangeRateCache.set(cacheKey, {
         rate,
         timestamp: Date.now(),
-        source: 'ExchangeRate-API'
+        source: apiKey ? 'ExchangeRate-API-Authenticated' : 'ExchangeRate-API-Free'
       })
 
       console.log(`✅ Got exchange rate: 1 ${from} = ${rate} ${to}`)
       
       return {
         rate,
-        source: 'ExchangeRate-API',
+        source: apiKey ? 'ExchangeRate-API-Authenticated' : 'ExchangeRate-API-Free',
         cached: false
       }
     } catch (error: any) {

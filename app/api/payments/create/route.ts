@@ -250,24 +250,31 @@ async function createPaystackCheckout(
 
     console.log(`[${correlationId}] Converting $${usdAmount} USD to NGN for Paystack`)
 
-    // Step 1: Get current USD to NGN exchange rate
-    let exchangeRate = 1550 // Fallback rate
-    
+    // Step 1: Get current USD to NGN exchange rate from environment-configured source
+    const fallbackRate = parseFloat(process.env.EXCHANGE_RATE_FALLBACK_USD_TO_NGN || '1550')
+    let exchangeRate = fallbackRate
+
     try {
-      // Use a reliable exchange rate API
-      const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD', {
+      // Use a reliable exchange rate API with optional API key
+      const apiKey = process.env.EXCHANGE_RATE_API_KEY
+      const apiUrl = apiKey
+        ? `https://v6.exchangerate-api.com/v6/${apiKey}/latest/USD`
+        : 'https://api.exchangerate-api.com/v4/latest/USD'
+
+      const response = await fetch(apiUrl, {
         signal: AbortSignal.timeout(5000)
       })
-      
+
       if (response.ok) {
         const data = await response.json()
-        if (data.rates?.NGN) {
-          exchangeRate = data.rates.NGN
-          console.log(`[${correlationId}] ✅ Current rate: 1 USD = ${exchangeRate} NGN`)
+        const ngnRate = data.conversion_rates?.NGN || data.rates?.NGN
+        if (ngnRate) {
+          exchangeRate = ngnRate
+          console.log(`[${correlationId}] ✅ Current rate: 1 USD = ${exchangeRate} NGN (API: ${apiKey ? 'authenticated' : 'free'})`)
         }
       }
     } catch (rateError) {
-      console.log(`[${correlationId}] ⚠️ Using fallback rate: ${exchangeRate}`)
+      console.log(`[${correlationId}] ⚠️ Exchange rate API failed, using environment fallback rate: ${exchangeRate}`)
     }
 
     // Step 2: Convert USD to NGN
@@ -364,18 +371,31 @@ async function createBankTransferInstructions(
   correlationId: string
 ) {
   try {
-    // Get current exchange rate for bank transfer
-    let exchangeRate = 1550
+    // Get current exchange rate for bank transfer from environment-configured source
+    const fallbackRate = parseFloat(process.env.EXCHANGE_RATE_FALLBACK_USD_TO_NGN || '1550')
+    let exchangeRate = fallbackRate
+
     try {
-      const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD')
+      // Use the same API configuration as Paystack function
+      const apiKey = process.env.EXCHANGE_RATE_API_KEY
+      const apiUrl = apiKey
+        ? `https://v6.exchangerate-api.com/v6/${apiKey}/latest/USD`
+        : 'https://api.exchangerate-api.com/v4/latest/USD'
+
+      const response = await fetch(apiUrl, {
+        signal: AbortSignal.timeout(5000)
+      })
+
       if (response.ok) {
         const data = await response.json()
-        if (data.rates?.NGN) {
-          exchangeRate = data.rates.NGN
+        const ngnRate = data.conversion_rates?.NGN || data.rates?.NGN
+        if (ngnRate) {
+          exchangeRate = ngnRate
+          console.log(`[${correlationId}] ✅ Bank transfer rate: 1 USD = ${exchangeRate} NGN`)
         }
       }
     } catch (error) {
-      console.log(`[${correlationId}] Using fallback rate for bank transfer`)
+      console.log(`[${correlationId}] ⚠️ Using environment fallback rate for bank transfer: ${exchangeRate}`)
     }
 
     const ngnAmount = Math.round(usdAmount * exchangeRate)
@@ -415,26 +435,21 @@ async function createCryptoPayment(
   correlationId: string
 ) {
   try {
-    const cryptoInfo = {
-      currency: "USDT",
-      network: "TRC20", 
-      address: "TYourUSDTAddressHere123456789", // Replace with your actual address
-      amount: usdAmount, // Crypto stays in USD
-      qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=TYourUSDTAddressHere123456789`,
-      instructions: [
-        `Send exactly ${usdAmount} USDT to the address above`,
-        "Use TRC20 network (Tron) for lower fees",
-        "Send transaction hash to hello@kamisoftenterprises.online", 
-        "Payment will be verified within 1 hour"
-      ]
-    }
+    // This function should redirect to NOWPayments for proper crypto handling
+    console.log(`[${correlationId}] Redirecting crypto payment to NOWPayments integration`)
 
     return {
-      cryptoInfo,
-      message: "Crypto payment address generated"
+      cryptoInfo: {
+        currency: "USDT",
+        network: "TRC20",
+        amount: usdAmount,
+        message: "Please use the NOWPayments integration for secure crypto payments",
+        redirectToNowPayments: true
+      },
+      message: "Crypto payment should use NOWPayments integration"
     }
   } catch (error: any) {
     console.error(`[${correlationId}] Crypto payment error:`, error)
-    throw new Error("Failed to generate crypto payment")
+    throw new Error("Failed to generate crypto payment - use NOWPayments integration")
   }
 }

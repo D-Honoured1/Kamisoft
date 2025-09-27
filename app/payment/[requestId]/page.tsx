@@ -88,8 +88,9 @@ export default function PaymentPage() {
   const params = useParams()
   const requestId = params.requestId as string
 
-  // Exchange rate - in production, fetch this from a real API
-  const [exchangeRate, setExchangeRate] = useState(1550) // NGN per USD
+  // Exchange rate - fetch from centralized API
+  const [exchangeRate, setExchangeRate] = useState(1550) // NGN per USD (initial fallback)
+  const [exchangeRateSource, setExchangeRateSource] = useState<string>('loading')
 
   const [serviceRequest, setServiceRequest] = useState<ServiceRequest | null>(null)
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>("paystack")
@@ -135,16 +136,19 @@ export default function PaymentPage() {
 
   const fetchExchangeRate = async () => {
     try {
-      // In production, fetch from a real exchange rate API
-      // const response = await fetch('/api/exchange-rate')
-      // const data = await response.json()
-      // setExchangeRate(data.usdToNgn)
-      
-      // For now, using fixed rate
-      setExchangeRate(1550)
+      const response = await fetch('/api/exchange-rate')
+      const data = await response.json()
+
+      if (data.success && data.usdToNgn) {
+        setExchangeRate(data.usdToNgn)
+        setExchangeRateSource(data.source || 'api')
+        console.log(`Exchange rate updated: 1 USD = ${data.usdToNgn} NGN (${data.source})`)
+      } else {
+        setExchangeRateSource('fallback')
+      }
     } catch (error) {
       console.error("Failed to fetch exchange rate:", error)
-      // Keep default rate
+      setExchangeRateSource('error-fallback')
     }
   }
 
