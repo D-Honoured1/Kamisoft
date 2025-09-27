@@ -60,11 +60,11 @@ export async function DELETE(req: Request, { params }: RouteParams) {
       return NextResponse.json({ error: "Payment not found" }, { status: 404 })
     }
 
-    // Only allow deletion of failed, cancelled, or pending payments
-    const deletableStatuses = ['failed', 'cancelled', 'pending']
+    // Only allow deletion of failed, cancelled, pending, or processing payments
+    const deletableStatuses = ['failed', 'cancelled', 'pending', 'processing']
     if (!deletableStatuses.includes(payment.payment_status)) {
       return NextResponse.json({
-        error: `Cannot delete payment with status '${payment.payment_status}'. Only failed, cancelled, or pending payments can be deleted.`
+        error: `Cannot delete payment with status '${payment.payment_status}'. Only failed, cancelled, pending, or processing payments can be deleted.`
       }, { status: 400 })
     }
 
@@ -184,7 +184,7 @@ export async function GET(req: Request, { params }: RouteParams) {
       return NextResponse.json({ error: "Payment not found" }, { status: 404 })
     }
 
-    const deletableStatuses = ['failed', 'cancelled', 'pending']
+    const deletableStatuses = ['failed', 'cancelled', 'pending', 'processing']
     const canDelete = deletableStatuses.includes(payment.payment_status)
 
     return NextResponse.json({

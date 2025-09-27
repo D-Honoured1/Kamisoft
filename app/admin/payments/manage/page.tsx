@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -201,31 +201,29 @@ export default function AdminPaymentManager() {
     }
   }
 
-  // Cancel crypto payment
-  const cancelCryptoPayment = async (paymentId: string, reason: string) => {
+  // Delete crypto payment (same as clearFailedPayment but for crypto)
+  const deleteCryptoPayment = async (paymentId: string) => {
     try {
       setProcessing(true)
-      const response = await fetch(`/api/admin/payments/${paymentId}/cancel`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason })
+      const response = await fetch(`/api/admin/payments/${paymentId}/delete`, {
+        method: 'DELETE',
       })
 
       if (response.ok) {
         await fetchPayments()
         toast({
           title: "Success",
-          description: "Crypto payment cancelled successfully",
+          description: "Crypto payment deleted successfully",
         })
       } else {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to cancel payment')
+        throw new Error(errorData.error || 'Failed to delete payment')
       }
     } catch (error: any) {
-      console.error('Error cancelling payment:', error)
+      console.error('Error deleting payment:', error)
       toast({
         title: "Error",
-        description: error.message || "Failed to cancel payment",
+        description: error.message || "Failed to delete payment",
         variant: "destructive"
       })
     } finally {
@@ -566,57 +564,46 @@ export default function AdminPaymentManager() {
                       </AlertDialog>
                     )}
 
-                    {/* Cancel Crypto Payment */}
-                    {(payment.payment_method === 'crypto' && ['pending', 'processing'].includes(payment.payment_status)) && (
+                    {/* Delete Crypto Payment */}
+                    {(payment.payment_method === 'crypto' && ['failed', 'cancelled', 'pending', 'processing'].includes(payment.payment_status)) && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button
                             size="sm"
                             variant="outline"
-                            className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
                             disabled={processing}
                           >
-                            <Ban className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Cancel Crypto Payment?</AlertDialogTitle>
+                            <AlertDialogTitle>Delete Crypto Payment?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              This will cancel the crypto payment and mark it as cancelled. The payment will no longer be processed.
-                              <div className="mt-2 p-3 bg-orange-50 rounded-lg">
+                              This will permanently delete this crypto payment record from the system.
+                              This action cannot be undone.
+                              <div className="mt-2 p-3 bg-red-50 rounded-lg">
                                 <p className="text-sm font-medium">Payment Details:</p>
-                                <p className="text-sm text-orange-800">
+                                <p className="text-sm text-red-800">
                                   ${payment.amount} • {payment.crypto_amount} {payment.crypto_symbol} • {payment.payment_status}
                                 </p>
                                 {payment.crypto_address && (
-                                  <p className="text-xs text-orange-700 mt-1">
+                                  <p className="text-xs text-red-700 mt-1">
                                     Address: {payment.crypto_address.substring(0, 20)}...
                                   </p>
                                 )}
-                              </div>
-                              <div className="mt-4">
-                                <label className="text-sm font-medium">Reason for cancellation (optional):</label>
-                                <Input
-                                  id="cancel-reason"
-                                  placeholder="e.g. Customer requested cancellation, Payment expired..."
-                                  className="mt-1"
-                                />
                               </div>
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel disabled={processing}>Cancel</AlertDialogCancel>
                             <AlertDialogAction
-                              onClick={() => {
-                                const reasonInput = document.getElementById('cancel-reason') as HTMLInputElement
-                                const reason = reasonInput?.value || 'No reason provided'
-                                cancelCryptoPayment(payment.id, reason)
-                              }}
+                              onClick={() => deleteCryptoPayment(payment.id)}
                               disabled={processing}
-                              className="bg-orange-600 hover:bg-orange-700"
+                              className="bg-red-600 hover:bg-red-700"
                             >
-                              {processing ? "Cancelling..." : "Cancel Payment"}
+                              {processing ? "Deleting..." : "Delete Payment"}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
