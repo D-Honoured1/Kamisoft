@@ -33,7 +33,8 @@ import {
   RefreshCw,
   Eye,
   Trash2,
-  DollarSign
+  DollarSign,
+  Ban
 } from "lucide-react"
 import { DashboardHomeButton } from "@/components/admin-navigation/dashboard-home-button"
 import { useToast } from "@/components/ui/use-toast"
@@ -50,6 +51,10 @@ interface Payment {
   error_message?: string
   admin_notes?: string
   paystack_reference?: string
+  crypto_address?: string
+  crypto_network?: string
+  crypto_amount?: number
+  crypto_symbol?: string
   service_requests: {
     id: string
     title: string
@@ -196,6 +201,38 @@ export default function AdminPaymentManager() {
     }
   }
 
+  // Cancel crypto payment
+  const cancelCryptoPayment = async (paymentId: string, reason: string) => {
+    try {
+      setProcessing(true)
+      const response = await fetch(`/api/admin/payments/${paymentId}/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason })
+      })
+
+      if (response.ok) {
+        await fetchPayments()
+        toast({
+          title: "Success",
+          description: "Crypto payment cancelled successfully",
+        })
+      } else {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to cancel payment')
+      }
+    } catch (error: any) {
+      console.error('Error cancelling payment:', error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to cancel payment",
+        variant: "destructive"
+      })
+    } finally {
+      setProcessing(false)
+    }
+  }
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'confirmed':
@@ -209,6 +246,8 @@ export default function AdminPaymentManager() {
       case 'failed':
       case 'declined':
         return <XCircle className="h-4 w-4 text-red-600" />
+      case 'cancelled':
+        return <Ban className="h-4 w-4 text-gray-600" />
       default:
         return <AlertTriangle className="h-4 w-4 text-gray-600" />
     }
@@ -227,6 +266,8 @@ export default function AdminPaymentManager() {
       case 'failed':
       case 'declined':
         return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+      case 'cancelled':
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
       default:
         return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
     }
@@ -250,6 +291,7 @@ export default function AdminPaymentManager() {
     confirmed: payments.filter(p => p.payment_status === 'confirmed').length,
     pending: payments.filter(p => ['pending', 'processing', 'success', 'completed'].includes(p.payment_status)).length,
     failed: payments.filter(p => ['failed', 'declined'].includes(p.payment_status)).length,
+    cancelled: payments.filter(p => p.payment_status === 'cancelled').length,
     totalRevenue: payments
       .filter(p => p.payment_status === 'confirmed')
       .reduce((sum, p) => sum + p.amount, 0)
@@ -282,7 +324,7 @@ export default function AdminPaymentManager() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -315,6 +357,18 @@ export default function AdminPaymentManager() {
                 <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
               </div>
               <Clock className="h-8 w-8 text-yellow-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Cancelled</p>
+                <p className="text-2xl font-bold text-gray-600">{stats.cancelled}</p>
+              </div>
+              <Ban className="h-8 w-8 text-gray-600" />
             </div>
           </CardContent>
         </Card>
@@ -370,6 +424,7 @@ export default function AdminPaymentManager() {
                   <SelectItem value="confirmed">Confirmed</SelectItem>
                   <SelectItem value="failed">Failed</SelectItem>
                   <SelectItem value="declined">Declined</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -505,6 +560,63 @@ export default function AdminPaymentManager() {
                               className="bg-green-600 hover:bg-green-700"
                             >
                               {processing ? "Approving..." : "Approve Payment"}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+
+                    {/* Cancel Crypto Payment */}
+                    {(payment.payment_method === 'crypto' && ['pending', 'processing'].includes(payment.payment_status)) && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                            disabled={processing}
+                          >
+                            <Ban className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Cancel Crypto Payment?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will cancel the crypto payment and mark it as cancelled. The payment will no longer be processed.
+                              <div className="mt-2 p-3 bg-orange-50 rounded-lg">
+                                <p className="text-sm font-medium">Payment Details:</p>
+                                <p className="text-sm text-orange-800">
+                                  ${payment.amount} • {payment.crypto_amount} {payment.crypto_symbol} • {payment.payment_status}
+                                </p>
+                                {payment.crypto_address && (
+                                  <p className="text-xs text-orange-700 mt-1">
+                                    Address: {payment.crypto_address.substring(0, 20)}...
+                                  </p>
+                                )}
+                              </div>
+                              <div className="mt-4">
+                                <label className="text-sm font-medium">Reason for cancellation (optional):</label>
+                                <Input
+                                  id="cancel-reason"
+                                  placeholder="e.g. Customer requested cancellation, Payment expired..."
+                                  className="mt-1"
+                                />
+                              </div>
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel disabled={processing}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => {
+                                const reasonInput = document.getElementById('cancel-reason') as HTMLInputElement
+                                const reason = reasonInput?.value || 'No reason provided'
+                                cancelCryptoPayment(payment.id, reason)
+                              }}
+                              disabled={processing}
+                              className="bg-orange-600 hover:bg-orange-700"
+                            >
+                              {processing ? "Cancelling..." : "Cancel Payment"}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>

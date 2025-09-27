@@ -69,7 +69,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     }
 
     // Validate payment status
-    const validStatuses = ['pending', 'processing', 'confirmed', 'declined', 'failed', 'refunded']
+    const validStatuses = ['pending', 'processing', 'confirmed', 'declined', 'failed', 'refunded', 'cancelled']
     if (!validStatuses.includes(payment_status)) {
       return NextResponse.json({ error: "Invalid payment status" }, { status: 400 })
     }
