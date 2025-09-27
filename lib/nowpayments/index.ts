@@ -1,4 +1,4 @@
-// lib/nowpayments/index.ts - NOWPayments API integration service
+// lib/nowpayments/index.ts - Fixed version without purchase_id for regular payments
 export interface NOWPaymentsConfig {
   apiKey: string
   sandboxMode: boolean
@@ -25,7 +25,7 @@ export interface NOWPaymentsCreatePaymentRequest {
   ipn_callback_url?: string
   order_id?: string
   order_description?: string
-  purchase_id?: number
+  // REMOVED: purchase_id - this causes the error for regular payments
   payout_address?: string
   payout_currency?: string
   payout_extra_id?: string
@@ -45,7 +45,6 @@ export interface NOWPaymentsCreatePaymentResponse {
   pay_currency: string
   order_id?: string
   order_description?: string
-  purchase_id?: number
   created_at: string
   updated_at: string
   outcome_amount?: number
@@ -70,7 +69,6 @@ export interface NOWPaymentsPaymentStatus {
   pay_currency: string
   order_id?: string
   order_description?: string
-  purchase_id?: number
   outcome_amount?: number
   outcome_currency?: string
   created_at: string
@@ -109,7 +107,6 @@ export interface NOWPaymentsPaymentDetails {
   expiresAt?: string
   timeLimit?: string
   orderDescription?: string
-  purchaseId?: number
 }
 
 export class NOWPaymentsService {
@@ -223,7 +220,7 @@ export class NOWPaymentsService {
     return this.makeRequest(`/v1/min-amount?${params}`)
   }
 
-  // Create payment
+  // Create payment - FIXED: No purchase_id for regular payments
   async createPayment(
     request: NOWPaymentsCreatePaymentRequest
   ): Promise<NOWPaymentsCreatePaymentResponse> {
@@ -232,9 +229,27 @@ export class NOWPaymentsService {
       request.ipn_callback_url = this.config.ipnCallbackUrl
     }
 
+    // IMPORTANT: Don't include purchase_id for regular payments
+    // It's only used for surcharges on existing payments
+    const paymentData = {
+      price_amount: request.price_amount,
+      price_currency: request.price_currency,
+      pay_currency: request.pay_currency,
+      ipn_callback_url: request.ipn_callback_url,
+      order_id: request.order_id,
+      order_description: request.order_description,
+      payout_address: request.payout_address,
+      payout_currency: request.payout_currency,
+      payout_extra_id: request.payout_extra_id,
+      pay_amount: request.pay_amount,
+      fixed_rate: request.fixed_rate,
+      is_fee_paid_by_user: request.is_fee_paid_by_user
+      // purchase_id is NOT included here - this was causing the error
+    }
+
     return this.makeRequest('/v1/payment', {
       method: 'POST',
-      body: JSON.stringify(request)
+      body: JSON.stringify(paymentData)
     })
   }
 
@@ -268,22 +283,21 @@ export class NOWPaymentsService {
     return this.makeRequest(endpoint)
   }
 
-  // Generate payment details for frontend
+  // Generate payment details for frontend - FIXED
   async generatePaymentDetails(
     usdAmount: number,
     payCurrency: string,
     orderId?: string,
     orderDescription?: string
   ): Promise<NOWPaymentsPaymentDetails> {
-    // Create payment with NOWPayments
+    // Create payment with NOWPayments - without purchase_id
     const paymentRequest: NOWPaymentsCreatePaymentRequest = {
       price_amount: usdAmount,
       price_currency: 'USD',
       pay_currency: payCurrency.toUpperCase(),
       order_id: orderId,
-      order_description: orderDescription || `Payment for $${usdAmount}`,
-      // Generate a numeric purchase_id from timestamp + random (NOWPayments requires number)
-      purchase_id: parseInt(Date.now().toString().slice(-10) + Math.floor(Math.random() * 100).toString().padStart(2, '0'))
+      order_description: orderDescription || `Payment for $${usdAmount}`
+      // REMOVED: purchase_id - this was causing the error
     }
 
     const payment = await this.createPayment(paymentRequest)
@@ -292,7 +306,7 @@ export class NOWPaymentsService {
     const qrCodeUrl = this.generateQRCodeUrl(payment.pay_address, payment.pay_amount, payment.pay_currency)
 
     // Generate explorer URL if possible
-    const explorerUrl = this.generateExplorerUrl(payment.pay_currency, payment.network)
+    const explorerUrl = this.generateExplorerUrl(payment.pay_currency, this.getNetworkName(payment.pay_currency))
 
     return {
       paymentId: payment.payment_id,
@@ -307,8 +321,7 @@ export class NOWPaymentsService {
       explorerUrl,
       expiresAt: payment.expiration_estimate_date,
       timeLimit: payment.time_limit,
-      orderDescription: payment.order_description,
-      purchaseId: payment.purchase_id
+      orderDescription: payment.order_description
     }
   }
 
@@ -425,4 +438,3 @@ const createNOWPaymentsService = (): NOWPaymentsService => {
 
 // Export singleton instance
 export const nowPaymentsService = createNOWPaymentsService()
-
