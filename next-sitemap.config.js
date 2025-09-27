@@ -1,5 +1,5 @@
 module.exports = {
-  siteUrl: process.env.SITE_URL || "https://kamisoft.vercel.app",
+  siteUrl: process.env.SITE_URL || "https://www.kamisoftenterprises.online",
   generateRobotsTxt: true,
   exclude: ["/admin/*", "/api/*", "/payment/*"],
   robotsTxtOptions: {

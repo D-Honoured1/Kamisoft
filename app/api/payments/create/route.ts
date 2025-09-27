@@ -127,11 +127,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Create payment record - Store USD amount for business consistency
+    const dbPaymentMethod = paymentMethod
+
     const paymentData = {
       request_id: requestId,
       amount: amount, // Store USD amount in database
       currency: 'USD', // Your business currency
-      payment_method: paymentMethod,
+      payment_method: dbPaymentMethod,
       payment_status: "pending",
       payment_type: paymentType,
       payment_sequence: paymentSequence,
