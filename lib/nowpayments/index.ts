@@ -25,7 +25,7 @@ export interface NOWPaymentsCreatePaymentRequest {
   ipn_callback_url?: string
   order_id?: string
   order_description?: string
-  purchase_id?: string
+  purchase_id?: number
   payout_address?: string
   payout_currency?: string
   payout_extra_id?: string
@@ -45,7 +45,7 @@ export interface NOWPaymentsCreatePaymentResponse {
   pay_currency: string
   order_id?: string
   order_description?: string
-  purchase_id?: string
+  purchase_id?: number
   created_at: string
   updated_at: string
   outcome_amount?: number
@@ -70,7 +70,7 @@ export interface NOWPaymentsPaymentStatus {
   pay_currency: string
   order_id?: string
   order_description?: string
-  purchase_id?: string
+  purchase_id?: number
   outcome_amount?: number
   outcome_currency?: string
   created_at: string
@@ -109,7 +109,7 @@ export interface NOWPaymentsPaymentDetails {
   expiresAt?: string
   timeLimit?: string
   orderDescription?: string
-  purchaseId?: string
+  purchaseId?: number
 }
 
 export class NOWPaymentsService {
@@ -282,7 +282,8 @@ export class NOWPaymentsService {
       pay_currency: payCurrency.toUpperCase(),
       order_id: orderId,
       order_description: orderDescription || `Payment for $${usdAmount}`,
-      purchase_id: orderId
+      // Generate a numeric purchase_id from timestamp + random (NOWPayments requires number)
+      purchase_id: parseInt(Date.now().toString().slice(-10) + Math.floor(Math.random() * 100).toString().padStart(2, '0'))
     }
 
     const payment = await this.createPayment(paymentRequest)
