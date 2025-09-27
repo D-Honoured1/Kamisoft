@@ -28,7 +28,6 @@ interface Payment {
   payment_method: string
   payment_status: string
   payment_type?: string
-  stripe_payment_intent_id?: string
   paystack_reference?: string
   created_at: string
   updated_at: string
@@ -102,7 +101,6 @@ export function PaymentManagement({ requestId, estimatedCost }: PaymentManagemen
 
   const getPaymentMethodIcon = (method: string) => {
     switch (method) {
-      case "stripe": return <CreditCard className="h-4 w-4" />
       case "paystack": return <Wallet className="h-4 w-4" />
       case "bank_transfer": return <Building className="h-4 w-4" />
       default: return <DollarSign className="h-4 w-4" />
@@ -232,11 +230,6 @@ export function PaymentManagement({ requestId, estimatedCost }: PaymentManagemen
                           {payment.payment_method.replace("_", " ").toUpperCase()} • 
                           Created: {new Date(payment.created_at).toLocaleString()}
                         </p>
-                        {payment.stripe_payment_intent_id && (
-                          <p className="text-xs text-muted-foreground">
-                            Stripe ID: {payment.stripe_payment_intent_id}
-                          </p>
-                        )}
                         {payment.paystack_reference && (
                           <p className="text-xs text-muted-foreground">
                             Paystack Ref: {payment.paystack_reference}
@@ -347,7 +340,6 @@ export function PaymentManagement({ requestId, estimatedCost }: PaymentManagemen
         <AlertTriangle className="h-4 w-4" />
         <AlertDescription>
           <strong>Security Note:</strong> All payments require manual admin confirmation for security. 
-          Even successful Stripe/Paystack payments should be verified before marking projects as paid. 
           Bank transfers require proof of payment verification.
         </AlertDescription>
       </Alert>

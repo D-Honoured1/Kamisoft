@@ -72,8 +72,7 @@ CREATE TYPE payment_status AS ENUM (
 
 -- Payment method
 CREATE TYPE payment_method AS ENUM (
-    'stripe',
-    'paystack', 
+    'paystack',
     'crypto',
     'bank_transfer'
 );
@@ -88,7 +87,6 @@ CREATE TABLE IF NOT EXISTS payments (
     payment_status payment_status DEFAULT 'pending',
     
     -- External payment references
-    stripe_payment_intent_id VARCHAR(255),
     paystack_reference VARCHAR(255),
     crypto_transaction_hash VARCHAR(255),
     

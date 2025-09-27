@@ -11,15 +11,12 @@ export async function POST(request: NextRequest) {
     const body = await request.text() // Get raw body for signature verification
     const jsonBody = JSON.parse(body)
 
-    // Determine webhook source based on headers or payload structure
-    const stripeSignature = request.headers.get("stripe-signature")
+    // Handle Paystack webhooks
     const paystackSignature = request.headers.get("x-paystack-signature")
 
     let paymentData = null
 
-    if (stripeSignature) {
-      paymentData = await handleStripeWebhook(body, stripeSignature, jsonBody)
-    } else if (paystackSignature) {
+    if (paystackSignature) {
       paymentData = await handlePaystackWebhook(body, paystackSignature, jsonBody)
     } else {
       console.error("Unknown webhook source - no valid signature found")
@@ -60,66 +57,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function handleStripeWebhook(body: string, signature: string, jsonBody: any) {
-  try {
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
-
-    if (!webhookSecret) {
-      console.error("Stripe webhook secret not configured")
-      return null
-    }
-
-    // Verify the webhook signature
-    let event
-    try {
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
-    } catch (err: any) {
-      console.error(`Stripe webhook signature verification failed:`, err.message)
-      return null
-    }
-
-    console.log("Processing Stripe webhook:", event.type)
-
-    switch (event.type) {
-      case "checkout.session.completed":
-        const session = event.data.object
-        return {
-          paymentId: session.metadata?.paymentId,
-          status: "completed",
-          reference: session.id,
-          referenceField: "stripe_payment_intent_id",
-          amount: session.amount_total / 100, // Convert from cents
-          customerEmail: session.customer_email
-        }
-      
-      case "checkout.session.expired":
-        const expiredSession = event.data.object
-        return {
-          paymentId: expiredSession.metadata?.paymentId,
-          status: "failed",
-          reference: expiredSession.id,
-          referenceField: "stripe_payment_intent_id",
-        }
-
-      case "payment_intent.payment_failed":
-        const failedPayment = event.data.object
-        return {
-          paymentId: failedPayment.metadata?.paymentId,
-          status: "failed",
-          reference: failedPayment.id,
-          referenceField: "stripe_payment_intent_id",
-        }
-
-      default:
-        console.log(`Unhandled Stripe event type: ${event.type}`)
-        return null
-    }
-  } catch (error) {
-    console.error("Error processing Stripe webhook:", error)
-    return null
-  }
-}
 
 async function handlePaystackWebhook(body: string, signature: string, jsonBody: any) {
   try {

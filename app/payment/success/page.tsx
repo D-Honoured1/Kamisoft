@@ -77,12 +77,12 @@ export default function PaymentSuccessPage() {
 
   const getPaymentMethodIcon = (method: string) => {
     switch (method) {
-      case 'stripe':
-        return <CreditCard className="h-5 w-5" />
       case 'paystack':
         return <CreditCard className="h-5 w-5" />
       case 'bank_transfer':
         return <Building className="h-5 w-5" />
+      case 'crypto':
+        return <CreditCard className="h-5 w-5" />
       default:
         return <CreditCard className="h-5 w-5" />
     }
@@ -90,8 +90,6 @@ export default function PaymentSuccessPage() {
 
   const getPaymentMethodName = (method: string) => {
     switch (method) {
-      case 'stripe':
-        return 'Credit/Debit Card (Stripe)'
       case 'paystack':
         return 'Paystack'
       case 'bank_transfer':

@@ -17,7 +17,7 @@ export type RequestStatus = "pending" | "in_progress" | "completed" | "cancelled
 
 export type PaymentStatus = "pending" | "processing" | "completed" | "failed" | "refunded"
 
-export type PaymentMethod = "stripe" | "paystack" | "nowpayments" | "bank_transfer"
+export type PaymentMethod = "paystack" | "nowpayments" | "bank_transfer"
 
 export type PaymentPlan = "full" | "split"
 
@@ -83,7 +83,6 @@ export interface Payment {
   is_partial_payment?: boolean
   total_amount_due?: number
   admin_notes?: string
-  stripe_payment_intent_id?: string
   paystack_reference?: string
   crypto_transaction_hash?: string
   crypto_address?: string

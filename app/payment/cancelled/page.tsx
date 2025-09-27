@@ -110,7 +110,6 @@ export default function PaymentCancelledPage() {
 
     const current = payment.payment_method
     const methods = [
-      { id: 'stripe', name: 'Credit/Debit Card', icon: <CreditCard className="h-5 w-5" />, description: 'Visa, MasterCard, American Express' },
       { id: 'paystack', name: 'Paystack', icon: <Wallet className="h-5 w-5" />, description: 'Cards, Bank Transfer, USSD' },
       { id: 'bank_transfer', name: 'Bank Transfer', icon: <Building className="h-5 w-5" />, description: 'Direct bank transfer' }
     ]

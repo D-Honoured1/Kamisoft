@@ -61,9 +61,9 @@ export async function GET() {
       conversionRate: 0,
       avgPaymentAmount: 0,
       paymentMethods: {
-        stripe: 0,
         paystack: 0,
         bank_transfer: 0,
+        crypto: 0,
         other: 0
       },
       paymentTypes: {
@@ -112,14 +112,14 @@ export async function GET() {
 
         // Payment method counts
         switch (payment.payment_method) {
-          case "stripe":
-            stats.paymentMethods.stripe++
-            break
           case "paystack":
             stats.paymentMethods.paystack++
             break
           case "bank_transfer":
             stats.paymentMethods.bank_transfer++
+            break
+          case "crypto":
+            stats.paymentMethods.crypto++
             break
           default:
             stats.paymentMethods.other++

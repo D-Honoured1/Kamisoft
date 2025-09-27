@@ -38,7 +38,6 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
         created_at,
         updated_at,
         confirmed_at,
-        stripe_payment_intent_id,
         paystack_reference,
         service_requests (
           id,
@@ -91,8 +90,6 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 // Helper function to format payment method for display
 function getPaymentMethodDisplay(method: string): string {
   switch (method) {
-    case 'stripe':
-      return 'Credit/Debit Card (Stripe)'
     case 'paystack':
       return 'Paystack'
     case 'bank_transfer':
