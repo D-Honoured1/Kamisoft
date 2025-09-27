@@ -76,9 +76,19 @@ export function NOWPaymentsPaymentSelector({
         throw new Error('Invalid response format from crypto payment service')
       }
 
+      // Ensure currencies array exists and is valid
+      const currenciesArray = data.currencies || []
+      if (currenciesArray.length === 0) {
+        throw new Error('No cryptocurrencies available from payment service')
+      }
+
       // Filter currencies based on amount limits and show popular ones first
-      const availableCurrencies = data.currencies.filter((currency: NOWPaymentsCurrency) =>
-        usdAmount >= currency.minAmount && usdAmount <= currency.maxAmount
+      const availableCurrencies = currenciesArray.filter((currency: NOWPaymentsCurrency) =>
+        currency &&
+        typeof currency.minAmount === 'number' &&
+        typeof currency.maxAmount === 'number' &&
+        usdAmount >= currency.minAmount &&
+        usdAmount <= currency.maxAmount
       )
 
       console.log('Available currencies for amount $' + usdAmount + ':', availableCurrencies)

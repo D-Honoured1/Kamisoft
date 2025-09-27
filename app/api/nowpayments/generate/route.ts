@@ -169,10 +169,20 @@ export async function GET() {
   try {
     const currencies = await nowPaymentsService.getPaymentCurrencies()
 
-    // Filter and format popular cryptocurrencies
+    // Ensure we have a valid array
+    if (!Array.isArray(currencies)) {
+      throw new Error('Invalid currencies response from NOWPayments')
+    }
+
+    // Filter and format popular cryptocurrencies - be more inclusive
     const supportedCurrencies = currencies
-      .filter(currency => currency.is_popular ||
-        ['btc', 'eth', 'usdt', 'usdc', 'ltc', 'doge', 'bnb'].includes(currency.currency.toLowerCase()))
+      .filter(currency => {
+        if (!currency || !currency.currency) return false
+        const symbol = currency.currency.toLowerCase()
+        return currency.is_popular ||
+               ['btc', 'eth', 'usdt', 'usdc', 'ltc', 'doge', 'bnb', 'ada', 'dot', 'sol'].includes(symbol) ||
+               symbol.includes('usdt') || symbol.includes('usdc')
+      })
       .map(currency => ({
         id: currency.currency.toLowerCase(),
         name: currency.name || currency.currency.toUpperCase(),
@@ -201,9 +211,62 @@ export async function GET() {
     })
   } catch (error: any) {
     console.error("Error fetching NOWPayments currencies:", error)
+
+    // Return fallback currencies when service is unavailable
+    const fallbackCurrencies = [
+      {
+        id: 'btc',
+        name: 'Bitcoin',
+        symbol: 'BTC',
+        network: 'Bitcoin',
+        minAmount: 0.0001,
+        maxAmount: 100,
+        isStablecoin: false,
+        isPopular: true,
+        smartContract: undefined
+      },
+      {
+        id: 'eth',
+        name: 'Ethereum',
+        symbol: 'ETH',
+        network: 'Ethereum',
+        minAmount: 0.001,
+        maxAmount: 1000,
+        isStablecoin: false,
+        isPopular: true,
+        smartContract: undefined
+      },
+      {
+        id: 'usdt',
+        name: 'Tether USD',
+        symbol: 'USDT',
+        network: 'ERC20',
+        minAmount: 1,
+        maxAmount: 50000,
+        isStablecoin: true,
+        isPopular: true,
+        smartContract: undefined
+      },
+      {
+        id: 'usdc',
+        name: 'USD Coin',
+        symbol: 'USDC',
+        network: 'ERC20',
+        minAmount: 1,
+        maxAmount: 50000,
+        isStablecoin: true,
+        isPopular: true,
+        smartContract: undefined
+      }
+    ]
+
     return NextResponse.json({
-      error: "Failed to fetch supported cryptocurrencies",
-      details: error.message
-    }, { status: 500 })
+      success: true,
+      currencies: fallbackCurrencies,
+      count: fallbackCurrencies.length,
+      totalAvailable: fallbackCurrencies.length,
+      fallback: true,
+      error: "NOWPayments service temporarily unavailable - showing fallback currencies"
+    })
   }
 }

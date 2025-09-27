@@ -26,21 +26,16 @@ export async function GET() {
       })
     }
 
-    // Get fallback rate from environment
-    const fallbackRate = parseFloat(process.env.EXCHANGE_RATE_FALLBACK_USD_TO_NGN || '1550')
-    let exchangeRate = fallbackRate
-    let source = 'environment-fallback'
+    let exchangeRate = 0
+    let source = 'no-rate-available'
 
     try {
-      // Use the same API configuration as payment routes
-      const apiKey = process.env.EXCHANGE_RATE_API_KEY
-      const apiUrl = apiKey
-        ? `https://v6.exchangerate-api.com/v6/${apiKey}/latest/USD`
-        : 'https://api.exchangerate-api.com/v4/latest/USD'
+      // Use free exchange rate API first
+      const freeApiUrl = 'https://api.exchangerate-api.com/v4/latest/USD'
 
-      console.log(`🌐 Fetching live exchange rate from: ${apiKey ? 'authenticated API' : 'free API'}`)
+      console.log(`🌐 Fetching live exchange rate from: free API`)
 
-      const response = await fetch(apiUrl, {
+      const response = await fetch(freeApiUrl, {
         signal: AbortSignal.timeout(5000)
       })
 
@@ -49,58 +44,85 @@ export async function GET() {
       if (response.ok) {
         const data = await response.json()
         console.log(`📊 Exchange rate API data:`, {
-          hasConversionRates: !!data.conversion_rates,
           hasRates: !!data.rates,
-          ngnFromConversion: data.conversion_rates?.NGN,
           ngnFromRates: data.rates?.NGN
         })
 
-        const ngnRate = data.conversion_rates?.NGN || data.rates?.NGN
+        const ngnRate = data.rates?.NGN
         if (ngnRate && ngnRate > 0) {
           exchangeRate = ngnRate
-          source = apiKey ? 'exchangerate-api-authenticated' : 'exchangerate-api-free'
+          source = 'exchangerate-api-free'
           console.log(`✅ Exchange rate updated: 1 USD = ${exchangeRate} NGN (${source})`)
         } else {
           console.error(`❌ No valid NGN rate found in API response`)
+          throw new Error('No NGN rate in response')
         }
       } else {
         console.error(`❌ Exchange rate API failed with status: ${response.status}`)
         const errorText = await response.text()
         console.error(`❌ Error response:`, errorText)
+        throw new Error(`API returned ${response.status}`)
       }
     } catch (apiError: any) {
       console.error(`❌ Exchange rate API error:`, apiError.message)
-      console.warn(`⚠️ Using fallback rate: ${fallbackRate}`)
+
+      // Try alternative free API
+      try {
+        console.log(`🔄 Trying alternative free API...`)
+        const altResponse = await fetch('https://api.fxratesapi.com/latest?base=USD&symbols=NGN', {
+          signal: AbortSignal.timeout(5000)
+        })
+
+        if (altResponse.ok) {
+          const altData = await altResponse.json()
+          const ngnRate = altData.rates?.NGN
+          if (ngnRate && ngnRate > 0) {
+            exchangeRate = ngnRate
+            source = 'fxratesapi-free'
+            console.log(`✅ Exchange rate updated from alternative API: 1 USD = ${exchangeRate} NGN`)
+          } else {
+            throw new Error('No NGN rate in alternative API')
+          }
+        } else {
+          throw new Error(`Alternative API returned ${altResponse.status}`)
+        }
+      } catch (altError: any) {
+        console.error(`❌ Alternative exchange rate API also failed:`, altError.message)
+        throw new Error('All exchange rate APIs unavailable')
+      }
     }
 
-    // Update cache
-    exchangeRateCache = {
-      rate: exchangeRate,
-      timestamp: Date.now(),
-      source
-    }
+    // Only cache valid exchange rates
+    if (exchangeRate > 0) {
+      exchangeRateCache = {
+        rate: exchangeRate,
+        timestamp: Date.now(),
+        source
+      }
 
-    return NextResponse.json({
-      success: true,
-      usdToNgn: exchangeRate,
-      source,
-      cached: false,
-      lastUpdated: new Date().toISOString()
-    })
+      return NextResponse.json({
+        success: true,
+        usdToNgn: exchangeRate,
+        source,
+        cached: false,
+        lastUpdated: new Date().toISOString()
+      })
+    } else {
+      throw new Error('No valid exchange rate available')
+    }
 
   } catch (error: any) {
     console.error("Exchange rate API error:", error)
 
-    // Return fallback rate even in error case
-    const fallbackRate = parseFloat(process.env.EXCHANGE_RATE_FALLBACK_USD_TO_NGN || '1550')
     return NextResponse.json({
-      success: true,
-      usdToNgn: fallbackRate,
-      source: 'error-fallback',
+      success: false,
+      error: 'Exchange rate service temporarily unavailable',
+      details: error.message,
+      usdToNgn: null,
+      source: 'error',
       cached: false,
-      error: error.message,
       lastUpdated: new Date().toISOString()
-    })
+    }, { status: 503 })
   }
 }
 

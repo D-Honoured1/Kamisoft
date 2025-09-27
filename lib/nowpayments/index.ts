@@ -165,8 +165,20 @@ export class NOWPaymentsService {
       return this.currenciesCache.data
     }
 
-    const response = await this.makeRequest<{ currencies: NOWPaymentsCurrency[] }>('/v1/currencies')
-    const currencies = response.currencies || []
+    const response = await this.makeRequest<{ currencies?: string[] }>('/v1/currencies')
+    const currencyStrings = response.currencies || []
+
+    // Convert string array to NOWPaymentsCurrency objects
+    const currencies: NOWPaymentsCurrency[] = currencyStrings.map(currencyCode => ({
+      currency: currencyCode,
+      name: currencyCode.toUpperCase(),
+      network: this.getNetworkName(currencyCode),
+      min_amount: 0.001,
+      max_amount: 1000000,
+      is_fiat: false, // All are crypto since we get them from /currencies
+      is_popular: this.isPopularCurrency(currencyCode),
+      is_stable: this.isStablecoin(currencyCode)
+    }))
 
     // Cache the result
     this.currenciesCache = {
@@ -379,16 +391,27 @@ export class NOWPaymentsService {
     const currencies = await this.getPaymentCurrencies()
     return currencies.some(c => c.currency.toLowerCase() === currency.toLowerCase())
   }
+
+  // Helper method to determine if a currency is popular
+  private isPopularCurrency(currencyCode: string): boolean {
+    const popular = ['btc', 'eth', 'usdt', 'usdc', 'ltc', 'doge', 'bnb', 'ada', 'dot', 'sol']
+    return popular.includes(currencyCode.toLowerCase()) || currencyCode.toLowerCase().includes('usdt')
+  }
+
+  // Helper method to determine if a currency is a stablecoin
+  private isStablecoin(currencyCode: string): boolean {
+    const stablecoins = ['usdt', 'usdc', 'dai', 'busd', 'tusd', 'usdp']
+    const code = currencyCode.toLowerCase()
+    return stablecoins.some(stable => code.includes(stable))
+  }
 }
 
 // Create service instance
 const createNOWPaymentsService = (): NOWPaymentsService => {
   const config: NOWPaymentsConfig = {
     apiKey: process.env.NOWPAYMENTS_API_KEY || '',
-    sandboxMode: process.env.NODE_ENV !== 'production',
-    baseUrl: process.env.NODE_ENV === 'production'
-      ? 'https://api.nowpayments.io'
-      : 'https://api.sandbox.nowpayments.io',
+    sandboxMode: false, // Use production API for now
+    baseUrl: 'https://api.nowpayments.io', // Always use production API
     ipnCallbackUrl: process.env.NOWPAYMENTS_IPN_URL
   }
 
@@ -402,13 +425,3 @@ const createNOWPaymentsService = (): NOWPaymentsService => {
 // Export singleton instance
 export const nowPaymentsService = createNOWPaymentsService()
 
-// Export types
-export type {
-  NOWPaymentsConfig,
-  NOWPaymentsCurrency,
-  NOWPaymentsCreatePaymentRequest,
-  NOWPaymentsCreatePaymentResponse,
-  NOWPaymentsPaymentStatus,
-  NOWPaymentsEstimate,
-  NOWPaymentsPaymentDetails
-}
