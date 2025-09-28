@@ -366,10 +366,30 @@ export default function PaymentPage() {
   const serviceCategory = SERVICE_CATEGORIES[serviceRequest.service_category as keyof typeof SERVICE_CATEGORIES]
   const totalCost = serviceRequest.estimated_cost
   const discountPercent = serviceRequest.admin_discount_percent || DEFAULT_DISCOUNT_PERCENT
+
+  // Calculate existing payments
+  const existingPayments = serviceRequest.payments?.filter(p => p.payment_status === 'completed') || []
+  const totalPaid = existingPayments.reduce((sum, payment) => sum + payment.amount, 0)
+  const remainingBalance = totalCost - totalPaid
+  const hasPartialPayment = totalPaid > 0 && remainingBalance > 0
+  const isFullyPaid = totalPaid >= totalCost
+
   const splitAmount = totalCost * (SPLIT_PAYMENT_PERCENT / 100)
   const fullPaymentDiscount = totalCost * (discountPercent / 100)
   const fullPaymentAmount = totalCost - fullPaymentDiscount
-  const currentPaymentAmount = selectedPaymentType === "split" ? splitAmount : fullPaymentAmount
+
+  // Adjust amounts based on existing payments
+  let currentPaymentAmount: number
+  let isRemainingBalancePayment = false
+
+  if (hasPartialPayment) {
+    // This is a remaining balance payment
+    currentPaymentAmount = remainingBalance
+    isRemainingBalancePayment = true
+  } else {
+    // Normal payment (no existing payments)
+    currentPaymentAmount = selectedPaymentType === "split" ? splitAmount : fullPaymentAmount
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-orange-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
@@ -379,11 +399,22 @@ export default function PaymentPage() {
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-2 mb-4">
               <Shield className="h-8 w-8 text-primary" />
-              <h1 className="text-3xl font-bold">Secure Payment</h1>
+              <h1 className="text-3xl font-bold">
+                {isRemainingBalancePayment ? "Final Payment" : "Secure Payment"}
+              </h1>
             </div>
             <p className="text-muted-foreground">
-              Complete your payment for {serviceRequest.title}
+              {isRemainingBalancePayment
+                ? `Complete your remaining balance payment for ${serviceRequest.title}`
+                : `Complete your payment for ${serviceRequest.title}`
+              }
             </p>
+            {isRemainingBalancePayment && (
+              <div className="mt-2 flex items-center justify-center gap-2 text-sm text-blue-600">
+                <CheckCircle className="h-4 w-4" />
+                <span>You have already paid ${totalPaid.toFixed(2)} • Balance: ${remainingBalance.toFixed(2)}</span>
+              </div>
+            )}
             {timeRemaining && timeRemaining !== "Expired" && (
               <div className="mt-2 flex items-center justify-center gap-2 text-sm text-amber-600">
                 <Clock className="h-4 w-4" />
@@ -498,94 +529,164 @@ export default function PaymentPage() {
 
             {/* Payment Options */}
             <div className="lg:col-span-2">
-              {/* Payment Type Selection */}
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calculator className="h-5 w-5" />
-                    Payment Option
-                  </CardTitle>
-                  <CardDescription>
-                    Choose how you'd like to pay for this service
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <RadioGroup 
-                    value={selectedPaymentType} 
-                    onValueChange={(value) => setSelectedPaymentType(value as PaymentType)}
-                  >
-                    <div className="grid md:grid-cols-2 gap-4">
-                      {/* Split Payment */}
-                      <div className="relative">
-                        <RadioGroupItem value="split" id="split" className="peer sr-only" />
-                        <Label
-                          htmlFor="split"
-                          className="flex flex-col p-6 border-2 rounded-lg cursor-pointer hover:bg-accent peer-checked:border-primary peer-checked:bg-primary/5"
-                        >
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                              <CreditCard className="h-5 w-5 text-blue-600" />
-                            </div>
-                            <span className="font-semibold">Split Payment</span>
-                          </div>
-                          <div className="space-y-2">
-                            <div className="text-2xl font-bold text-blue-600">
-                              ${splitAmount.toFixed(2)}
-                            </div>
-                            <div className="text-lg font-semibold text-blue-600">
-                              ₦{(splitAmount * exchangeRate).toLocaleString()}
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              Pay 50% now, 50% on completion
-                            </div>
-                            <ul className="text-xs text-muted-foreground space-y-1">
-                              <li>• Lower upfront cost</li>
-                              <li>• Pay remaining when satisfied</li>
-                              <li>• Standard project terms</li>
-                            </ul>
-                          </div>
-                        </Label>
-                      </div>
-
-                      {/* Full Payment */}
-                      <div className="relative">
-                        <RadioGroupItem value="full" id="full" className="peer sr-only" />
-                        <Label
-                          htmlFor="full"
-                          className="flex flex-col p-6 border-2 rounded-lg cursor-pointer hover:bg-accent peer-checked:border-primary peer-checked:bg-primary/5"
-                        >
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                              <Tag className="h-5 w-5 text-green-600" />
-                            </div>
-                            <span className="font-semibold">Full Payment</span>
-                            <Badge className="bg-green-100 text-green-800">
-                              <Star className="w-3 h-3 mr-1" />
-                              Save {discountPercent}%
-                            </Badge>
-                          </div>
-                          <div className="space-y-2">
-                            <div className="text-2xl font-bold text-green-600">
-                              ${fullPaymentAmount.toFixed(2)}
-                            </div>
-                            <div className="text-lg font-semibold text-green-600">
-                              ₦{(fullPaymentAmount * exchangeRate).toLocaleString()}
-                            </div>
-                            <div className="text-sm text-green-600">
-                              You save ₦{(fullPaymentDiscount * exchangeRate).toLocaleString()}
-                            </div>
-                            <ul className="text-xs text-muted-foreground space-y-1">
-                              <li>• {discountPercent}% discount applied</li>
-                              <li>• No remaining balance</li>
-                              <li>• Priority project handling</li>
-                            </ul>
-                          </div>
-                        </Label>
+              {/* Payment Type Selection or Remaining Balance */}
+              {isRemainingBalancePayment ? (
+                <Card className="mb-6">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Calculator className="h-5 w-5" />
+                      Remaining Balance Payment
+                    </CardTitle>
+                    <CardDescription>
+                      Complete your final payment for this service
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {/* Payment History Summary */}
+                    <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 rounded-lg mb-6">
+                      <h4 className="font-semibold mb-3 flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        Payment Progress
+                      </h4>
+                      <div className="grid grid-cols-3 gap-4 text-center">
+                        <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border">
+                          <div className="text-lg font-bold text-green-600">${totalPaid.toFixed(2)}</div>
+                          <div className="text-xs text-muted-foreground">Already Paid</div>
+                          <div className="text-sm text-green-600">₦{(totalPaid * exchangeRate).toLocaleString()}</div>
+                        </div>
+                        <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border">
+                          <div className="text-lg font-bold text-orange-600">${remainingBalance.toFixed(2)}</div>
+                          <div className="text-xs text-muted-foreground">Balance Due</div>
+                          <div className="text-sm text-orange-600">₦{(remainingBalance * exchangeRate).toLocaleString()}</div>
+                        </div>
+                        <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border">
+                          <div className="text-lg font-bold text-blue-600">${totalCost.toFixed(2)}</div>
+                          <div className="text-xs text-muted-foreground">Total Project</div>
+                          <div className="text-sm text-blue-600">₦{(totalCost * exchangeRate).toLocaleString()}</div>
+                        </div>
                       </div>
                     </div>
-                  </RadioGroup>
-                </CardContent>
-              </Card>
+
+                    {/* Final Payment Amount */}
+                    <div className="p-6 border-2 border-orange-200 bg-orange-50 dark:bg-orange-950/20 rounded-lg">
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-3 mb-3">
+                          <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                            <DollarSign className="h-5 w-5 text-orange-600" />
+                          </div>
+                          <span className="font-semibold text-lg">Final Payment Amount</span>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="text-4xl font-bold text-orange-600">
+                            ${remainingBalance.toFixed(2)}
+                          </div>
+                          <div className="text-2xl font-semibold text-orange-600">
+                            ₦{(remainingBalance * exchangeRate).toLocaleString()}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            Complete payment to finish your project
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Alert className="mt-4">
+                      <CheckCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        This is your final payment. After completion, your project will be fully paid and ready for delivery.
+                      </AlertDescription>
+                    </Alert>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="mb-6">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Calculator className="h-5 w-5" />
+                      Payment Option
+                    </CardTitle>
+                    <CardDescription>
+                      Choose how you'd like to pay for this service
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <RadioGroup
+                      value={selectedPaymentType}
+                      onValueChange={(value) => setSelectedPaymentType(value as PaymentType)}
+                    >
+                      <div className="grid md:grid-cols-2 gap-4">
+                        {/* Split Payment */}
+                        <div className="relative">
+                          <RadioGroupItem value="split" id="split" className="peer sr-only" />
+                          <Label
+                            htmlFor="split"
+                            className="flex flex-col p-6 border-2 rounded-lg cursor-pointer hover:bg-accent peer-checked:border-primary peer-checked:bg-primary/5"
+                          >
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                <CreditCard className="h-5 w-5 text-blue-600" />
+                              </div>
+                              <span className="font-semibold">Split Payment</span>
+                            </div>
+                            <div className="space-y-2">
+                              <div className="text-2xl font-bold text-blue-600">
+                                ${splitAmount.toFixed(2)}
+                              </div>
+                              <div className="text-lg font-semibold text-blue-600">
+                                ₦{(splitAmount * exchangeRate).toLocaleString()}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                Pay 50% now, 50% on completion
+                              </div>
+                              <ul className="text-xs text-muted-foreground space-y-1">
+                                <li>• Lower upfront cost</li>
+                                <li>• Pay remaining when satisfied</li>
+                                <li>• Standard project terms</li>
+                              </ul>
+                            </div>
+                          </Label>
+                        </div>
+
+                        {/* Full Payment */}
+                        <div className="relative">
+                          <RadioGroupItem value="full" id="full" className="peer sr-only" />
+                          <Label
+                            htmlFor="full"
+                            className="flex flex-col p-6 border-2 rounded-lg cursor-pointer hover:bg-accent peer-checked:border-primary peer-checked:bg-primary/5"
+                          >
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                                <Tag className="h-5 w-5 text-green-600" />
+                              </div>
+                              <span className="font-semibold">Full Payment</span>
+                              <Badge className="bg-green-100 text-green-800">
+                                <Star className="w-3 h-3 mr-1" />
+                                Save {discountPercent}%
+                              </Badge>
+                            </div>
+                            <div className="space-y-2">
+                              <div className="text-2xl font-bold text-green-600">
+                                ${fullPaymentAmount.toFixed(2)}
+                              </div>
+                              <div className="text-lg font-semibold text-green-600">
+                                ₦{(fullPaymentAmount * exchangeRate).toLocaleString()}
+                              </div>
+                              <div className="text-sm text-green-600">
+                                You save ₦{(fullPaymentDiscount * exchangeRate).toLocaleString()}
+                              </div>
+                              <ul className="text-xs text-muted-foreground space-y-1">
+                                <li>• {discountPercent}% discount applied</li>
+                                <li>• No remaining balance</li>
+                                <li>• Priority project handling</li>
+                              </ul>
+                            </div>
+                          </Label>
+                        </div>
+                      </div>
+                    </RadioGroup>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Payment Methods - NIGERIA FOCUSED */}
               <Card>

@@ -14,6 +14,9 @@ import { PaymentLinkDeactivator } from "@/components/admin/payment-link-deactiva
 import { PaymentDeleter } from "@/components/admin/payment-deleter"
 import { PaymentApprover } from "@/components/admin/payment-approver"
 import { NOWPaymentsPaymentVerifier } from "@/components/admin/nowpayments-payment-verifier"
+import { RemainingBalanceLinkGenerator } from "@/components/admin/remaining-balance-link-generator"
+import { ManualPaymentEntry } from "@/components/admin/manual-payment-entry"
+import { ManualPaymentHistory } from "@/components/admin/manual-payment-history"
 
 interface ServiceRequestDetailProps {
   params: {
@@ -258,6 +261,26 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
               status={request.status}
             />
           )}
+
+          {/* Remaining Balance Link Generator */}
+          {(() => {
+            const completedPayments = payments.filter((p: any) => p.payment_status === 'completed')
+            const totalPaid = completedPayments.reduce((sum: number, p: any) => sum + p.amount, 0)
+            const estimatedCost = request.estimated_cost || 0
+            const remainingBalance = estimatedCost - totalPaid
+            const partialPaymentStatus = request.partial_payment_status || 'none'
+
+            return partialPaymentStatus === 'first_paid' && remainingBalance > 0 && (
+              <RemainingBalanceLinkGenerator
+                requestId={request.id}
+                totalPaid={totalPaid}
+                balanceDue={remainingBalance}
+                clientEmail={client?.email}
+                clientName={client?.name}
+                partialPaymentStatus={partialPaymentStatus}
+              />
+            )
+          })()}
         </div>
 
         {/* Sidebar */}
@@ -412,6 +435,40 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
               </div>
             </CardContent>
           </Card>
+
+          {/* Manual Payment Entry */}
+          {request.estimated_cost && request.estimated_cost > 0 && (
+            (() => {
+              const completedPayments = payments.filter((p: any) => p.payment_status === 'completed')
+              const totalPaid = completedPayments.reduce((sum: number, p: any) => sum + p.amount, 0)
+              const estimatedCost = request.estimated_cost || 0
+              const remainingBalance = Math.max(0, estimatedCost - totalPaid)
+
+              return (
+                <ManualPaymentEntry
+                  requestId={request.id}
+                  estimatedCost={estimatedCost}
+                  totalPaid={totalPaid}
+                  balanceDue={remainingBalance}
+                  clientName={client?.name || 'Unknown Client'}
+                  onPaymentAdded={() => {
+                    // Refresh the page to show updated payment information
+                    window.location.reload()
+                  }}
+                />
+              )
+            })()
+          )}
+
+          {/* Manual Payment History */}
+          {hasPayments && (
+            <ManualPaymentHistory
+              payments={payments}
+              onRefresh={() => {
+                window.location.reload()
+              }}
+            />
+          )}
 
           {/* Payment Link Deactivator - Show if payment link exists */}
           {request.payment_link_expiry && (

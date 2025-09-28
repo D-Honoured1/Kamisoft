@@ -61,6 +61,8 @@ export interface ServiceRequest {
   payment_plan?: PaymentPlan
   partial_payment_status?: PartialPaymentStatus
   admin_discount_percent?: number
+  payment_link_expiry?: string
+  remaining_balance_link_active?: boolean
   created_at: string
   updated_at: string
 
@@ -90,6 +92,11 @@ export interface Payment {
   crypto_amount?: number
   crypto_symbol?: string
   metadata?: string
+  manual_entry?: boolean
+  admin_verified?: boolean
+  verification_date?: string
+  verified_by_admin_id?: string
+  payment_source?: "online" | "manual" | "bulk_import"
   created_at: string
   updated_at: string
 
