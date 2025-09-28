@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -26,7 +27,6 @@ interface ManualPaymentEntryProps {
   totalPaid: number
   balanceDue: number
   clientName: string
-  onPaymentAdded?: () => void
 }
 
 export function ManualPaymentEntry({
@@ -34,9 +34,9 @@ export function ManualPaymentEntry({
   estimatedCost,
   totalPaid,
   balanceDue,
-  clientName,
-  onPaymentAdded
+  clientName
 }: ManualPaymentEntryProps) {
+  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
@@ -99,7 +99,7 @@ export function ManualPaymentEntry({
         throw new Error(errorData.error || "Failed to record payment")
       }
 
-      const result = await response.json()
+      await response.json()
       setSuccess(`Payment of $${paymentAmount} recorded successfully`)
 
       // Reset form
@@ -110,9 +110,10 @@ export function ManualPaymentEntry({
       setNotes("")
       setIsOpen(false)
 
-      if (onPaymentAdded) {
-        onPaymentAdded()
-      }
+      // Refresh the page to show updated data
+      setTimeout(() => {
+        router.refresh()
+      }, 1000) // Give time for user to see success message
 
     } catch (error: any) {
       console.error("Error recording manual payment:", error)

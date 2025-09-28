@@ -451,10 +451,6 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
                   totalPaid={totalPaid}
                   balanceDue={remainingBalance}
                   clientName={client?.name || 'Unknown Client'}
-                  onPaymentAdded={() => {
-                    // Refresh the page to show updated payment information
-                    window.location.reload()
-                  }}
                 />
               )
             })()
@@ -464,9 +460,6 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
           {hasPayments && (
             <ManualPaymentHistory
               payments={payments}
-              onRefresh={() => {
-                window.location.reload()
-              }}
             />
           )}
 

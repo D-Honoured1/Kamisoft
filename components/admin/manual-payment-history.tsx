@@ -28,10 +28,9 @@ interface ManualPayment {
 
 interface ManualPaymentHistoryProps {
   payments: ManualPayment[]
-  onRefresh?: () => void
 }
 
-export function ManualPaymentHistory({ payments, onRefresh }: ManualPaymentHistoryProps) {
+export function ManualPaymentHistory({ payments }: ManualPaymentHistoryProps) {
   const [selectedPayment, setSelectedPayment] = useState<ManualPayment | null>(null)
 
   // Filter for manual payments only
