@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic"
 
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { emailService } from "@/lib/email"
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -119,6 +120,38 @@ export async function POST(req: Request) {
         throw new Error(`Failed to create contact inquiry: ${inquiryError.message}`)
       }
 
+
+      // Step 3: Send email notifications
+      try {
+        // Send notification to admin
+        const adminEmailResult = await emailService.sendContactFormNotification({
+          name,
+          email,
+          phone,
+          company,
+          service,
+          subject: subject || "Contact Form Inquiry",
+          message
+        })
+
+        // Send confirmation to user
+        const confirmationEmailResult = await emailService.sendContactConfirmation({
+          name,
+          email,
+          phone,
+          company,
+          service,
+          subject: subject || "Contact Form Inquiry",
+          message
+        })
+
+        console.log('Admin email result:', adminEmailResult)
+        console.log('Confirmation email result:', confirmationEmailResult)
+
+      } catch (emailError: any) {
+        console.error('Email sending failed:', emailError)
+        // Don't fail the entire request if email fails
+      }
 
       return NextResponse.json({
         success: true,
