@@ -88,7 +88,7 @@ const getStatusIcon = (status: string) => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6 mb-8">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -174,40 +174,43 @@ const getStatusIcon = (status: string) => {
             <div className="space-y-6">
               {requests.map((request: any) => (
                 <Card key={request.id} className="hover:shadow-lg transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between mb-4">
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="space-y-3 mb-4">
+                      {/* Title and primary badges */}
                       <div className="space-y-2">
-                        <div className="flex items-center gap-3">
-                          <h3 className="font-medium text-lg">{request.title || 'Untitled Request'}</h3>
+                        <h3 className="font-medium text-lg break-words">{request.title || 'Untitled Request'}</h3>
+                        <div className="flex flex-wrap items-center gap-2">
                           <Badge className={getStatusColor(request.status)}>
                             <span className="flex items-center gap-1">
                               {getStatusIcon(request.status)}
-                              {request.status.replace("_", " ")}
+                              <span className="truncate">{request.status.replace("_", " ")}</span>
                             </span>
                           </Badge>
                           {request.priority && request.priority !== 'medium' && (
                             <Badge variant="outline" className={
-                              request.priority === 'high' ? 'border-red-500 text-red-700' : 
+                              request.priority === 'high' ? 'border-red-500 text-red-700' :
                               request.priority === 'low' ? 'border-gray-500 text-gray-700' : ''
                             }>
-                              {request.priority} priority
+                              <span className="truncate">{request.priority} priority</span>
                             </Badge>
                           )}
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <User className="h-4 w-4" />
-                            {request.clients?.name || 'Unknown Client'}
-                          </span>
-                          {request.clients?.company && (
-                            <span>• {request.clients.company}</span>
-                          )}
-                          <span className="flex items-center gap-1">
-                            <span className={`w-2 h-2 rounded-full ${
-                              request.request_type === 'digital' ? 'bg-blue-500' : 'bg-orange-500'
-                            }`}></span>
-                            {request.request_type === 'digital' ? 'Digital/Remote' : 'On-Site'}
-                          </span>
+                      </div>
+
+                      {/* Client and company info - mobile friendly */}
+                      <div className="space-y-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <User className="h-4 w-4 flex-shrink-0" />
+                          <span className="truncate">{request.clients?.name || 'Unknown Client'}</span>
+                        </div>
+                        {request.clients?.company && (
+                          <div className="pl-5 truncate text-xs">{request.clients.company}</div>
+                        )}
+                        <div className="flex items-center gap-1">
+                          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                            request.request_type === 'digital' ? 'bg-blue-500' : 'bg-orange-500'
+                          }`}></span>
+                          <span className="truncate">{request.request_type === 'digital' ? 'Digital/Remote' : 'On-Site'}</span>
                         </div>
                       </div>
                     </div>
@@ -215,12 +218,14 @@ const getStatusIcon = (status: string) => {
                     <div className="space-y-4">
                       <div>
                         <h4 className="font-medium text-sm text-muted-foreground mb-2">Service Category</h4>
-                        <Badge variant="secondary">{request.service_category.replace('_', ' ')}</Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          <span className="truncate">{request.service_category.replace('_', ' ')}</span>
+                        </Badge>
                       </div>
-                      
+
                       <div>
                         <h4 className="font-medium text-sm text-muted-foreground mb-2">Description</h4>
-                        <p className="text-sm line-clamp-2">{request.description}</p>
+                        <p className="text-sm break-words line-clamp-3 sm:line-clamp-2">{request.description}</p>
                       </div>
 
                       {request.estimated_cost && (
@@ -230,22 +235,27 @@ const getStatusIcon = (status: string) => {
                         </div>
                       )}
 
-                      <div className="flex items-center justify-between pt-4 border-t">
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <div className="pt-4 border-t space-y-3 sm:space-y-0">
+                        {/* Dates - stack on mobile */}
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4" />
-                            Created: {new Date(request.created_at).toLocaleDateString()}
+                            <Calendar className="h-4 w-4 flex-shrink-0" />
+                            <span className="truncate">Created: {new Date(request.created_at).toLocaleDateString()}</span>
                           </span>
                           {request.preferred_date && (
-                            <span>
+                            <span className="truncate pl-5 sm:pl-0">
                               Preferred: {new Date(request.preferred_date).toLocaleDateString()}
                             </span>
                           )}
                         </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" asChild>
+
+                        {/* Action button - full width on mobile */}
+                        <div className="flex justify-end">
+                          <Button size="sm" variant="outline" asChild className="w-full sm:w-auto">
                             <Link href={`/admin/requests/${request.id}`}>
-                              View Details <ArrowRight className="ml-2 h-4 w-4" />
+                              <span className="flex items-center justify-center gap-2">
+                                View Details <ArrowRight className="h-4 w-4" />
+                              </span>
                             </Link>
                           </Button>
                         </div>
