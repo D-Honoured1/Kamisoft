@@ -164,7 +164,7 @@ export default function RequestServicePage() {
                     <AlertDescription className="font-medium">
                       {error}
                       <div className="text-sm mt-2 opacity-90">
-                        If this problem persists, please contact us directly at hello@kamisoftenterprises.online
+                        If this problem persists, please contact us directly at support@kamisoftenterprises.online
                       </div>
                     </AlertDescription>
                   </Alert>

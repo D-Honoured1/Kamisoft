@@ -350,8 +350,8 @@ export default function PaymentPage() {
             <div className="text-center text-sm text-muted-foreground pt-4 border-t">
               <p>
                 Need help? Email us at{" "}
-                <a href="mailto:hello@kamisoftenterprises.online" className="text-primary hover:underline">
-                  hello@kamisoftenterprises.online
+                <a href="mailto:support@kamisoftenterprises.online" className="text-primary hover:underline">
+                  support@kamisoftenterprises.online
                 </a>
               </p>
             </div>

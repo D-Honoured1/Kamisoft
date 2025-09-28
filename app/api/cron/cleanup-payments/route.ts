@@ -209,7 +209,7 @@ async function sendPaymentExpiredNotification(payment: any) {
         serviceTitle: payment.service_requests?.title,
         amount: payment.amount,
         paymentMethod: payment.payment_method,
-        contactEmail: 'hello@kamisoftenterprises.online'
+        contactEmail: process.env.FROM_EMAIL
       }
     }
 

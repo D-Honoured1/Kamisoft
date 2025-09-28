@@ -274,7 +274,7 @@ async function sendPaymentConfirmationEmail(paystackData: any) {
         paymentType: paystackData.metadata?.paymentType === 'split' ? '50% Upfront Payment' : 'Full Payment',
         transactionDate: new Date(paystackData.paid_at).toLocaleString('en-NG'),
         projectStatus: paystackData.metadata?.paymentType === 'full' ? 'Fully Paid - Work will begin immediately' : 'Upfront payment received - Work will begin shortly',
-        supportEmail: 'hello@kamisoftenterprises.online'
+        supportEmail: process.env.FROM_EMAIL
       }
     }
 

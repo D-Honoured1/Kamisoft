@@ -335,11 +335,11 @@ export default function PaymentCancelledPage() {
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm">
                 <a 
-                  href="mailto:hello@kamisoftenterprises.online" 
+                  href="mailto:support@kamisoftenterprises.online" 
                   className="text-primary hover:underline flex items-center gap-2"
                 >
                   <Mail className="h-4 w-4" />
-                  hello@kamisoftenterprises.online
+                  support@kamisoftenterprises.online
                 </a>
                 <span className="hidden sm:block">•</span>
                 <span className="text-muted-foreground">

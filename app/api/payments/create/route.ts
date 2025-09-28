@@ -403,7 +403,7 @@ async function createBankTransferInstructions(
         `Transfer ₦${ngnAmount.toLocaleString()} NGN (equivalent to $${usdAmount} USD)`,
         `Exchange rate: 1 USD = ₦${exchangeRate}`,
         "Use the reference number in your transfer description", 
-        "Send proof of payment to hello@kamisoftenterprises.online",
+        `Send proof of payment to ${process.env.FROM_EMAIL}`,
         "Payment will be verified within 24 hours"
       ]
     }

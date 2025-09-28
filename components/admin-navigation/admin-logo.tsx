@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Home } from "lucide-react"
 import { usePathname } from "next/navigation"
@@ -24,9 +25,13 @@ export function AdminLogo() {
         </Button>
         <div className="h-6 w-px bg-border" />
         <Link href="/admin" className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <span className="text-primary-foreground font-bold">K</span>
-          </div>
+          <Image
+            src="/logo.svg"
+            alt="Kamisoft Logo"
+            width={32}
+            height={32}
+            className="h-8 w-8"
+          />
           <span className="font-bold text-lg">Admin</span>
         </Link>
       </div>
@@ -35,9 +40,13 @@ export function AdminLogo() {
 
   return (
     <Link href="/admin" className="flex items-center space-x-2">
-      <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-        <span className="text-primary-foreground font-bold">K</span>
-      </div>
+      <Image
+        src="/logo.svg"
+        alt="Kamisoft Logo"
+        width={32}
+        height={32}
+        className="h-8 w-8"
+      />
       <span className="font-bold text-xl">
         {isMainDashboard ? 'Kamisoft Admin' : 'Admin'}
       </span>

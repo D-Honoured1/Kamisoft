@@ -120,7 +120,7 @@ export const COMPANY_INFO = {
 
   contact: {
     email: "hello@kamisoftenterprises.online",
-    phone: "+234 XXX XXX XXXX", // To be updated
+    phone: "+2348036392157",
     address: "Lagos, Nigeria",
   },
 

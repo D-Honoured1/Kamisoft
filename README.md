@@ -110,4 +110,4 @@ This project is proprietary software owned by Kamisoft Enterprises.
 
 ## Support
 
-For support, email support@kamisoft.com or visit our website.
+For support, email support@kamisoftenterprises.online or visit our website.

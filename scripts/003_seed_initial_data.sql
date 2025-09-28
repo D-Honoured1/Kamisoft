@@ -7,7 +7,7 @@ INSERT INTO leadership_team (name, position, bio, email, display_order, is_activ
     'Daniel Austen',
     'Chief Executive Officer',
     'Visionary leader with over 10 years of experience in technology and business development. Founded Kamisoft Enterprises in 2015 with a mission to deliver cutting-edge software solutions across Africa and beyond.',
-    'daniel@kamisoft.com',
+    'support@kamisoftenterprises.online',
     1,
     true
 ),
@@ -15,7 +15,7 @@ INSERT INTO leadership_team (name, position, bio, email, display_order, is_activ
     'Sarah Johnson',
     'Chief Operating Officer', 
     'Operations expert with extensive experience in scaling technology companies. Ensures smooth delivery of all client projects and manages our growing team of developers.',
-    'sarah@kamisoft.com',
+    'support@kamisoftenterprises.online',
     2,
     true
 ),
@@ -23,7 +23,7 @@ INSERT INTO leadership_team (name, position, bio, email, display_order, is_activ
     'Michael Chen',
     'Chief Technology Officer',
     'Technical architect with deep expertise in full-stack development, blockchain, and AI. Leads our technical strategy and ensures we stay at the forefront of technology trends.',
-    'michael@kamisoft.com',
+    'support@kamisoftenterprises.online',
     3,
     true
 );
