@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Calendar, FileText, Download, Print } from "lucide-react"
+import { ArrowLeft, Calendar, FileText, Download, Printer } from "lucide-react"
 import Link from "next/link"
 import { useEffect } from "react"
 
@@ -95,7 +95,7 @@ export function LegalDocumentLayout({
         <div className="flex gap-2">
           {showPrintButton && (
             <Button variant="outline" size="sm" onClick={handlePrint}>
-              <Print className="h-4 w-4 mr-2" />
+              <Printer className="h-4 w-4 mr-2" />
               Print
             </Button>
           )}
