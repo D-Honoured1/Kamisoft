@@ -4,7 +4,7 @@ import { requireAuth } from "@/lib/auth/server-auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Users, FileText, CreditCard, Briefcase, Clock, MessageSquare } from "lucide-react"
+import { Users, FileText, CreditCard, Briefcase, Clock, MessageSquare, UserCheck } from "lucide-react"
 import Link from "next/link"
 import { formatDate } from "@/lib/utils/date-formatter"
 
@@ -248,6 +248,12 @@ export default async function AdminDashboard() {
               <Link href="/admin/portfolio">
                 <Briefcase className="mr-2 h-4 w-4" />
                 Portfolio Management ({stats[4].value})
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full justify-start bg-transparent">
+              <Link href="/admin/leadership">
+                <UserCheck className="mr-2 h-4 w-4" />
+                Leadership Management
               </Link>
             </Button>
           </CardContent>
