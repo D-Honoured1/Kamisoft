@@ -1,6 +1,8 @@
 import { LegalDocumentLayout } from "@/components/legal/legal-document-layout"
 import { TableOfContents } from "@/components/legal/table-of-contents"
 
+export const dynamic = 'force-dynamic'
+
 export default function CookiePolicyPage() {
   return (
     <div className="flex flex-col lg:flex-row gap-8">
