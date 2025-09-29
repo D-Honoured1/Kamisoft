@@ -1,10 +1,10 @@
-// app/admin/portfolio/new/page.tsx
+// app/admin/portfolio/edit/[id]/page.tsx
 "use client"
 
 export const dynamic = "force-dynamic"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,7 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ImageUpload } from "@/components/ui/image-upload"
 import { PortfolioImageManager } from "@/components/admin/portfolio-image-manager"
-import { ArrowLeft, Plus, X } from "lucide-react"
+import { ArrowLeft, Plus, X, Loader2 } from "lucide-react"
 import Link from "next/link"
 
 const SERVICE_CATEGORIES = [
@@ -29,32 +29,72 @@ const SERVICE_CATEGORIES = [
   { value: "ai_automation", label: "AI & Automation" },
 ]
 
-export default function NewPortfolioProject() {
+export default function EditPortfolioProject() {
   const router = useRouter()
+  const params = useParams()
+  const projectId = params.id as string
+
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingData, setIsLoadingData] = useState(true)
   const [error, setError] = useState("")
   const [technologies, setTechnologies] = useState<string[]>([])
   const [newTechnology, setNewTechnology] = useState("")
 
-  // Add these new state fields in the formData useState:
-const [formData, setFormData] = useState({
-  title: "",
-  description: "",
-  service_category: "",
-  client_name: "",
-  project_url: "",
-  github_url: "",
-  featured_image_url: "",
-  completion_date: "",
-  is_featured: false,
-  is_published: true,
-  // New client feedback fields
-  client_feedback: "",
-  client_rating: 0,
-  feedback_date: "",
-})
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    service_category: "",
+    client_name: "",
+    project_url: "",
+    github_url: "",
+    featured_image_url: "",
+    completion_date: "",
+    is_featured: false,
+    is_published: true,
+    client_feedback: "",
+    client_rating: 0,
+    feedback_date: "",
+  })
 
+  // Load existing project data
+  useEffect(() => {
+    const loadProject = async () => {
+      try {
+        const response = await fetch(`/api/admin/portfolio?id=${projectId}`)
+        if (!response.ok) {
+          throw new Error("Failed to load project")
+        }
+        const data = await response.json()
+        const project = data.project
 
+        setFormData({
+          title: project.title || "",
+          description: project.description || "",
+          service_category: project.service_category || "",
+          client_name: project.client_name || "",
+          project_url: project.project_url || "",
+          github_url: project.github_url || "",
+          featured_image_url: project.featured_image_url || "",
+          completion_date: project.completion_date ? project.completion_date.split('T')[0] : "",
+          is_featured: project.is_featured || false,
+          is_published: project.is_published !== undefined ? project.is_published : true,
+          client_feedback: project.client_feedback || "",
+          client_rating: project.client_rating || 0,
+          feedback_date: project.feedback_date ? project.feedback_date.split('T')[0] : "",
+        })
+        setTechnologies(project.technologies || [])
+      } catch (error: any) {
+        console.error("Error loading project:", error)
+        setError("Failed to load project data")
+      } finally {
+        setIsLoadingData(false)
+      }
+    }
+
+    if (projectId) {
+      loadProject()
+    }
+  }, [projectId])
 
   const addTechnology = () => {
     if (newTechnology.trim() && !technologies.includes(newTechnology.trim())) {
@@ -74,9 +114,10 @@ const [formData, setFormData] = useState({
 
     try {
       const res = await fetch("/api/admin/portfolio", {
-        method: "POST",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          id: projectId,
           ...formData,
           technologies,
           completion_date: formData.completion_date || null,
@@ -85,16 +126,29 @@ const [formData, setFormData] = useState({
 
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || "Failed to create project")
+        throw new Error(data.error || "Failed to update project")
       }
 
       router.push("/admin/portfolio")
     } catch (error: any) {
-      console.error("Error creating project:", error)
-      setError(error.message || "An error occurred while creating the project")
+      console.error("Error updating project:", error)
+      setError(error.message || "An error occurred while updating the project")
     } finally {
       setIsLoading(false)
     }
+  }
+
+  if (isLoadingData) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading project data...</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -107,17 +161,17 @@ const [formData, setFormData] = useState({
           </Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Add New Portfolio Project</h1>
-          <p className="text-muted-foreground mt-1">Create a new portfolio project to showcase your work</p>
+          <h1 className="text-3xl font-bold text-foreground">Edit Portfolio Project</h1>
+          <p className="text-muted-foreground mt-1">Update your portfolio project information</p>
         </div>
       </div>
 
       <Card className="border-2 shadow-lg">
         <CardHeader className="border-b bg-muted/50">
           <CardTitle>Project Details</CardTitle>
-          <CardDescription>Fill in the information about your new portfolio project</CardDescription>
+          <CardDescription>Update the information about your portfolio project</CardDescription>
         </CardHeader>
-        
+
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
@@ -224,8 +278,8 @@ const [formData, setFormData] = useState({
             </div>
 
             <PortfolioImageManager
-              projectId="new"
-              projectTitle={formData.title || "New Project"}
+              projectId={projectId}
+              projectTitle={formData.title}
               projectUrl={formData.project_url}
               currentImageUrl={formData.featured_image_url}
               onImageUpdate={(url) => setFormData({ ...formData, featured_image_url: url })}
@@ -245,7 +299,7 @@ const [formData, setFormData] = useState({
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
-              
+
               {technologies.length > 0 && (
                 <div className="flex flex-wrap gap-2 p-3 border-2 border-dashed rounded-md">
                   {technologies.map((tech, index) => (
@@ -265,60 +319,60 @@ const [formData, setFormData] = useState({
             </div>
 
             {/* Client Feedback Section */}
-<div className="space-y-4 p-4 border-2 border-dashed rounded-lg">
-  <Label>Client Feedback (Optional)</Label>
-  
-  <div className="space-y-4">
-    <div className="space-y-2">
-      <Label htmlFor="client_feedback">Client Testimonial</Label>
-      <Textarea
-        id="client_feedback"
-        value={formData.client_feedback}
-        onChange={(e) => setFormData({ ...formData, client_feedback: e.target.value })}
-        placeholder="Enter client feedback or testimonial..."
-        rows={3}
-        className="border-2"
-      />
-    </div>
+            <div className="space-y-4 p-4 border-2 border-dashed rounded-lg">
+              <Label>Client Feedback (Optional)</Label>
 
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div className="space-y-2">
-        <Label htmlFor="client_rating">Client Rating (1-5 stars)</Label>
-        <Select
-          value={formData.client_rating.toString()}
-          onValueChange={(value) => setFormData({ ...formData, client_rating: parseInt(value) })}
-        >
-          <SelectTrigger className="border-2">
-            <SelectValue placeholder="Select rating" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="0">No Rating</SelectItem>
-            <SelectItem value="1">⭐ 1 Star</SelectItem>
-            <SelectItem value="2">⭐⭐ 2 Stars</SelectItem>
-            <SelectItem value="3">⭐⭐⭐ 3 Stars</SelectItem>
-            <SelectItem value="4">⭐⭐⭐⭐ 4 Stars</SelectItem>
-            <SelectItem value="5">⭐⭐⭐⭐⭐ 5 Stars</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="client_feedback">Client Testimonial</Label>
+                  <Textarea
+                    id="client_feedback"
+                    value={formData.client_feedback}
+                    onChange={(e) => setFormData({ ...formData, client_feedback: e.target.value })}
+                    placeholder="Enter client feedback or testimonial..."
+                    rows={3}
+                    className="border-2"
+                  />
+                </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="feedback_date">Feedback Date</Label>
-        <Input
-          id="feedback_date"
-          type="date"
-          value={formData.feedback_date}
-          onChange={(e) => setFormData({ ...formData, feedback_date: e.target.value })}
-          className="border-2"
-        />
-      </div>
-    </div>
-  </div>
-</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="client_rating">Client Rating (1-5 stars)</Label>
+                    <Select
+                      value={formData.client_rating.toString()}
+                      onValueChange={(value) => setFormData({ ...formData, client_rating: parseInt(value) })}
+                    >
+                      <SelectTrigger className="border-2">
+                        <SelectValue placeholder="Select rating" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">No Rating</SelectItem>
+                        <SelectItem value="1">⭐ 1 Star</SelectItem>
+                        <SelectItem value="2">⭐⭐ 2 Stars</SelectItem>
+                        <SelectItem value="3">⭐⭐⭐ 3 Stars</SelectItem>
+                        <SelectItem value="4">⭐⭐⭐⭐ 4 Stars</SelectItem>
+                        <SelectItem value="5">⭐⭐⭐⭐⭐ 5 Stars</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="feedback_date">Feedback Date</Label>
+                    <Input
+                      id="feedback_date"
+                      type="date"
+                      value={formData.feedback_date}
+                      onChange={(e) => setFormData({ ...formData, feedback_date: e.target.value })}
+                      className="border-2"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
 
             <div className="space-y-4 p-4 border-2 border-dashed rounded-lg">
               <Label>Project Settings</Label>
-              
+
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="is_featured"
@@ -329,7 +383,7 @@ const [formData, setFormData] = useState({
                   Feature this project (will be highlighted on the portfolio page)
                 </Label>
               </div>
-              
+
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="is_published"
@@ -344,7 +398,7 @@ const [formData, setFormData] = useState({
 
             <div className="flex gap-4 pt-6 border-t-2">
               <Button type="submit" disabled={isLoading} className="flex-1">
-                {isLoading ? "Creating Project..." : "Create Project"}
+                {isLoading ? "Updating Project..." : "Update Project"}
               </Button>
               <Button type="button" variant="outline" onClick={() => router.back()} className="border-2">
                 Cancel

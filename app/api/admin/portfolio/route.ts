@@ -3,6 +3,56 @@ export const dynamic = "force-dynamic"
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getAdminUser } from "@/lib/auth/server-auth"
+import { cleanupPortfolioImages } from "@/lib/storage-cleanup"
+
+export async function GET(req: Request) {
+  try {
+    // Check authentication
+    const adminUser = await getAdminUser()
+    if (!adminUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(req.url)
+    const projectId = searchParams.get("id")
+
+    if (!projectId) {
+      return NextResponse.json({ error: "Project ID is required" }, { status: 400 })
+    }
+
+    const supabase = createServerClient()
+
+    // Fetch the specific portfolio project
+    const { data: project, error } = await supabase
+      .from("portfolio_projects")
+      .select("*")
+      .eq("id", projectId)
+      .single()
+
+    if (error) {
+      console.error("Database error:", error)
+      return NextResponse.json(
+        { error: "Failed to fetch portfolio project", details: error.message },
+        { status: 500 }
+      )
+    }
+
+    if (!project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 })
+    }
+
+    return NextResponse.json({
+      success: true,
+      project,
+    })
+  } catch (error) {
+    console.error("Portfolio fetch error:", error)
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    )
+  }
+}
 
 export async function POST(req: Request) {
   try {
@@ -148,6 +198,9 @@ export async function DELETE(req: Request) {
     }
 
     const supabase = createServerClient()
+
+    // Clean up associated images before deleting the record
+    await cleanupPortfolioImages(projectId)
 
     // Delete the portfolio project
     const { error } = await supabase

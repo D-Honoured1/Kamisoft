@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic"
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getAdminUser } from "@/lib/auth/server-auth"
+import { cleanupLeadershipImages } from "@/lib/storage-cleanup"
 
 export async function GET() {
   try {
@@ -167,6 +168,9 @@ export async function DELETE(req: Request) {
     }
 
     const supabase = createServerClient()
+
+    // Clean up associated images before deleting the record
+    await cleanupLeadershipImages(memberId)
 
     // Delete the leadership member
     const { error } = await supabase
