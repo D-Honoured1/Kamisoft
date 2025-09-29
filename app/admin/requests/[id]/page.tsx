@@ -148,26 +148,26 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-xl flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    {request.title || 'Service Request'}
+              <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <CardTitle className="text-xl flex items-center gap-2 flex-wrap">
+                    <FileText className="h-5 w-5 flex-shrink-0" />
+                    <span className="break-words">{request.title || 'Service Request'}</span>
                   </CardTitle>
                   <CardDescription className="mt-1">
                     Submitted on {new Date(request.created_at).toLocaleDateString()}
                   </CardDescription>
                 </div>
                 <div className="flex gap-2 flex-wrap">
-                  <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                  <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs">
                     Service Request
                   </Badge>
                   {request.priority && (
-                    <Badge className={getPriorityColor(request.priority)}>
+                    <Badge className={`${getPriorityColor(request.priority)} text-xs`}>
                       {request.priority} priority
                     </Badge>
                   )}
-                  <Badge className={getStatusColor(request.status)}>
+                  <Badge className={`${getStatusColor(request.status)} text-xs`}>
                     <span className="flex items-center gap-1">
                       {getStatusIcon(request.status)}
                       {request.status.replace("_", " ")}
@@ -213,17 +213,17 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t">
                   <div>
                     <h4 className="font-medium text-foreground mb-2">Request Type</h4>
-                    <Badge variant="outline">
+                    <Badge variant="outline" className="text-xs sm:text-sm">
                       {requestType === 'digital' ? 'Digital/Remote' : 'On-Site'}
                     </Badge>
                   </div>
                   {request.preferred_date && (
                     <div>
                       <h4 className="font-medium text-foreground mb-2">Preferred Date</h4>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-muted-foreground break-words">
                         {new Date(request.preferred_date).toLocaleDateString()}
                       </p>
                     </div>
@@ -302,14 +302,14 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-muted-foreground">{client.email}</p>
+                  <div className="flex items-start gap-2">
+                    <Mail className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                    <p className="text-muted-foreground text-sm break-all">{client.email}</p>
                   </div>
                   {client.phone && (
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-muted-foreground">{client.phone}</p>
+                    <div className="flex items-start gap-2">
+                      <Phone className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                      <p className="text-muted-foreground text-sm break-words">{client.phone}</p>
                     </div>
                   )}
                   <div className="pt-4 border-t mt-4">
@@ -389,9 +389,9 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
                       const paymentSequence = payment.payment_sequence || (index + 1)
 
                       return (
-                        <div key={payment.id} className="flex items-center justify-between p-2 border rounded mb-2">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
+                        <div key={payment.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded mb-2 gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <p className="text-sm font-medium">${payment.amount.toLocaleString()}</p>
                               {isPartialPayment && (
                                 <Badge variant="outline" className="text-xs">
@@ -399,19 +399,19 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
                                 </Badge>
                               )}
                             </div>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-muted-foreground truncate">
                               {payment.payment_method || 'N/A'}
                               {payment.created_at && ` • ${new Date(payment.created_at).toLocaleDateString()}`}
                             </p>
                           </div>
                           <Badge
-                            className={
+                            className={`flex-shrink-0 text-xs ${
                               payment.payment_status === "completed" || payment.payment_status === "confirmed"
                                 ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                                 : payment.payment_status === "failed"
                                 ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
                                 : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-                            }
+                            }`}
                           >
                             {payment.payment_status}
                           </Badge>
