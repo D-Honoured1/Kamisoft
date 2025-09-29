@@ -6,8 +6,8 @@ export function Footer() {
   return (
     <footer className="bg-muted/50 border-t">
       <div className="container py-12">
-        {/* Mobile: 2x2 grid, Desktop: 4 columns */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+        {/* Mobile: 2x2 grid, Desktop: 5 columns */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           {/* Company Info - Takes full width on mobile */}
           <div className="col-span-2 md:col-span-1 space-y-4">
             <div className="flex items-center space-x-2">
@@ -55,6 +55,33 @@ export function Footer() {
               <li className="text-muted-foreground">Blockchain Solutions</li>
               <li className="text-muted-foreground">Fintech Platforms</li>
               <li className="text-muted-foreground">Mobile Development</li>
+            </ul>
+          </div>
+
+          {/* Legal */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold">Legal</h3>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <Link href="/legal/privacy-policy" className="text-muted-foreground hover:text-primary transition-colors">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/legal/terms-of-service" className="text-muted-foreground hover:text-primary transition-colors">
+                  Terms of Service
+                </Link>
+              </li>
+              <li>
+                <Link href="/legal/cookie-policy" className="text-muted-foreground hover:text-primary transition-colors">
+                  Cookie Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/legal" className="text-muted-foreground hover:text-primary transition-colors">
+                  All Legal Documents
+                </Link>
+              </li>
             </ul>
           </div>
 
