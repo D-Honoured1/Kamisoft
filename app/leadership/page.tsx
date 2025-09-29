@@ -81,7 +81,7 @@ export default async function LeadershipPage() {
         </div>
       </section>
 
-      {/* Executive Team Carousel */}
+      {/* Executive Team */}
       {executiveTeam.length > 0 && (
         <section className="py-20">
           <div className="container">
@@ -92,10 +92,10 @@ export default async function LeadershipPage() {
               </p>
             </div>
 
-            <Carousel className="w-full max-w-6xl mx-auto">
-              <CarouselContent className="-ml-2 md:-ml-4">
+            {executiveTeam.length <= 3 ? (
+              <div className="flex flex-wrap justify-center gap-6 max-w-6xl mx-auto">
                 {executiveTeam.map((leader) => (
-                  <CarouselItem key={leader.id} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
+                  <div key={leader.id} className="w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1rem)] max-w-sm">
                     <Card className="group hover:shadow-lg transition-all duration-300 border-0 bg-card/50 text-center h-full">
                       <CardHeader className="pb-4">
                         <div className="mx-auto w-32 h-32 rounded-full overflow-hidden mb-6 bg-muted/50">
@@ -137,17 +137,67 @@ export default async function LeadershipPage() {
                         </div>
                       </CardContent>
                     </Card>
-                  </CarouselItem>
+                  </div>
                 ))}
-              </CarouselContent>
-              <CarouselPrevious />
-              <CarouselNext />
-            </Carousel>
+              </div>
+            ) : (
+              <Carousel className="w-full max-w-6xl mx-auto">
+                <CarouselContent className="-ml-2 md:-ml-4">
+                  {executiveTeam.map((leader) => (
+                    <CarouselItem key={leader.id} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
+                      <Card className="group hover:shadow-lg transition-all duration-300 border-0 bg-card/50 text-center h-full">
+                        <CardHeader className="pb-4">
+                          <div className="mx-auto w-32 h-32 rounded-full overflow-hidden mb-6 bg-muted/50">
+                            <img
+                              src={leader.profile_image_url || "/placeholder.svg"}
+                              alt={leader.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          </div>
+                          <CardTitle className="text-xl">{leader.name}</CardTitle>
+                          <CardDescription className="text-primary font-medium">{leader.position}</CardDescription>
+                        </CardHeader>
+
+                        <CardContent className="space-y-6">
+                          <p className="text-sm text-muted-foreground leading-relaxed line-clamp-4">{leader.bio}</p>
+
+                          <div className="flex justify-center space-x-4">
+                            {leader.email && (
+                              <Button size="sm" variant="outline" asChild>
+                                <Link href={`mailto:${leader.email}`}>
+                                  <Mail className="h-4 w-4" />
+                                </Link>
+                              </Button>
+                            )}
+                            {leader.linkedin_url && (
+                              <Button size="sm" variant="outline" asChild>
+                                <Link href={leader.linkedin_url} target="_blank" rel="noopener noreferrer">
+                                  <Linkedin className="h-4 w-4" />
+                                </Link>
+                              </Button>
+                            )}
+                            {leader.twitter_url && (
+                              <Button size="sm" variant="outline" asChild>
+                                <Link href={leader.twitter_url} target="_blank" rel="noopener noreferrer">
+                                  <Twitter className="h-4 w-4" />
+                                </Link>
+                              </Button>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious />
+                <CarouselNext />
+              </Carousel>
+            )}
           </div>
         </section>
       )}
 
-      {/* Team Members Carousel */}
+      {/* Team Members */}
       {regularTeam.length > 0 && (
         <section className="py-20 bg-muted/30">
           <div className="container">
@@ -158,10 +208,10 @@ export default async function LeadershipPage() {
               </p>
             </div>
 
-            <Carousel className="w-full max-w-6xl mx-auto">
-              <CarouselContent className="-ml-2 md:-ml-4">
+            {regularTeam.length <= 3 ? (
+              <div className="flex flex-wrap justify-center gap-6 max-w-6xl mx-auto">
                 {regularTeam.map((member) => (
-                  <CarouselItem key={member.id} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
+                  <div key={member.id} className="w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1rem)] max-w-sm">
                     <Card className="group hover:shadow-lg transition-all duration-300 border-0 bg-background/50 text-center h-full">
                       <CardHeader className="pb-4">
                         <div className="mx-auto w-24 h-24 rounded-full overflow-hidden mb-4 bg-muted/50">
@@ -205,12 +255,64 @@ export default async function LeadershipPage() {
                         </div>
                       </CardContent>
                     </Card>
-                  </CarouselItem>
+                  </div>
                 ))}
-              </CarouselContent>
-              <CarouselPrevious />
-              <CarouselNext />
-            </Carousel>
+              </div>
+            ) : (
+              <Carousel className="w-full max-w-6xl mx-auto">
+                <CarouselContent className="-ml-2 md:-ml-4">
+                  {regularTeam.map((member) => (
+                    <CarouselItem key={member.id} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
+                      <Card className="group hover:shadow-lg transition-all duration-300 border-0 bg-background/50 text-center h-full">
+                        <CardHeader className="pb-4">
+                          <div className="mx-auto w-24 h-24 rounded-full overflow-hidden mb-4 bg-muted/50">
+                            <img
+                              src={member.profile_image_url || "/placeholder.svg"}
+                              alt={member.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          </div>
+                          <CardTitle className="text-lg">{member.name}</CardTitle>
+                          <CardDescription className="text-primary font-medium text-sm">{member.position}</CardDescription>
+                        </CardHeader>
+
+                        <CardContent className="space-y-4">
+                          {member.bio && (
+                            <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">{member.bio}</p>
+                          )}
+
+                          <div className="flex justify-center space-x-3">
+                            {member.email && (
+                              <Button size="sm" variant="outline" asChild>
+                                <Link href={`mailto:${member.email}`}>
+                                  <Mail className="h-4 w-4" />
+                                </Link>
+                              </Button>
+                            )}
+                            {member.linkedin_url && (
+                              <Button size="sm" variant="outline" asChild>
+                                <Link href={member.linkedin_url} target="_blank" rel="noopener noreferrer">
+                                  <Linkedin className="h-4 w-4" />
+                                </Link>
+                              </Button>
+                            )}
+                            {member.twitter_url && (
+                              <Button size="sm" variant="outline" asChild>
+                                <Link href={member.twitter_url} target="_blank" rel="noopener noreferrer">
+                                  <Twitter className="h-4 w-4" />
+                                </Link>
+                              </Button>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious />
+                <CarouselNext />
+              </Carousel>
+            )}
           </div>
         </section>
       )}

@@ -12,212 +12,102 @@ export default function CookiePolicyPage() {
 
       <div className="flex-1 lg:order-1">
         <LegalDocumentLayout
-          title="Cookie Policy"
+          title="Cookies Policy"
           description="Information about cookies and similar technologies we use"
-          lastUpdated="December 15, 2024"
-          effectiveDate="December 15, 2024"
+          lastUpdated="September 29, 2025"
+          effectiveDate="September 29, 2025"
         >
-          <h2 id="introduction">1. Introduction</h2>
           <p>
-            This Cookie Policy explains how Kamisoft Enterprises ("we," "our," or "us") uses cookies
-            and similar technologies when you visit our website or use our services. It explains what
-            these technologies are, why we use them, and your rights to control our use of them.
+            This Cookies Policy explains what Cookies are and how We use them. You should read this policy so You can understand what type of cookies We use, or the information We collect using Cookies and how that information is used.
           </p>
           <p>
-            This policy should be read alongside our{" "}
-            <a href="/legal/privacy-policy" className="text-primary hover:underline">
-              Privacy Policy
-            </a>, which provides more information about how we collect, use, and protect your personal data.
-          </p>
-
-          <h2 id="what-are-cookies">2. What Are Cookies?</h2>
-          <p>
-            Cookies are small text files that are placed on your device (computer, smartphone, tablet)
-            when you visit a website. They are widely used to make websites work more efficiently and
-            to provide information to website owners.
+            Cookies do not typically contain any information that personally identifies a user, but personal information that we store about You may be linked to the information stored in and obtained from Cookies. For further information on how We use, store and keep your personal data secure, see our <a href="/legal/privacy-policy" className="text-primary hover:underline">Privacy Policy</a>.
           </p>
           <p>
-            Cookies can be "persistent" or "session" cookies. Persistent cookies remain on your device
-            until they expire or are deleted, while session cookies are temporary and are deleted when
-            you close your browser.
+            We do not store sensitive personal information, such as mailing addresses, account passwords, etc. in the Cookies We use.
           </p>
 
-          <h2 id="types-of-cookies">3. Types of Cookies We Use</h2>
+          <h2 id="interpretation-definitions">Interpretation and Definitions</h2>
 
-          <h3 id="essential-cookies">3.1 Essential Cookies</h3>
-          <p>These cookies are strictly necessary for our website to function properly. They include:</p>
-          <ul>
-            <li>Security cookies to authenticate users and prevent fraudulent use</li>
-            <li>Session cookies to maintain your session while navigating our site</li>
-            <li>Load balancing cookies to ensure website stability</li>
-            <li>Preference cookies to remember your settings and choices</li>
-          </ul>
-          <p>These cookies cannot be disabled as they are essential for the website's operation.</p>
-
-          <h3 id="performance-cookies">3.2 Performance and Analytics Cookies</h3>
-          <p>These cookies help us understand how visitors interact with our website by collecting anonymous information:</p>
-          <ul>
-            <li>Page views and visitor counts</li>
-            <li>Time spent on pages</li>
-            <li>Bounce rates and exit pages</li>
-            <li>Browser and device information</li>
-            <li>Traffic sources and referral URLs</li>
-          </ul>
-          <p>We use this information to improve our website's performance and user experience.</p>
-
-          <h3 id="functional-cookies">3.3 Functional Cookies</h3>
-          <p>These cookies enable enhanced functionality and personalization:</p>
-          <ul>
-            <li>Remembering your preferences and settings</li>
-            <li>Storing your language and region preferences</li>
-            <li>Remembering your login status</li>
-            <li>Customizing content based on your interests</li>
-          </ul>
-
-          <h3 id="marketing-cookies">3.4 Marketing and Advertising Cookies</h3>
-          <p>These cookies are used to deliver relevant advertisements and measure their effectiveness:</p>
-          <ul>
-            <li>Tracking your browsing behavior across websites</li>
-            <li>Building a profile of your interests</li>
-            <li>Delivering targeted advertisements</li>
-            <li>Measuring advertising campaign performance</li>
-            <li>Limiting the number of times you see an advertisement</li>
-          </ul>
-
-          <h2 id="third-party-cookies">4. Third-Party Cookies</h2>
-          <p>We may use third-party services that place their own cookies on your device:</p>
-
-          <h3 id="analytics-services">4.1 Analytics Services</h3>
-          <ul>
-            <li><strong>Google Analytics:</strong> Helps us understand website usage and performance</li>
-            <li><strong>Hotjar:</strong> Provides heatmaps and user behavior insights</li>
-            <li><strong>Microsoft Clarity:</strong> Offers session recordings and analytics</li>
-          </ul>
-
-          <h3 id="social-media">4.2 Social Media</h3>
-          <ul>
-            <li><strong>LinkedIn:</strong> For professional networking integration</li>
-            <li><strong>Twitter:</strong> For social media sharing functionality</li>
-            <li><strong>GitHub:</strong> For development portfolio integration</li>
-          </ul>
-
-          <h3 id="communication-tools">4.3 Communication Tools</h3>
-          <ul>
-            <li><strong>Email service providers:</strong> For newsletter and communication management</li>
-            <li><strong>Customer support platforms:</strong> For chat and support functionality</li>
-          </ul>
-
-          <h3 id="payment-processors">4.4 Payment Processors</h3>
-          <ul>
-            <li><strong>Stripe:</strong> For secure payment processing</li>
-            <li><strong>PayPal:</strong> For alternative payment options</li>
-            <li><strong>Cryptocurrency payment processors:</strong> For digital currency transactions</li>
-          </ul>
-
-          <h2 id="cookie-consent">5. Cookie Consent and Management</h2>
-
-          <h3 id="consent">5.1 Your Consent</h3>
+          <h3 id="interpretation">Interpretation</h3>
           <p>
-            By continuing to use our website, you consent to our use of cookies as described in this policy.
-            For non-essential cookies, we will ask for your explicit consent before placing them on your device.
+            The words whose initial letters are capitalized have meanings defined under the following conditions. The following definitions shall have the same meaning regardless of whether they appear in singular or in plural.
           </p>
 
-          <h3 id="managing-cookies">5.2 Managing Cookies</h3>
-          <p>You have several options for managing cookies:</p>
-
-          <h4>Browser Settings</h4>
-          <p>Most web browsers allow you to control cookies through their settings:</p>
+          <h3 id="definitions">Definitions</h3>
+          <p>For the purposes of this Cookies Policy:</p>
           <ul>
-            <li>Block all cookies</li>
-            <li>Block third-party cookies only</li>
-            <li>Delete existing cookies</li>
-            <li>Receive notifications when cookies are set</li>
+            <li><strong>Company</strong> (referred to as either "the Company", "We", "Us" or "Our" in this Cookies Policy) refers to Kamisoft Enterprises, Lagos, Nigeria.</li>
+            <li><strong>Cookies</strong> means small files that are placed on Your computer, mobile device or any other device by a website, containing details of your browsing history on that website among its many uses.</li>
+            <li><strong>Website</strong> refers to Kamisoft Enterprises, accessible from <a href="https://www.kamisoftenterprises.online" className="text-primary hover:underline">https://www.kamisoftenterprises.online</a></li>
+            <li><strong>You</strong> means the individual accessing or using the Website, or a company, or any legal entity on behalf of which such individual is accessing or using the Website, as applicable.</li>
           </ul>
 
-          <h4>Opt-Out Tools</h4>
-          <p>You can opt out of specific tracking and advertising cookies using these tools:</p>
-          <ul>
-            <li>Google Analytics Opt-out: <a href="https://tools.google.com/dlpage/gaoptout" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">Google Analytics Opt-out Browser Add-on</a></li>
-            <li>Network Advertising Initiative: <a href="http://www.networkadvertising.org/choices/" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">NAI Opt-out</a></li>
-            <li>Digital Advertising Alliance: <a href="http://www.aboutads.info/choices/" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">DAA Opt-out</a></li>
-          </ul>
+          <h2 id="use-of-cookies">The Use of the Cookies</h2>
 
-          <h2 id="browser-instructions">6. Browser-Specific Instructions</h2>
-
-          <h3 id="chrome">6.1 Google Chrome</h3>
-          <p>Settings → Privacy and Security → Cookies and other site data</p>
-
-          <h3 id="firefox">6.2 Mozilla Firefox</h3>
-          <p>Settings → Privacy & Security → Enhanced Tracking Protection</p>
-
-          <h3 id="safari">6.3 Safari</h3>
-          <p>Preferences → Privacy → Manage Website Data</p>
-
-          <h3 id="edge">6.4 Microsoft Edge</h3>
-          <p>Settings → Site permissions → Cookies and site data</p>
-
-          <h2 id="mobile-devices">7. Mobile Devices</h2>
-
-          <h3 id="ios">7.1 iOS (iPhone/iPad)</h3>
-          <p>Settings → Safari → Privacy & Security</p>
-
-          <h3 id="android">7.2 Android</h3>
-          <p>Chrome app → Settings → Site settings → Cookies</p>
-
-          <h2 id="consequences">8. Consequences of Disabling Cookies</h2>
-          <p>If you choose to disable cookies, some features of our website may not function properly:</p>
-          <ul>
-            <li>You may need to re-enter information more frequently</li>
-            <li>Some personalization features may not work</li>
-            <li>Website performance may be affected</li>
-            <li>You may see less relevant content and advertisements</li>
-            <li>Some interactive features may not function</li>
-          </ul>
-
-          <h2 id="updates-to-policy">9. Updates to This Cookie Policy</h2>
+          <h3 id="type-of-cookies">Type of Cookies We Use</h3>
           <p>
-            We may update this Cookie Policy from time to time to reflect changes in technology,
-            legislation, or our cookie practices. We will notify you of any material changes by:
+            Cookies can be "Persistent" or "Session" Cookies. Persistent Cookies remain on your personal computer or mobile device when You go offline, while Session Cookies are deleted as soon as You close your web browser.
           </p>
+          <p>
+            We use both session and persistent Cookies for the purposes set out below:
+          </p>
+
+          <h4 id="necessary-cookies">Necessary / Essential Cookies</h4>
+          <p><strong>Type:</strong> Session Cookies</p>
+          <p><strong>Administered by:</strong> Us</p>
+          <p>
+            <strong>Purpose:</strong> These Cookies are essential to provide You with services available through the Website and to enable You to use some of its features. They help to authenticate users and prevent fraudulent use of user accounts. Without these Cookies, the services that You have asked for cannot be provided, and We only use these Cookies to provide You with those services.
+          </p>
+
+          <h4 id="functionality-cookies">Functionality Cookies</h4>
+          <p><strong>Type:</strong> Persistent Cookies</p>
+          <p><strong>Administered by:</strong> Us</p>
+          <p>
+            <strong>Purpose:</strong> These Cookies allow us to remember choices You make when You use the Website, such as remembering your login details or language preference. The purpose of these Cookies is to provide You with a more personal experience and to avoid You having to re-enter your preferences every time You use the Website.
+          </p>
+
+          <h2 id="your-choices">Your Choices Regarding Cookies</h2>
+          <p>
+            If You prefer to avoid the use of Cookies on the Website, first You must disable the use of Cookies in your browser and then delete the Cookies saved in your browser associated with this website. You may use this option for preventing the use of Cookies at any time.
+          </p>
+          <p>
+            If You do not accept Our Cookies, You may experience some inconvenience in your use of the Website and some features may not function properly.
+          </p>
+          <p>
+            If You'd like to delete Cookies or instruct your web browser to delete or refuse Cookies, please visit the help pages of your web browser.
+          </p>
+
+          <h3 id="browser-instructions">Browser-Specific Instructions</h3>
           <ul>
-            <li>Posting an updated policy on our website</li>
-            <li>Displaying a prominent notice about the changes</li>
-            <li>Sending email notifications to registered users</li>
+            <li>
+              <strong>Chrome web browser:</strong> Please visit this page from Google: <a href="https://support.google.com/accounts/answer/32050" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">https://support.google.com/accounts/answer/32050</a>
+            </li>
+            <li>
+              <strong>Internet Explorer web browser:</strong> Please visit this page from Microsoft: <a href="http://support.microsoft.com/kb/278835" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">http://support.microsoft.com/kb/278835</a>
+            </li>
+            <li>
+              <strong>Firefox web browser:</strong> Please visit this page from Mozilla: <a href="https://support.mozilla.org/en-US/kb/delete-cookies-remove-info-websites-stored" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">https://support.mozilla.org/en-US/kb/delete-cookies-remove-info-websites-stored</a>
+            </li>
+            <li>
+              <strong>Safari web browser:</strong> Please visit this page from Apple: <a href="https://support.apple.com/guide/safari/manage-cookies-and-website-data-sfri11471/mac" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">https://support.apple.com/guide/safari/manage-cookies-and-website-data-sfri11471/mac</a>
+            </li>
+            <li>
+              <strong>For any other web browser:</strong> Please visit your web browser's official web pages.
+            </li>
           </ul>
 
-          <h2 id="data-protection-rights">10. Your Data Protection Rights</h2>
-          <p>Under applicable data protection laws, you have the right to:</p>
+          <h2 id="more-information">More Information about Cookies</h2>
+          <p>
+            You can learn more about cookies: <a href="https://www.freeprivacypolicy.com/blog/cookies/" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">Cookies: What Do They Do?</a>
+          </p>
+
+          <h2 id="contact-us">Contact Us</h2>
+          <p>If you have any questions about this Cookies Policy, You can contact us:</p>
           <ul>
-            <li>Access information about the cookies we use</li>
-            <li>Request deletion of cookie data</li>
-            <li>Object to certain types of cookie processing</li>
-            <li>Withdraw consent for non-essential cookies</li>
-            <li>Receive information about data transfers to third countries</li>
+            <li>By email: <a href="mailto:support@kamisoftenterprises.online" className="text-primary hover:underline">support@kamisoftenterprises.online</a></li>
+            <li>By visiting this page on our website: <a href="https://www.kamisoftenterprises.online/contact" className="text-primary hover:underline">https://www.kamisoftenterprises.online/contact</a></li>
           </ul>
-
-          <h2 id="international-transfers">11. International Transfers</h2>
-          <p>
-            Some of our third-party service providers may transfer cookie data to countries outside
-            Nigeria. We ensure that such transfers comply with applicable data protection laws and
-            include appropriate safeguards to protect your information.
-          </p>
-
-          <h2 id="contact-information">12. Contact Information</h2>
-          <p>
-            If you have questions about this Cookie Policy or our use of cookies, please contact us:
-          </p>
-          <div className="bg-muted/50 p-4 rounded-lg">
-            <p><strong>Kamisoft Enterprises</strong></p>
-            <p>Email: <a href="mailto:support@kamisoftenterprises.online" className="text-primary hover:underline">support@kamisoftenterprises.online</a></p>
-            <p>General Contact: <a href="mailto:support@kamisoftenterprises.online" className="text-primary hover:underline">support@kamisoftenterprises.online</a></p>
-            <p>Address: Lagos, Nigeria</p>
-          </div>
-
-          <h2 id="effective-date">13. Effective Date</h2>
-          <p>
-            This Cookie Policy is effective as of December 15, 2024, and was last updated on
-            December 15, 2024.
-          </p>
         </LegalDocumentLayout>
       </div>
     </div>
