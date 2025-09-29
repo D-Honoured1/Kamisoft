@@ -120,11 +120,11 @@ This email was sent from the Kamisoft Enterprises contact form on ${new Date().t
     `
 
     return this.sendEmail({
-      to: process.env.FROM_EMAIL || 'admin@kamisoftenterprises.online',
+      to: process.env.FROM_EMAIL || 'support@kamisoftenterprises.online',
       subject: `Contact Form: ${data.subject}`,
       text: textContent,
       html: htmlContent,
-      cc: ['info@kamisoftenterprises.online'] // Optional: CC to info email
+      cc: ['support@kamisoftenterprises.online'] // Optional: CC to support email
     })
   }
 
@@ -153,7 +153,7 @@ This email was sent from the Kamisoft Enterprises contact form on ${new Date().t
           <p>In the meantime, feel free to explore our services and solutions on our website. If you have any urgent inquiries, you can also reach us directly at:</p>
 
           <div style="background-color: #f0f8ff; padding: 15px; border-radius: 5px;">
-            <p style="margin: 0;"><strong>Email:</strong> info@kamisoftenterprises.online</p>
+            <p style="margin: 0;"><strong>Email:</strong> support@kamisoftenterprises.online</p>
             <p style="margin: 5px 0 0 0;"><strong>Website:</strong> https://www.kamisoftenterprises.online</p>
           </div>
 
@@ -185,7 +185,7 @@ Submitted on: ${new Date().toLocaleDateString()}
 
 In the meantime, feel free to explore our services and solutions on our website. If you have any urgent inquiries, you can also reach us directly at:
 
-Email: info@kamisoftenterprises.online
+Email: support@kamisoftenterprises.online
 Website: https://www.kamisoftenterprises.online
 
 Thank you for choosing Kamisoft Enterprises!

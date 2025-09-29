@@ -53,7 +53,7 @@ export default function LegalPage() {
             <h2 className="text-2xl font-semibold">Kamisoft Enterprises</h2>
             <p className="text-muted-foreground">A subsidiary of Amor Group</p>
             <p className="text-sm text-muted-foreground">
-              Lagos, Nigeria • Contact: hello@kamisoftenterprises.online
+              Lagos, Nigeria • Contact: support@kamisoftenterprises.online
             </p>
             <div className="flex items-center justify-center gap-2 mt-4">
               <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -122,10 +122,10 @@ export default function LegalPage() {
                 If you have any questions about these documents or our practices,
                 please don't hesitate to contact us at{" "}
                 <Link
-                  href="mailto:hello@kamisoftenterprises.online"
+                  href="mailto:support@kamisoftenterprises.online"
                   className="text-primary hover:underline"
                 >
-                  hello@kamisoftenterprises.online
+                  support@kamisoftenterprises.online
                 </Link>
               </p>
             </div>

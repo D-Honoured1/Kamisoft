@@ -242,8 +242,8 @@ export default function TermsOfServicePage() {
           </p>
           <div className="bg-muted/50 p-4 rounded-lg">
             <p><strong>Kamisoft Enterprises</strong></p>
-            <p>Email: <a href="mailto:legal@kamisoftenterprises.online" className="text-primary hover:underline">legal@kamisoftenterprises.online</a></p>
-            <p>General Contact: <a href="mailto:hello@kamisoftenterprises.online" className="text-primary hover:underline">hello@kamisoftenterprises.online</a></p>
+            <p>Email: <a href="mailto:support@kamisoftenterprises.online" className="text-primary hover:underline">support@kamisoftenterprises.online</a></p>
+            <p>General Contact: <a href="mailto:support@kamisoftenterprises.online" className="text-primary hover:underline">support@kamisoftenterprises.online</a></p>
             <p>Address: Lagos, Nigeria</p>
           </div>
 

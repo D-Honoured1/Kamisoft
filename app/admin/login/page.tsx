@@ -132,7 +132,7 @@ export default function AdminLogin() {
                   autoComplete="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="admin@kamisoftenterprises.online"
+                  placeholder="support@kamisoftenterprises.online"
                   required
                   disabled={isLoading}
                 />

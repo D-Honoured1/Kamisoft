@@ -139,7 +139,7 @@ export function LegalDocumentLayout({
             <h2 className="text-xl font-semibold">Kamisoft Enterprises</h2>
             <p className="text-muted-foreground">A subsidiary of Amor Group</p>
             <p className="text-sm text-muted-foreground">
-              Lagos, Nigeria • Contact: hello@kamisoftenterprises.online
+              Lagos, Nigeria • Contact: support@kamisoftenterprises.online
             </p>
           </div>
         </CardContent>
@@ -156,8 +156,8 @@ export function LegalDocumentLayout({
           <div className="text-center text-sm text-muted-foreground space-y-2">
             <p>
               If you have any questions about this document, please contact us at{" "}
-              <Link href="mailto:hello@kamisoftenterprises.online" className="text-primary hover:underline">
-                hello@kamisoftenterprises.online
+              <Link href="mailto:support@kamisoftenterprises.online" className="text-primary hover:underline">
+                support@kamisoftenterprises.online
               </Link>
             </p>
             <p>© {new Date().getFullYear()} Kamisoft Enterprises. All rights reserved.</p>

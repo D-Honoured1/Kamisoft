@@ -119,7 +119,7 @@ export const COMPANY_INFO = {
   parentCompany: "Amor Group",
 
   contact: {
-    email: "hello@kamisoftenterprises.online",
+    email: "support@kamisoftenterprises.online",
     phone: "+2348036392157",
     address: "Lagos, Nigeria",
   },
