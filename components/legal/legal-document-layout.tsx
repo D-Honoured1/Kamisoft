@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Calendar, FileText, Download, Print } from "lucide-react"
 import Link from "next/link"
+import { useEffect } from "react"
 
 interface LegalDocumentLayoutProps {
   title: string
@@ -30,10 +31,61 @@ export function LegalDocumentLayout({
     window.print()
   }
 
+  // Add print styles dynamically on client side only
+  useEffect(() => {
+    const printStyles = `
+      @media print {
+        body {
+          font-size: 12pt !important;
+          line-height: 1.4 !important;
+        }
+
+        .no-print {
+          display: none !important;
+        }
+
+        .print\\:shadow-none {
+          box-shadow: none !important;
+        }
+
+        .print\\:border-0 {
+          border: none !important;
+        }
+
+        h1, h2, h3 {
+          break-after: avoid;
+          page-break-after: avoid;
+        }
+
+        .prose h2 {
+          margin-top: 2rem !important;
+          margin-bottom: 1rem !important;
+        }
+
+        .prose p {
+          margin-bottom: 1rem !important;
+        }
+
+        .prose ul, .prose ol {
+          margin-bottom: 1rem !important;
+        }
+      }
+    `
+
+    const styleElement = document.createElement('style')
+    styleElement.textContent = printStyles
+    document.head.appendChild(styleElement)
+
+    // Cleanup function
+    return () => {
+      document.head.removeChild(styleElement)
+    }
+  }, [])
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       {/* Header with Navigation */}
-      <div className="flex items-center gap-4 mb-8">
+      <div className="flex items-center gap-4 mb-8 no-print">
         <Button variant="outline" size="sm" asChild>
           <Link href="/legal">
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -115,45 +167,3 @@ export function LegalDocumentLayout({
     </div>
   )
 }
-
-// Print styles for better document printing
-export const LegalPrintStyles = () => (
-  <style jsx global>{`
-    @media print {
-      body {
-        font-size: 12pt;
-        line-height: 1.4;
-      }
-
-      .no-print {
-        display: none !important;
-      }
-
-      .print\\:shadow-none {
-        box-shadow: none !important;
-      }
-
-      .print\\:border-0 {
-        border: none !important;
-      }
-
-      h1, h2, h3 {
-        break-after: avoid;
-        page-break-after: avoid;
-      }
-
-      .prose h2 {
-        margin-top: 2rem;
-        margin-bottom: 1rem;
-      }
-
-      .prose p {
-        margin-bottom: 1rem;
-      }
-
-      .prose ul, .prose ol {
-        margin-bottom: 1rem;
-      }
-    }
-  `}</style>
-)
