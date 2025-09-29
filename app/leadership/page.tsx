@@ -1,46 +1,41 @@
+import { createServerClient } from "@/lib/supabase/server"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
 import { Mail, Linkedin, Twitter } from "lucide-react"
 import Link from "next/link"
 
-export default function LeadershipPage() {
-  // This would normally come from the database
-  const leadershipTeam = [
-    {
-      id: "1",
-      name: "Daniel Austen",
-      position: "Chief Executive Officer",
-      bio: "Visionary leader with over 10 years of experience in technology and business development. Founded Kamisoft Enterprises in 2015 with a mission to deliver cutting-edge software solutions across Africa and beyond.",
-      email: "support@kamisoftenterprises.online",
-      linkedin_url: "https://linkedin.com/in/daniel-austen",
-      twitter_url: "https://twitter.com/daniel_austen",
-      profile_image_url: "/professional-ceo-portrait.png",
-      display_order: 1,
-    },
-    {
-      id: "2",
-      name: "Sarah Johnson",
-      position: "Chief Operating Officer",
-      bio: "Operations expert with extensive experience in scaling technology companies. Ensures smooth delivery of all client projects and manages our growing team of developers.",
-      email: "support@kamisoftenterprises.online",
-      linkedin_url: "https://linkedin.com/in/sarah-johnson",
-      twitter_url: "https://twitter.com/sarah_johnson",
-      profile_image_url: "/professional-coo-portrait.png",
-      display_order: 2,
-    },
-    {
-      id: "3",
-      name: "Michael Chen",
-      position: "Chief Technology Officer",
-      bio: "Technical architect with deep expertise in full-stack development, blockchain, and AI. Leads our technical strategy and ensures we stay at the forefront of technology trends.",
-      email: "support@kamisoftenterprises.online",
-      linkedin_url: "https://linkedin.com/in/michael-chen",
-      twitter_url: "https://twitter.com/michael_chen",
-      profile_image_url: "/professional-cto-portrait.png",
-      display_order: 3,
-    },
-  ]
+export default async function LeadershipPage() {
+  const supabase = createServerClient()
+
+  // Fetch leadership team from database
+  const { data: leadershipTeam, error } = await supabase
+    .from("leadership_team")
+    .select("*")
+    .eq("is_active", true)
+    .order("display_order", { ascending: true })
+
+  if (error) {
+    console.error("Error fetching leadership team:", error)
+  }
+
+  // Separate executive team (C-level positions) from regular team
+  const executiveTeam = leadershipTeam?.filter(member =>
+    member.position.toLowerCase().includes('chief') ||
+    member.position.toLowerCase().includes('ceo') ||
+    member.position.toLowerCase().includes('coo') ||
+    member.position.toLowerCase().includes('cto') ||
+    member.position.toLowerCase().includes('cfo')
+  ) || []
+
+  const regularTeam = leadershipTeam?.filter(member =>
+    !member.position.toLowerCase().includes('chief') &&
+    !member.position.toLowerCase().includes('ceo') &&
+    !member.position.toLowerCase().includes('coo') &&
+    !member.position.toLowerCase().includes('cto') &&
+    !member.position.toLowerCase().includes('cfo')
+  ) || []
 
   const departments = [
     {
@@ -86,60 +81,139 @@ export default function LeadershipPage() {
         </div>
       </section>
 
-      {/* Leadership Team */}
-      <section className="py-20">
-        <div className="container">
-          <div className="text-center space-y-4 mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold">Executive Team</h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              The visionaries leading Kamisoft Enterprises to new heights
-            </p>
+      {/* Executive Team Carousel */}
+      {executiveTeam.length > 0 && (
+        <section className="py-20">
+          <div className="container">
+            <div className="text-center space-y-4 mb-16">
+              <h2 className="text-3xl lg:text-4xl font-bold">Executive Team</h2>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                The visionaries leading Kamisoft Enterprises to new heights
+              </p>
+            </div>
+
+            <Carousel className="w-full max-w-6xl mx-auto">
+              <CarouselContent className="-ml-2 md:-ml-4">
+                {executiveTeam.map((leader) => (
+                  <CarouselItem key={leader.id} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
+                    <Card className="group hover:shadow-lg transition-all duration-300 border-0 bg-card/50 text-center h-full">
+                      <CardHeader className="pb-4">
+                        <div className="mx-auto w-32 h-32 rounded-full overflow-hidden mb-6 bg-muted/50">
+                          <img
+                            src={leader.profile_image_url || "/placeholder.svg"}
+                            alt={leader.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                        <CardTitle className="text-xl">{leader.name}</CardTitle>
+                        <CardDescription className="text-primary font-medium">{leader.position}</CardDescription>
+                      </CardHeader>
+
+                      <CardContent className="space-y-6">
+                        <p className="text-sm text-muted-foreground leading-relaxed line-clamp-4">{leader.bio}</p>
+
+                        <div className="flex justify-center space-x-4">
+                          {leader.email && (
+                            <Button size="sm" variant="outline" asChild>
+                              <Link href={`mailto:${leader.email}`}>
+                                <Mail className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                          )}
+                          {leader.linkedin_url && (
+                            <Button size="sm" variant="outline" asChild>
+                              <Link href={leader.linkedin_url} target="_blank" rel="noopener noreferrer">
+                                <Linkedin className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                          )}
+                          {leader.twitter_url && (
+                            <Button size="sm" variant="outline" asChild>
+                              <Link href={leader.twitter_url} target="_blank" rel="noopener noreferrer">
+                                <Twitter className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious />
+              <CarouselNext />
+            </Carousel>
           </div>
+        </section>
+      )}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {leadershipTeam.map((leader) => (
-              <Card
-                key={leader.id}
-                className="group hover:shadow-lg transition-all duration-300 border-0 bg-card/50 text-center"
-              >
-                <CardHeader className="pb-4">
-                  <div className="mx-auto w-32 h-32 rounded-full overflow-hidden mb-6 bg-muted/50">
-                    <img
-                      src={leader.profile_image_url || "/placeholder.svg"}
-                      alt={leader.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                  <CardTitle className="text-xl">{leader.name}</CardTitle>
-                  <CardDescription className="text-primary font-medium">{leader.position}</CardDescription>
-                </CardHeader>
+      {/* Team Members Carousel */}
+      {regularTeam.length > 0 && (
+        <section className="py-20 bg-muted/30">
+          <div className="container">
+            <div className="text-center space-y-4 mb-16">
+              <h2 className="text-3xl lg:text-4xl font-bold">Our Team</h2>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                Meet the talented professionals who make it all happen
+              </p>
+            </div>
 
-                <CardContent className="space-y-6">
-                  <p className="text-sm text-muted-foreground leading-relaxed">{leader.bio}</p>
+            <Carousel className="w-full max-w-6xl mx-auto">
+              <CarouselContent className="-ml-2 md:-ml-4">
+                {regularTeam.map((member) => (
+                  <CarouselItem key={member.id} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
+                    <Card className="group hover:shadow-lg transition-all duration-300 border-0 bg-background/50 text-center h-full">
+                      <CardHeader className="pb-4">
+                        <div className="mx-auto w-24 h-24 rounded-full overflow-hidden mb-4 bg-muted/50">
+                          <img
+                            src={member.profile_image_url || "/placeholder.svg"}
+                            alt={member.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                        <CardTitle className="text-lg">{member.name}</CardTitle>
+                        <CardDescription className="text-primary font-medium text-sm">{member.position}</CardDescription>
+                      </CardHeader>
 
-                  <div className="flex justify-center space-x-4">
-                    <Button size="sm" variant="outline" asChild>
-                      <Link href={`mailto:${leader.email}`}>
-                        <Mail className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                    <Button size="sm" variant="outline" asChild>
-                      <Link href={leader.linkedin_url} target="_blank" rel="noopener noreferrer">
-                        <Linkedin className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                    <Button size="sm" variant="outline" asChild>
-                      <Link href={leader.twitter_url} target="_blank" rel="noopener noreferrer">
-                        <Twitter className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                      <CardContent className="space-y-4">
+                        {member.bio && (
+                          <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">{member.bio}</p>
+                        )}
+
+                        <div className="flex justify-center space-x-3">
+                          {member.email && (
+                            <Button size="sm" variant="outline" asChild>
+                              <Link href={`mailto:${member.email}`}>
+                                <Mail className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                          )}
+                          {member.linkedin_url && (
+                            <Button size="sm" variant="outline" asChild>
+                              <Link href={member.linkedin_url} target="_blank" rel="noopener noreferrer">
+                                <Linkedin className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                          )}
+                          {member.twitter_url && (
+                            <Button size="sm" variant="outline" asChild>
+                              <Link href={member.twitter_url} target="_blank" rel="noopener noreferrer">
+                                <Twitter className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious />
+              <CarouselNext />
+            </Carousel>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Team Structure */}
       <section className="py-20 bg-muted/30">

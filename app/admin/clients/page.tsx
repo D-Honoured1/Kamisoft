@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Mail, Phone, FileText, Search, Filter, Users, MessageSquare } from "lucide-react"
+import { Mail, Phone, FileText, Search, Filter, Users, MessageSquare, Archive, Trash2 } from "lucide-react"
+import { DeleteClientDialog } from "@/components/admin/delete-client-dialog"
+import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
 
 interface Client {
@@ -41,6 +43,16 @@ export default function ClientsManagement() {
   const [searchTerm, setSearchTerm] = useState("")
   const [filterType, setFilterType] = useState("all") // all, service_only, contact_only
   const [sortBy, setSortBy] = useState("newest") // newest, oldest, name
+  const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean
+    client: Client | null
+    isLoading: boolean
+  }>({
+    isOpen: false,
+    client: null,
+    isLoading: false
+  })
+  const { toast } = useToast()
 
   useEffect(() => {
     fetchClients()
@@ -133,10 +145,56 @@ export default function ClientsManagement() {
     }
   }
 
+  const handleDeleteClient = (client: Client) => {
+    setDeleteDialog({
+      isOpen: true,
+      client,
+      isLoading: false
+    })
+  }
+
+  const handleDeleteConfirm = async (reason: string) => {
+    if (!deleteDialog.client) return
+
+    setDeleteDialog(prev => ({ ...prev, isLoading: true }))
+
+    try {
+      const response = await fetch(`/api/admin/clients/${deleteDialog.client.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to archive client')
+      }
+
+      toast({
+        title: "Client Archived",
+        description: `${deleteDialog.client.name} has been successfully archived.`
+      })
+
+      // Remove client from list
+      setClients(prev => prev.filter(c => c.id !== deleteDialog.client?.id))
+      setDeleteDialog({ isOpen: false, client: null, isLoading: false })
+
+    } catch (error: any) {
+      toast({
+        title: "Archive Failed",
+        description: error.message || "Failed to archive client",
+        variant: "destructive"
+      })
+    } finally {
+      setDeleteDialog(prev => ({ ...prev, isLoading: false }))
+    }
+  }
+
   const getClientDetailUrl = (client: Client) => {
     const hasServiceRequests = client.service_requests?.length > 0
     const hasContactInquiries = client.contact_inquiries?.length > 0
-    
+
     if (hasServiceRequests) {
       // Redirect to latest service request
       const latestRequest = client.service_requests[0]
@@ -344,9 +402,19 @@ export default function ClientsManagement() {
                     </div>
                   </div>
 
-                  <Button size="sm" variant="outline" className="w-full" asChild>
-                    <Link href={detailUrl}>View Details</Link>
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" className="flex-1" asChild>
+                      <Link href={detailUrl}>View Details</Link>
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDeleteClient(client)}
+                      className="px-3 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                    >
+                      <Archive className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             )
@@ -378,6 +446,14 @@ export default function ClientsManagement() {
           </CardContent>
         </Card>
       )}
+
+      <DeleteClientDialog
+        isOpen={deleteDialog.isOpen}
+        onClose={() => setDeleteDialog({ isOpen: false, client: null, isLoading: false })}
+        onConfirm={handleDeleteConfirm}
+        clientName={deleteDialog.client?.name || ""}
+        isLoading={deleteDialog.isLoading}
+      />
     </div>
   )
 }
