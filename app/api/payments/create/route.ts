@@ -392,9 +392,9 @@ async function createBankTransferInstructions(
     const ngnAmount = Math.round(usdAmount * exchangeRate)
 
     const instructions = {
-      bankName: "First Bank of Nigeria",
-      accountNumber: "3050505050", 
-      accountName: "Kamisoft Enterprises Limited",
+      bankName: "Kuda Bank (Primary) or Moniepoint (Alternative)",
+      accountNumber: "3002495746 (Kuda) | 6417130337 (Moniepoint)",
+      accountName: "Kamisoft Enterprises",
       usdAmount: usdAmount,
       ngnAmount: ngnAmount,
       exchangeRate: exchangeRate,
@@ -402,8 +402,10 @@ async function createBankTransferInstructions(
       instructions: [
         `Transfer ₦${ngnAmount.toLocaleString()} NGN (equivalent to $${usdAmount} USD)`,
         `Exchange rate: 1 USD = ₦${exchangeRate}`,
-        "Use the reference number in your transfer description", 
-        `Send proof of payment to ${process.env.FROM_EMAIL}`,
+        "PRIMARY: Kuda Bank - 3002495746 - Kamisoft Enterprises",
+        "ALTERNATIVE: Moniepoint - 6417130337 - Kamisoft Enterprises",
+        "Use the reference number in your transfer description",
+        `Send proof of payment to support@kamisoftenterprises.online`,
         "Payment will be verified within 24 hours"
       ]
     }
