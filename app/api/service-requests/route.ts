@@ -1,8 +1,9 @@
-// app/api/service-requests/route.ts - FIXED VERSION
+// app/api/service-requests/route.ts - FIXED VERSION WITH EMAIL NOTIFICATIONS
 export const dynamic = "force-dynamic"
 
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { emailService } from "@/lib/email"
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -159,6 +160,44 @@ export async function POST(req: Request) {
       }
 
       console.log("Service request created successfully:", request.id)
+
+      // Step 3: Send email notifications
+      try {
+        // Send notification to admin
+        const adminEmailResult = await emailService.sendServiceRequestNotification({
+          name,
+          email,
+          phone,
+          company,
+          service_category,
+          request_type: request_type || "digital",
+          title,
+          description,
+          preferred_date,
+          site_address
+        })
+
+        // Send confirmation to user
+        const confirmationEmailResult = await emailService.sendServiceRequestConfirmation({
+          name,
+          email,
+          phone,
+          company,
+          service_category,
+          request_type: request_type || "digital",
+          title,
+          description,
+          preferred_date,
+          site_address
+        })
+
+        console.log('Admin email result:', adminEmailResult)
+        console.log('Confirmation email result:', confirmationEmailResult)
+
+      } catch (emailError: any) {
+        console.error('Email sending failed:', emailError)
+        // Don't fail the entire request if email fails
+      }
 
       return NextResponse.json({
         success: true,

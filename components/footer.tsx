@@ -1,5 +1,6 @@
 import Link from "next/link"
-import { Shield, Mail, Phone, MapPin, Linkedin, Twitter, Github } from "lucide-react"
+import Image from "next/image"
+import { Mail, Phone, MapPin, Linkedin, Twitter, Github } from "lucide-react"
 import { COMPANY_INFO } from "@/lib/constants/services"
 
 export function Footer() {
@@ -11,7 +12,7 @@ export function Footer() {
           {/* Company Info - Takes full width on mobile */}
           <div className="col-span-2 md:col-span-1 space-y-4">
             <div className="flex items-center space-x-2">
-              <Shield className="h-6 w-6 text-primary" />
+              <Image src="/logo.svg" alt="Kamisoft Logo" width={24} height={24} className="h-6 w-6" />
               <span className="text-lg font-bold">Kamisoft Enterprises</span>
             </div>
             <p className="text-sm text-muted-foreground">{COMPANY_INFO.description}</p>
