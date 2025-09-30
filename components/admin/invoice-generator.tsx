@@ -43,6 +43,9 @@ export function InvoiceGenerator({
     setIsGenerating(true)
 
     try {
+      console.log('[INVOICE UI] Starting invoice generation...')
+      console.log('[INVOICE UI] Request params:', { requestId, paymentId, autoSend })
+
       const response = await fetch('/api/invoices/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -53,12 +56,20 @@ export function InvoiceGenerator({
         })
       })
 
+      console.log('[INVOICE UI] Response status:', response.status)
       const data = await response.json()
+      console.log('[INVOICE UI] Response data:', data)
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to generate invoice')
+        const errorMessage = data.details || data.error || 'Failed to generate invoice'
+        console.error('[INVOICE UI] Generation failed:', errorMessage)
+        if (data.stack) {
+          console.error('[INVOICE UI] Server error stack:', data.stack)
+        }
+        throw new Error(errorMessage)
       }
 
+      console.log('[INVOICE UI] Invoice generated successfully!')
       toast({
         title: "Invoice Generated!",
         description: (
@@ -70,12 +81,15 @@ export function InvoiceGenerator({
       })
 
       // Refresh the page to show new invoice
-      window.location.reload()
+      setTimeout(() => {
+        window.location.reload()
+      }, 1500)
 
     } catch (error: any) {
+      console.error('[INVOICE UI] Error:', error)
       toast({
         title: "Generation Failed",
-        description: error.message || "Failed to generate invoice",
+        description: error.message || error.toString() || "Failed to generate invoice",
         variant: "destructive"
       })
     } finally {
