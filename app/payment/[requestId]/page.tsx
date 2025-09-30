@@ -230,7 +230,9 @@ export default function PaymentPage() {
       const discountPercent = serviceRequest.admin_discount_percent || DEFAULT_DISCOUNT_PERCENT
 
       // Calculate existing payments
-      const existingPayments = serviceRequest.payments?.filter(p => p.payment_status === 'completed') || []
+      const existingPayments = serviceRequest.payments?.filter(p =>
+        p.payment_status === 'completed' || p.payment_status === 'confirmed'
+      ) || []
       const totalPaid = existingPayments.reduce((sum, payment) => sum + payment.amount, 0)
       const remainingBalance = cost - totalPaid
 
@@ -368,7 +370,9 @@ export default function PaymentPage() {
   const discountPercent = serviceRequest.admin_discount_percent || DEFAULT_DISCOUNT_PERCENT
 
   // Calculate existing payments
-  const existingPayments = serviceRequest.payments?.filter(p => p.payment_status === 'completed') || []
+  const existingPayments = serviceRequest.payments?.filter(p =>
+    p.payment_status === 'completed' || p.payment_status === 'confirmed'
+  ) || []
   const totalPaid = existingPayments.reduce((sum, payment) => sum + payment.amount, 0)
   const remainingBalance = totalCost - totalPaid
   const hasPartialPayment = totalPaid > 0 && remainingBalance > 0

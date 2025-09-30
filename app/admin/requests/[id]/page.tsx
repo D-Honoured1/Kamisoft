@@ -277,7 +277,9 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
 
           {/* Remaining Balance Link Generator */}
           {(() => {
-            const completedPayments = payments.filter((p: any) => p.payment_status === 'completed')
+            const completedPayments = payments.filter((p: any) =>
+              p.payment_status === 'completed' || p.payment_status === 'confirmed'
+            )
             const totalPaid = completedPayments.reduce((sum: number, p: any) => sum + p.amount, 0)
             const estimatedCost = request.estimated_cost || 0
             const remainingBalance = estimatedCost - totalPaid
@@ -362,7 +364,9 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
 
                 {/* Payment Summary */}
                 {hasPayments && (() => {
-                  const completedPayments = payments.filter((p: any) => p.payment_status === 'completed')
+                  const completedPayments = payments.filter((p: any) =>
+                    p.payment_status === 'completed' || p.payment_status === 'confirmed'
+                  )
                   const totalPaid = completedPayments.reduce((sum: number, p: any) => sum + p.amount, 0)
                   const estimatedCost = request.estimated_cost || 0
                   const remainingBalance = estimatedCost - totalPaid
