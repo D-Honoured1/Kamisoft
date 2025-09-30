@@ -43,7 +43,7 @@ SET
     END,
     updated_at = NOW()
 WHERE
-    payment_method IN ('bank_transfer', 'cash', 'cheque')
+    payment_method = 'bank_transfer'
     AND (manual_entry IS NULL OR manual_entry = FALSE)
     AND (metadata::text LIKE '%manualEntry%' OR admin_notes IS NOT NULL);
 
