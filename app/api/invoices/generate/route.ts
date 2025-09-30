@@ -7,7 +7,20 @@ import React from 'react'
 import InvoiceService from "@/lib/invoice"
 import { InvoicePDF } from "@/lib/invoice/invoice-pdf-template"
 import { createServerClient } from "@/lib/supabase/server"
+import { createClient } from "@supabase/supabase-js"
 import { emailService } from "@/lib/email"
+
+// Create admin client with service role for database operations
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+)
 
 export async function POST(request: NextRequest) {
   try {
@@ -76,12 +89,11 @@ export async function POST(request: NextRequest) {
       throw new Error(`PDF generation failed: ${pdfError.message}`)
     }
 
-    // Upload PDF to Supabase Storage
+    // Upload PDF to Supabase Storage (using admin client for permissions)
     console.log('[INVOICE] Uploading PDF to storage...')
-    const supabase = createServerClient()
     const fileName = `invoices/${invoiceNumber}.pdf`
 
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
       .from('documents')
       .upload(fileName, pdfBuffer, {
         contentType: 'application/pdf',
@@ -99,7 +111,7 @@ export async function POST(request: NextRequest) {
     // Get public URL for the PDF
     let pdfUrl: string | undefined
     if (uploadData) {
-      const { data: { publicUrl } } = supabase.storage
+      const { data: { publicUrl } } = supabaseAdmin.storage
         .from('documents')
         .getPublicUrl(fileName)
 
@@ -107,24 +119,51 @@ export async function POST(request: NextRequest) {
       console.log('[INVOICE] PDF public URL:', pdfUrl)
     }
 
-    // Create invoice record in database
+    // Create invoice record in database (using admin client)
     console.log('[INVOICE] Creating invoice record in database...')
-    const invoice = await InvoiceService.createInvoice(invoiceData, pdfUrl)
+    const invoiceRecord = {
+      request_id: invoiceData.requestId,
+      payment_id: invoiceData.paymentId,
+      invoice_number: invoiceNumber,
+      subtotal: invoiceData.subtotal,
+      tax_amount: invoiceData.taxAmount,
+      total_amount: invoiceData.totalAmount,
+      status: 'draft' as const,
+      due_date: invoiceData.dueDate?.toISOString().split('T')[0],
+      pdf_url: pdfUrl
+    }
 
-    if (!invoice) {
+    console.log('[INVOICE] Invoice record to insert:', {
+      invoice_number: invoiceRecord.invoice_number,
+      request_id: invoiceRecord.request_id,
+      total_amount: invoiceRecord.total_amount
+    })
+
+    const { data: invoice, error: invoiceError } = await supabaseAdmin
+      .from('invoices')
+      .insert(invoiceRecord)
+      .select('id, invoice_number, pdf_url, status')
+      .single()
+
+    if (invoiceError || !invoice) {
       console.error('[INVOICE] Failed to create invoice record in database')
+      console.error('[INVOICE] Error:', invoiceError)
+      console.error('[INVOICE] Error details:', JSON.stringify(invoiceError))
       return NextResponse.json(
-        { error: "Failed to create invoice record" },
+        { error: "Failed to create invoice record", details: invoiceError?.message },
         { status: 500 }
       )
     }
 
-    console.log('[INVOICE] Invoice record created:', invoice.id, invoice.invoiceNumber)
+    console.log('[INVOICE] Invoice record created:', invoice.id, invoice.invoice_number)
 
     // Optionally update invoice status to 'sent' and send email
     if (autoSend) {
       console.log('[INVOICE] Auto-send enabled, updating status to sent...')
-      await InvoiceService.updateInvoiceStatus(invoice.id, 'sent')
+      await supabaseAdmin
+        .from('invoices')
+        .update({ status: 'sent' })
+        .eq('id', invoice.id)
       console.log('[INVOICE] Invoice status updated to sent')
 
       // Send invoice email with PDF attachment
