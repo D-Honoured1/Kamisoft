@@ -400,8 +400,7 @@ async function createBankTransferInstructions(
       exchangeRate: exchangeRate,
       reference: `KE_BANK_${paymentId.slice(0, 8)}`,
       instructions: [
-        `Transfer ₦${ngnAmount.toLocaleString()} NGN (equivalent to $${usdAmount} USD)`,
-        `Exchange rate: 1 USD = ₦${exchangeRate}`,
+        `Transfer ₦${ngnAmount.toLocaleString()} NGN`,
         "PRIMARY: Kuda Bank - 3002495746 - Kamisoft Enterprises",
         "ALTERNATIVE: Moniepoint - 6417130337 - Kamisoft Enterprises",
         "Use the reference number in your transfer description",

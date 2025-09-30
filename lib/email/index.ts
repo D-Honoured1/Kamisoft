@@ -80,12 +80,37 @@ class EmailService {
 
   async sendEmail(options: EmailOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
-      if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
+      // Detailed configuration check with specific error messages
+      if (!process.env.SMTP_HOST) {
+        console.error('SMTP_HOST environment variable not set')
         return {
           success: false,
-          error: 'Email configuration not set up properly'
+          error: 'SMTP_HOST not configured'
         }
       }
+      if (!process.env.SMTP_USER) {
+        console.error('SMTP_USER environment variable not set')
+        return {
+          success: false,
+          error: 'SMTP_USER not configured'
+        }
+      }
+      if (!process.env.SMTP_PASSWORD) {
+        console.error('SMTP_PASSWORD environment variable not set')
+        return {
+          success: false,
+          error: 'SMTP_PASSWORD not configured'
+        }
+      }
+
+      console.log('Sending email to:', options.to)
+      console.log('Email subject:', options.subject)
+      console.log('SMTP Config:', {
+        host: process.env.SMTP_HOST,
+        port: process.env.SMTP_PORT,
+        user: process.env.SMTP_USER,
+        from: process.env.FROM_EMAIL
+      })
 
       const info = await this.transporter.sendMail({
         from: process.env.FROM_EMAIL,
@@ -98,12 +123,19 @@ class EmailService {
         attachments: options.attachments,
       })
 
+      console.log('Email sent successfully. Message ID:', info.messageId)
       return {
         success: true,
         messageId: info.messageId
       }
     } catch (error: any) {
-      console.error('Email sending failed:', error)
+      console.error('❌ Email sending failed:', {
+        error: error.message,
+        code: error.code,
+        command: error.command,
+        to: options.to,
+        subject: options.subject
+      })
       return {
         success: false,
         error: error.message || 'Failed to send email'
