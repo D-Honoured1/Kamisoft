@@ -903,8 +903,8 @@ export default function PaymentPage() {
                           <div className="space-y-3">
                             <div>
                               <Label className="text-xs text-muted-foreground">Amount</Label>
-                              <div className="font-semibold">${bankDetails.amount.toFixed(2)} USD</div>
-                              <div className="text-sm text-muted-foreground">≈ ₦{bankDetails.ngnAmount}</div>
+                              <div className="font-semibold">${bankDetails.usdAmount?.toFixed(2) || '0.00'} USD</div>
+                              <div className="text-sm text-muted-foreground">≈ ₦{bankDetails.ngnAmount?.toLocaleString() || '0'}</div>
                             </div>
                             <div>
                               <Label className="text-xs text-muted-foreground">Reference</Label>

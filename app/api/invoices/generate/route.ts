@@ -7,6 +7,7 @@ import React from 'react'
 import InvoiceService from "@/lib/invoice"
 import { InvoicePDF } from "@/lib/invoice/invoice-pdf-template"
 import { createServerClient } from "@/lib/supabase/server"
+import { emailService } from "@/lib/email"
 
 export async function POST(request: NextRequest) {
   try {
@@ -93,8 +94,22 @@ export async function POST(request: NextRequest) {
     if (autoSend) {
       await InvoiceService.updateInvoiceStatus(invoice.id, 'sent')
 
-      // TODO: Send email with invoice attachment
-      // await sendInvoiceEmail(invoiceData.clientEmail, invoice, pdfBuffer)
+      // Send invoice email with PDF attachment
+      try {
+        await emailService.sendInvoiceEmail({
+          clientName: invoiceData.clientName,
+          clientEmail: invoiceData.clientEmail,
+          invoiceNumber: invoiceNumber,
+          invoiceDate: invoiceDate,
+          totalAmount: invoiceData.totalAmount,
+          pdfBuffer: pdfBuffer,
+          serviceTitle: invoiceData.serviceTitle
+        })
+        console.log('Invoice email sent to:', invoiceData.clientEmail)
+      } catch (emailError: any) {
+        console.error('Failed to send invoice email:', emailError)
+        // Don't fail the entire request if email fails
+      }
     }
 
     return NextResponse.json({

@@ -99,10 +99,51 @@ export function PaymentLinkGenerator({
     }
   }
 
+  const [isSendingEmail, setIsSendingEmail] = useState(false)
+  const [emailSuccess, setEmailSuccess] = useState(false)
+
   const sendEmailNotification = async () => {
+    if (!clientEmail || !clientName) {
+      setError("Client email and name are required")
+      return
+    }
+
+    setIsSendingEmail(true)
+    setError("")
+    setEmailSuccess(false)
+
     try {
-      alert("Payment link sent to client email (demo)")
-    } catch (error) {
+      const response = await fetch('/api/payment-link/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requestId,
+          clientName,
+          clientEmail,
+          paymentLink,
+          projectCost: cost,
+          splitAmount: splitPaymentAmount,
+          fullPaymentAmount,
+          discountPercent,
+          discountAmount,
+          linkExpiry,
+          serviceTitle: "Project Payment" // You can pass actual service title if available
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send email')
+      }
+
+      setEmailSuccess(true)
+      setTimeout(() => setEmailSuccess(false), 5000) // Clear success message after 5 seconds
+
+    } catch (error: any) {
+      setError(error.message || 'Failed to send email')
+    } finally {
+      setIsSendingEmail(false)
     }
   }
 
@@ -283,12 +324,26 @@ export function PaymentLinkGenerator({
                   </a>
                 </Button>
                 
-                <Button size="sm" onClick={sendEmailNotification} className="flex-1">
+                <Button
+                  size="sm"
+                  onClick={sendEmailNotification}
+                  className="flex-1"
+                  disabled={isSendingEmail || !clientEmail}
+                >
                   <Mail className="mr-2 h-3 w-3" />
-                  Email to Client
+                  {isSendingEmail ? "Sending..." : emailSuccess ? "Sent!" : "Email to Client"}
                 </Button>
               </div>
             </div>
+
+            {emailSuccess && (
+              <Alert className="bg-green-50 dark:bg-green-950/20 border-green-200">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-green-800 dark:text-green-200">
+                  Payment link email sent successfully to {clientEmail}!
+                </AlertDescription>
+              </Alert>
+            )}
 
             <Alert>
               <CheckCircle className="h-4 w-4" />
