@@ -31,7 +31,10 @@ export async function DELETE(req: Request, { params }: RouteParams) {
     }
 
     const { id: paymentId } = params
-    console.log(`🗑️ Admin ${adminUser.email} attempting to delete payment ${paymentId}`)
+    const { searchParams } = new URL(req.url)
+    const permanent = searchParams.get('permanent') === 'true'
+
+    console.log(`🗑️ Admin ${adminUser.email} attempting to ${permanent ? 'permanently delete' : 'soft delete'} payment ${paymentId}`)
 
     // First, get the payment details
     const { data: payment, error: paymentError } = await supabaseAdmin
@@ -76,28 +79,63 @@ export async function DELETE(req: Request, { params }: RouteParams) {
       reference: payment.paystack_reference
     })
 
-    // Soft delete: Update payment status to 'deleted' instead of actually deleting
-    // This maintains audit trail while removing it from active views
-    const { error: deleteError } = await supabaseAdmin
-      .from("payments")
-      .update({
-        payment_status: "deleted",
-        deleted_at: new Date().toISOString(),
-        deleted_by: adminUser.email,
-        admin_notes: `Payment deleted by admin ${adminUser.email} on ${new Date().toISOString()}. Original status: ${payment.payment_status}`,
-        updated_at: new Date().toISOString()
-      })
-      .eq("id", paymentId)
+    if (permanent) {
+      // PERMANENT DELETE: Remove from database completely
+      // This is only for failed/cancelled/deleted payments that need to be purged
 
-    if (deleteError) {
-      console.error("❌ Error soft-deleting payment:", deleteError)
-      return NextResponse.json({
-        error: "Failed to delete payment",
-        details: deleteError.message
-      }, { status: 500 })
+      // Step 1: Delete audit log entries first (foreign key constraint)
+      const { error: auditDeleteError } = await supabaseAdmin
+        .from("payment_audit_log")
+        .delete()
+        .eq("payment_id", paymentId)
+
+      if (auditDeleteError) {
+        console.error("❌ Error deleting payment audit records:", auditDeleteError)
+        // Continue anyway - table might not exist or be empty
+      } else {
+        console.log(`🗑️ Deleted audit records for payment ${paymentId}`)
+      }
+
+      // Step 2: Physically delete the payment record
+      const { error: deleteError } = await supabaseAdmin
+        .from("payments")
+        .delete()
+        .eq("id", paymentId)
+
+      if (deleteError) {
+        console.error("❌ Error permanently deleting payment:", deleteError)
+        return NextResponse.json({
+          error: "Failed to permanently delete payment",
+          details: deleteError.message
+        }, { status: 500 })
+      }
+
+      console.log(`✅ Payment PERMANENTLY deleted: ${paymentId}`)
+
+    } else {
+      // SOFT DELETE: Update payment status to 'deleted' instead of actually deleting
+      // This maintains audit trail while removing it from active views
+      const { error: deleteError } = await supabaseAdmin
+        .from("payments")
+        .update({
+          payment_status: "deleted",
+          deleted_at: new Date().toISOString(),
+          deleted_by: adminUser.email,
+          admin_notes: `Payment deleted by admin ${adminUser.email} on ${new Date().toISOString()}. Original status: ${payment.payment_status}`,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", paymentId)
+
+      if (deleteError) {
+        console.error("❌ Error soft-deleting payment:", deleteError)
+        return NextResponse.json({
+          error: "Failed to delete payment",
+          details: deleteError.message
+        }, { status: 500 })
+      }
+
+      console.log(`✅ Payment soft-deleted successfully: ${paymentId}`)
     }
-
-    console.log(`✅ Payment soft-deleted successfully: ${paymentId}`)
 
     // Log the deletion for audit purposes
     try {
@@ -146,10 +184,11 @@ export async function DELETE(req: Request, { params }: RouteParams) {
 
     return NextResponse.json({
       success: true,
-      message: "Payment deleted successfully",
+      message: permanent ? "Payment permanently deleted" : "Payment deleted successfully",
       data: {
         payment_id: paymentId,
         original_status: payment.payment_status,
+        deletion_type: permanent ? "permanent" : "soft",
         deleted_at: new Date().toISOString(),
         deleted_by: adminUser.email
       }

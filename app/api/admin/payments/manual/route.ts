@@ -118,7 +118,12 @@ export async function POST(request: NextRequest) {
         admin_notes: notes,
         metadata: JSON.stringify(metadata),
         created_at: paymentDate + "T00:00:00Z", // Use the specified payment date
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        // Manual payment tracking columns
+        manual_entry: true,
+        admin_verified: adminVerified,
+        payment_source: 'manual',
+        verification_date: adminVerified ? new Date().toISOString() : null
       })
       .select()
       .single()

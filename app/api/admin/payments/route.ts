@@ -31,10 +31,20 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "request_id parameter required" }, { status: 400 })
     }
 
-    const { data: payments, error } = await supabaseAdmin
+    // Check if we should include deleted payments
+    const includeDeleted = searchParams.get('include_deleted') === 'true'
+
+    let query = supabaseAdmin
       .from("payments")
       .select("*")
       .eq("request_id", requestId)
+
+    // Filter out soft-deleted payments unless specifically requested
+    if (!includeDeleted) {
+      query = query.neq('payment_status', 'deleted')
+    }
+
+    const { data: payments, error } = await query
       .order("created_at", { ascending: false })
 
     if (error) {
