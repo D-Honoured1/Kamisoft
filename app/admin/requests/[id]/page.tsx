@@ -54,7 +54,7 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
     }
   }
 
-  // Get payments separately
+  // Get payments separately (including deleted for cleanup, but hidden from main list)
   let payments = []
   const { data: paymentsData, error: paymentsError} = await supabase
     .from("payments")
@@ -68,6 +68,7 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
       crypto_confirmations
     `)
     .eq("request_id", request.id)
+    // Don't filter deleted here - we need them for the cleanup section
 
   if (!paymentsError && paymentsData) {
     payments = paymentsData
@@ -400,8 +401,8 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
 
                 {hasPayments && (
                   <div>
-                    <p className="font-medium text-foreground mb-2">Payments ({payments.length})</p>
-                    {payments.map((payment: any, index: number) => {
+                    <p className="font-medium text-foreground mb-2">Payments ({payments.filter((p: any) => p.payment_status !== 'deleted').length})</p>
+                    {payments.filter((payment: any) => payment.payment_status !== 'deleted').map((payment: any, index: number) => {
                       const isPartialPayment = payment.is_partial_payment || payment.payment_type === 'split'
                       const paymentSequence = payment.payment_sequence || (index + 1)
 
@@ -589,17 +590,19 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
             )
           })()}
 
-          {/* Failed/Cancelled Payments Management */}
+          {/* Failed/Cancelled/Deleted Payments Management */}
           {(() => {
+            // Note: We filter out deleted payments in the main query, but if you want to show them:
+            // Remove the .neq("payment_status", "deleted") filter above
             const failedPayments = payments.filter((payment: any) =>
-              ['failed', 'cancelled', 'pending'].includes(payment.payment_status)
+              ['failed', 'cancelled', 'pending', 'deleted'].includes(payment.payment_status)
             )
             return failedPayments.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Failed/Cancelled Payments</CardTitle>
+                  <CardTitle>Failed/Cancelled/Deleted Payments</CardTitle>
                   <CardDescription>
-                    Manage and clean up failed or cancelled payment attempts
+                    Permanently delete failed, cancelled, or soft-deleted payment records
                   </CardDescription>
                 </CardHeader>
                 <CardContent>

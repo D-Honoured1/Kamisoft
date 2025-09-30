@@ -67,7 +67,6 @@ export class InvoiceService {
    * Create invoice data from service request
    */
   static async prepareInvoiceData(requestId: string, paymentId?: string): Promise<InvoiceData | null> {
-    console.log('[InvoiceService] Preparing invoice data for requestId:', requestId)
     const supabase = createServerClient()
 
     // Fetch service request with client details
@@ -87,16 +86,9 @@ export class InvoiceService {
       .single()
 
     if (error || !request) {
-      console.error('[InvoiceService] Error fetching service request:', error)
-      console.error('[InvoiceService] Request ID:', requestId)
+      console.error('Error fetching service request:', error)
       return null
     }
-
-    console.log('[InvoiceService] Service request fetched:', {
-      id: request.id,
-      title: request.title,
-      client: (request as any).clients?.name
-    })
 
     const client = (request as any).clients
     const finalCost = request.final_cost || request.estimated_cost || 0
@@ -150,7 +142,6 @@ export class InvoiceService {
     invoiceData: InvoiceData,
     pdfUrl?: string
   ): Promise<GeneratedInvoice | null> {
-    console.log('[InvoiceService] Creating invoice in database...')
     const supabase = createServerClient()
     const invoiceNumber = await this.generateInvoiceNumber()
 
@@ -166,12 +157,6 @@ export class InvoiceService {
       pdf_url: pdfUrl
     }
 
-    console.log('[InvoiceService] Invoice record to insert:', {
-      invoice_number: invoiceRecord.invoice_number,
-      request_id: invoiceRecord.request_id,
-      total_amount: invoiceRecord.total_amount
-    })
-
     const { data, error } = await supabase
       .from('invoices')
       .insert(invoiceRecord)
@@ -179,12 +164,10 @@ export class InvoiceService {
       .single()
 
     if (error) {
-      console.error('[InvoiceService] Error creating invoice:', error)
-      console.error('[InvoiceService] Error details:', JSON.stringify(error))
+      console.error('Error creating invoice:', error)
       return null
     }
 
-    console.log('[InvoiceService] Invoice created successfully:', data.id)
     return data as GeneratedInvoice
   }
 
