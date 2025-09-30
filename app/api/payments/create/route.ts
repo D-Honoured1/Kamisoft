@@ -364,6 +364,21 @@ async function createBankTransferInstructions(
   correlationId: string
 ) {
   try {
+    const supabase = createServerClient()
+
+    // Get payment and service request details for email
+    const { data: payment } = await supabase
+      .from('payments')
+      .select(`
+        *,
+        service_requests (
+          *,
+          clients (*)
+        )
+      `)
+      .eq('id', paymentId)
+      .single()
+
     // Get current exchange rate for bank transfer from environment-configured source
     const fallbackRate = parseFloat(process.env.EXCHANGE_RATE_FALLBACK_USD_TO_NGN || '1550')
     let exchangeRate = fallbackRate
@@ -390,6 +405,7 @@ async function createBankTransferInstructions(
     }
 
     const ngnAmount = Math.round(usdAmount * exchangeRate)
+    const reference = `KE_BANK_${paymentId.slice(0, 8)}`
 
     const instructions = {
       bankName: "Kuda Bank (Primary) or Moniepoint (Alternative)",
@@ -398,7 +414,7 @@ async function createBankTransferInstructions(
       usdAmount: usdAmount,
       ngnAmount: ngnAmount,
       exchangeRate: exchangeRate,
-      reference: `KE_BANK_${paymentId.slice(0, 8)}`,
+      reference: reference,
       instructions: [
         `Transfer ₦${ngnAmount.toLocaleString()} NGN`,
         "PRIMARY: Kuda Bank - 3002495746 - Kamisoft Enterprises",
@@ -409,13 +425,39 @@ async function createBankTransferInstructions(
       ]
     }
 
+    // Send bank transfer email to client
+    if (payment && payment.service_requests && payment.service_requests.clients) {
+      try {
+        const { emailService } = await import('@/lib/email')
+
+        await emailService.sendBankTransferEmail({
+          clientName: payment.service_requests.clients.name,
+          clientEmail: payment.service_requests.clients.email,
+          bankName: "Kuda Bank (Primary) or Moniepoint (Alternative)",
+          accountNumber: "3002495746 (Kuda) | 6417130337 (Moniepoint)",
+          accountName: "Kamisoft Enterprises",
+          usdAmount: usdAmount,
+          ngnAmount: ngnAmount,
+          exchangeRate: exchangeRate,
+          reference: reference,
+          serviceTitle: payment.service_requests.title
+        })
+
+        console.log('Bank transfer email sent to:', payment.service_requests.clients.email)
+      } catch (emailError: any) {
+        console.error('Failed to send bank transfer email:', emailError)
+        // Don't fail the entire request if email fails
+      }
+    }
+
     return {
       bankDetails: instructions,
-      message: "Bank transfer instructions generated",
+      message: "Bank transfer instructions generated and emailed",
       ngnAmount: ngnAmount,
       exchangeRate: exchangeRate
     }
   } catch (error: any) {
+    console.error('Error in createBankTransferInstructions:', error)
     throw new Error("Failed to generate bank transfer instructions")
   }
 }

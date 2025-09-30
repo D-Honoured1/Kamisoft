@@ -393,7 +393,7 @@ async function sendPaymentConfirmationEmail(paystackData: any) {
     `
 
     // Send email using nodemailer (via email service)
-    const emailService = require('@/lib/email').default
+    const { emailService } = await import('@/lib/email')
 
     const emailOptions: any = {
       to: payment.service_requests.clients.email,

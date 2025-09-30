@@ -119,7 +119,10 @@ export async function POST(request: NextRequest) {
         invoiceNumber: invoice.invoiceNumber,
         pdfUrl: invoice.pdfUrl,
         status: autoSend ? 'sent' : invoice.status,
-        totalAmount: invoiceData.totalAmount
+        totalAmount: invoiceData.totalAmount,
+        invoice_number: invoice.invoiceNumber, // Also provide snake_case for compatibility
+        total_amount: invoiceData.totalAmount,
+        pdf_url: invoice.pdfUrl
       },
       message: autoSend
         ? "Invoice generated and sent successfully"

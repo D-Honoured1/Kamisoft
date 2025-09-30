@@ -60,6 +60,19 @@ export interface InvoiceEmailData {
   serviceTitle?: string
 }
 
+export interface BankTransferEmailData {
+  clientName: string
+  clientEmail: string
+  bankName: string
+  accountNumber: string
+  accountName: string
+  usdAmount: number
+  ngnAmount: number
+  exchangeRate: number
+  reference: string
+  serviceTitle?: string
+}
+
 class EmailService {
   private transporter: nodemailer.Transporter
 
@@ -708,6 +721,156 @@ Lagos, Nigeria
         content: data.pdfBuffer,
         contentType: 'application/pdf'
       }]
+    })
+  }
+
+  async sendBankTransferEmail(data: BankTransferEmailData): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="text-align: center; padding: 30px 20px; background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); color: white; border-radius: 8px 8px 0 0;">
+          <h1 style="margin: 0; font-size: 28px;">Bank Transfer Details</h1>
+          <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Kamisoft Enterprises</p>
+        </div>
+
+        <div style="padding: 30px 20px; background: #f9fafb;">
+          <p style="font-size: 16px; color: #333; margin: 0 0 20px 0;">Dear ${data.clientName},</p>
+
+          <p style="font-size: 15px; color: #555; line-height: 1.6;">
+            Thank you for choosing Kamisoft Enterprises! Below are the bank transfer details for your payment.
+            ${data.serviceTitle ? `This payment is for: <strong>${data.serviceTitle}</strong>` : ''}
+          </p>
+
+          <div style="background: white; padding: 25px; border-radius: 8px; margin: 25px 0; border: 2px solid #2563eb;">
+            <h3 style="color: #1e40af; margin-top: 0; font-size: 18px;">Bank Transfer Information:</h3>
+            <div style="background: #f0f9ff; padding: 20px; border-radius: 6px;">
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Bank Name:</strong></td>
+                  <td style="padding: 8px 0; color: #1e40af; font-weight: 600; font-size: 14px; text-align: right;">${data.bankName}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Account Name:</strong></td>
+                  <td style="padding: 8px 0; color: #1e40af; font-weight: 600; font-size: 14px; text-align: right;">${data.accountName}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Account Number:</strong></td>
+                  <td style="padding: 8px 0; color: #1e40af; font-weight: 600; font-family: monospace; font-size: 16px; text-align: right;">${data.accountNumber}</td>
+                </tr>
+                <tr>
+                  <td colspan="2" style="padding: 16px 0 8px 0; border-top: 2px solid #e5e7eb;"></td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Amount (USD):</strong></td>
+                  <td style="padding: 8px 0; color: #059669; font-weight: 700; font-size: 18px; text-align: right;">$${data.usdAmount.toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Amount (NGN):</strong></td>
+                  <td style="padding: 8px 0; color: #059669; font-weight: 700; font-size: 18px; text-align: right;">₦${data.ngnAmount.toLocaleString()}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666; font-size: 14px;"><strong>Reference:</strong></td>
+                  <td style="padding: 8px 0; color: #1e40af; font-weight: 600; font-family: monospace; font-size: 14px; text-align: right;">${data.reference}</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+
+          <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 6px; margin: 20px 0;">
+            <p style="margin: 0; color: #856404; font-size: 14px;">
+              <strong>⏰ Important Payment Instructions:</strong>
+            </p>
+            <ul style="margin: 10px 0; padding-left: 20px; color: #856404; font-size: 13px;">
+              <li>Transfer exactly <strong>₦${data.ngnAmount.toLocaleString()}</strong> to the account above</li>
+              <li>Include the reference number <strong>${data.reference}</strong> in your transfer narration/description</li>
+              <li>Send proof of payment (screenshot or receipt) to <a href="mailto:support@kamisoftenterprises.online" style="color: #2563eb;">support@kamisoftenterprises.online</a></li>
+              <li>Payment will be verified within 24 hours of receipt</li>
+              <li>You will receive a confirmation email once payment is verified</li>
+            </ul>
+          </div>
+
+          <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h4 style="color: #1e40af; margin-top: 0;">Exchange Rate Information:</h4>
+            <p style="color: #555; margin: 5px 0; font-size: 14px;">
+              Current rate: <strong>$1 = ₦${data.exchangeRate.toLocaleString()}</strong>
+            </p>
+            <p style="color: #666; margin: 5px 0; font-size: 12px;">
+              Exchange rate is updated hourly and may vary. The amount shown is based on the current rate at the time of payment request.
+            </p>
+          </div>
+
+          <div style="background: #f0f8ff; padding: 15px; border-radius: 6px; margin: 20px 0;">
+            <p style="margin: 0 0 10px 0; color: #333; font-weight: bold;">Need Help?</p>
+            <p style="margin: 0; color: #555; font-size: 14px;">
+              📧 Email: <a href="mailto:support@kamisoftenterprises.online" style="color: #2563eb;">support@kamisoftenterprises.online</a><br>
+              📱 Phone: +234 803 639 2157<br>
+              🌐 Website: <a href="https://www.kamisoftenterprises.online" style="color: #2563eb;">www.kamisoftenterprises.online</a>
+            </p>
+          </div>
+
+          <p style="font-size: 14px; color: #666; margin-top: 30px;">
+            Best regards,<br>
+            <strong>The Kamisoft Enterprises Team</strong>
+          </p>
+        </div>
+
+        <div style="background: #1f2937; color: #9ca3af; text-align: center; padding: 20px; border-radius: 0 0 8px 8px;">
+          <p style="margin: 0; font-size: 13px;">
+            © ${new Date().getFullYear()} Kamisoft Enterprises. All rights reserved.
+          </p>
+          <p style="margin: 8px 0 0 0; font-size: 12px;">
+            Lagos, Nigeria
+          </p>
+        </div>
+      </div>
+    `
+
+    const textContent = `
+Bank Transfer Details - Kamisoft Enterprises
+
+Dear ${data.clientName},
+
+Thank you for choosing Kamisoft Enterprises! Below are the bank transfer details for your payment.
+${data.serviceTitle ? `This payment is for: ${data.serviceTitle}` : ''}
+
+BANK TRANSFER INFORMATION:
+Bank Name: ${data.bankName}
+Account Name: ${data.accountName}
+Account Number: ${data.accountNumber}
+
+PAYMENT AMOUNT:
+USD: $${data.usdAmount.toFixed(2)}
+NGN: ₦${data.ngnAmount.toLocaleString()}
+
+REFERENCE: ${data.reference}
+
+IMPORTANT PAYMENT INSTRUCTIONS:
+• Transfer exactly ₦${data.ngnAmount.toLocaleString()} to the account above
+• Include the reference number ${data.reference} in your transfer narration/description
+• Send proof of payment (screenshot or receipt) to support@kamisoftenterprises.online
+• Payment will be verified within 24 hours of receipt
+• You will receive a confirmation email once payment is verified
+
+EXCHANGE RATE INFORMATION:
+Current rate: $1 = ₦${data.exchangeRate.toLocaleString()}
+Exchange rate is updated hourly and may vary. The amount shown is based on the current rate at the time of payment request.
+
+NEED HELP?
+📧 Email: support@kamisoftenterprises.online
+📱 Phone: +234 803 639 2157
+🌐 Website: www.kamisoftenterprises.online
+
+Best regards,
+The Kamisoft Enterprises Team
+
+© ${new Date().getFullYear()} Kamisoft Enterprises. All rights reserved.
+Lagos, Nigeria
+    `
+
+    return this.sendEmail({
+      to: data.clientEmail,
+      subject: `Bank Transfer Details - Kamisoft Enterprises${data.serviceTitle ? ` | ${data.serviceTitle}` : ''}`,
+      text: textContent,
+      html: htmlContent
     })
   }
 
