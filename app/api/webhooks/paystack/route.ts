@@ -149,8 +149,14 @@ async function handleChargeSuccess(data: any, webhookEventId: string) {
     if (data.metadata?.requestId) {
       try {
         await updateServiceRequestStatus(data.metadata.requestId, data.metadata?.paymentType)
+
+        // Auto-generate invoice for this payment
+        await generateInvoiceForPayment(paymentId, data.metadata.requestId)
+
+        // Send confirmation email with invoice
         await sendPaymentConfirmationEmail(data)
       } catch (notificationError: any) {
+        console.error('Notification/invoice error:', notificationError)
       }
     }
 
@@ -241,6 +247,55 @@ async function updateServiceRequestStatus(requestId: string, paymentType?: strin
   }
 }
 
+async function generateInvoiceForPayment(paymentId: string, requestId: string) {
+  try {
+    // Check if invoice already exists for this payment
+    const { data: existingInvoice } = await supabaseAdmin
+      .from('invoices')
+      .select('id')
+      .eq('payment_id', paymentId)
+      .single()
+
+    if (existingInvoice) {
+      console.log('Invoice already exists for payment:', paymentId)
+      return existingInvoice
+    }
+
+    // Generate invoice via internal API
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    const response = await fetch(`${baseUrl}/api/invoices/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        requestId,
+        paymentId,
+        autoSend: false // Don't send email yet, we'll attach it ourselves
+      })
+    })
+
+    if (!response.ok) {
+      console.error('Failed to generate invoice:', await response.text())
+      return null
+    }
+
+    const result = await response.json()
+    console.log('Invoice generated:', result.invoice?.invoiceNumber)
+
+    // Mark invoice as sent since we're sending it via email
+    if (result.invoice?.id) {
+      await supabaseAdmin
+        .from('invoices')
+        .update({ status: 'sent' })
+        .eq('id', result.invoice.id)
+    }
+
+    return result.invoice
+  } catch (error) {
+    console.error('Error generating invoice:', error)
+    return null
+  }
+}
+
 async function sendPaymentConfirmationEmail(paystackData: any) {
   try {
     // Get payment and service request details
@@ -261,27 +316,112 @@ async function sendPaymentConfirmationEmail(paystackData: any) {
 
     if (!payment) return
 
-    const emailData = {
+    // Get invoice for this payment (if generated)
+    const { data: invoice } = await supabaseAdmin
+      .from('invoices')
+      .select('*')
+      .eq('payment_id', paymentId)
+      .single()
+
+    // Prepare email content
+    const clientName = payment.service_requests.clients.name
+    const serviceTitle = payment.service_requests.title
+    const amountPaid = `${paystackData.currency === 'NGN' ? '₦' : '$'}${(paystackData.amount / 100).toLocaleString()}`
+    const paymentType = paystackData.metadata?.paymentType === 'split' ? '50% Upfront Payment' : 'Full Payment'
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+    .info-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2563eb; }
+    .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
+    .button { background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 10px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Payment Confirmed! ✓</h1>
+      <p>Kamisoft Enterprises</p>
+    </div>
+    <div class="content">
+      <p>Dear ${clientName},</p>
+      <p>Thank you! Your payment has been successfully received and confirmed.</p>
+
+      <div class="info-box">
+        <h3>Payment Details:</h3>
+        <p><strong>Service:</strong> ${serviceTitle}</p>
+        <p><strong>Amount Paid:</strong> ${amountPaid}</p>
+        <p><strong>Payment Type:</strong> ${paymentType}</p>
+        <p><strong>Reference:</strong> ${paystackData.reference}</p>
+        <p><strong>Payment Method:</strong> ${paystackData.channel}</p>
+        <p><strong>Transaction Date:</strong> ${new Date(paystackData.paid_at).toLocaleString('en-NG')}</p>
+      </div>
+
+      ${invoice ? `
+      <div class="info-box">
+        <h3>Invoice Details:</h3>
+        <p><strong>Invoice Number:</strong> ${invoice.invoice_number}</p>
+        <p><strong>Total Amount:</strong> $${invoice.total_amount.toLocaleString()}</p>
+        <p>Your invoice is attached to this email for your records.</p>
+      </div>
+      ` : ''}
+
+      <p><strong>What's Next?</strong></p>
+      <p>${paystackData.metadata?.paymentType === 'full'
+        ? 'Your project is now fully paid! Our team will begin work immediately and keep you updated on progress.'
+        : 'Thank you for the upfront payment! Our team will begin work shortly. The remaining balance will be due upon completion.'
+      }</p>
+
+      <p>If you have any questions, please don't hesitate to contact us.</p>
+
+      <p>Best regards,<br>Kamisoft Enterprises Team</p>
+    </div>
+    <div class="footer">
+      <p>Kamisoft Enterprises | Lagos, Nigeria</p>
+      <p>Email: support@kamisoftenterprises.online | Phone: +234 803 639 2157</p>
+      <p>Website: www.kamisoftenterprises.online</p>
+    </div>
+  </div>
+</body>
+</html>
+    `
+
+    // Send email using nodemailer (via email service)
+    const emailService = require('@/lib/email').default
+
+    const emailOptions: any = {
       to: payment.service_requests.clients.email,
-      subject: `Payment Confirmed - ${payment.service_requests.title}`,
-      template: 'payment-confirmation-nigeria',
-      data: {
-        clientName: payment.service_requests.clients.name,
-        serviceTitle: payment.service_requests.title,
-        amountPaid: `${paystackData.currency === 'NGN' ? '₦' : '$'}${(paystackData.amount / 100).toLocaleString()}`,
-        paymentReference: paystackData.reference,
-        paymentMethod: paystackData.channel,
-        paymentType: paystackData.metadata?.paymentType === 'split' ? '50% Upfront Payment' : 'Full Payment',
-        transactionDate: new Date(paystackData.paid_at).toLocaleString('en-NG'),
-        projectStatus: paystackData.metadata?.paymentType === 'full' ? 'Fully Paid - Work will begin immediately' : 'Upfront payment received - Work will begin shortly',
-        supportEmail: process.env.FROM_EMAIL
+      subject: `Payment Confirmed - ${serviceTitle} | Kamisoft Enterprises`,
+      html: htmlContent,
+      text: `Payment Confirmed!\n\nDear ${clientName},\n\nYour payment of ${amountPaid} for ${serviceTitle} has been confirmed.\n\nReference: ${paystackData.reference}\n${invoice ? `Invoice: ${invoice.invoice_number}\n` : ''}\n\nThank you for your business!\n\nKamisoft Enterprises\nsupport@kamisoftenterprises.online`
+    }
+
+    // Attach invoice PDF if available
+    if (invoice?.pdf_url) {
+      try {
+        const pdfResponse = await fetch(invoice.pdf_url)
+        const pdfBuffer = await pdfResponse.arrayBuffer()
+
+        emailOptions.attachments = [{
+          filename: `${invoice.invoice_number}.pdf`,
+          content: Buffer.from(pdfBuffer)
+        }]
+      } catch (pdfError) {
+        console.error('Could not attach PDF:', pdfError)
+        // Continue sending email without PDF
       }
     }
 
+    await emailService.sendEmail(emailOptions)
+    console.log('Payment confirmation email sent to:', payment.service_requests.clients.email)
 
-    // TODO: Integrate with your email service (SendGrid, Resend, etc.)
-    // await emailService.send(emailData)
-    
   } catch (error) {
+    console.error('Error sending payment confirmation email:', error)
   }
 }

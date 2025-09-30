@@ -7,6 +7,11 @@ export interface EmailOptions {
   html?: string
   cc?: string | string[]
   bcc?: string | string[]
+  attachments?: Array<{
+    filename: string
+    content: Buffer | string
+    contentType?: string
+  }>
 }
 
 export interface ContactFormEmailData {
@@ -54,6 +59,7 @@ class EmailService {
         subject: options.subject,
         text: options.text,
         html: options.html,
+        attachments: options.attachments,
       })
 
       return {
