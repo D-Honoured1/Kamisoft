@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic"
 
 import { NextRequest, NextResponse } from "next/server"
 import { renderToBuffer } from '@react-pdf/renderer'
+import React from 'react'
 import InvoiceService from "@/lib/invoice"
 import { InvoicePDF } from "@/lib/invoice/invoice-pdf-template"
 import { createServerClient } from "@/lib/supabase/server"
@@ -41,15 +42,15 @@ export async function POST(request: NextRequest) {
       day: 'numeric'
     }) || ''
 
-    // Generate PDF
+    // Generate PDF using React.createElement to avoid JSX syntax issues
     const pdfBuffer = await renderToBuffer(
-      <InvoicePDF
-        invoiceNumber={invoiceNumber}
-        invoiceDate={invoiceDate}
-        dueDate={dueDate}
-        invoiceData={invoiceData}
-        status="draft"
-      />
+      React.createElement(InvoicePDF, {
+        invoiceNumber,
+        invoiceDate,
+        dueDate,
+        invoiceData,
+        status: "draft"
+      })
     )
 
     // Upload PDF to Supabase Storage
