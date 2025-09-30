@@ -17,6 +17,7 @@ import { NOWPaymentsPaymentVerifier } from "@/components/admin/nowpayments-payme
 import { RemainingBalanceLinkGenerator } from "@/components/admin/remaining-balance-link-generator"
 import { ManualPaymentEntry } from "@/components/admin/manual-payment-entry"
 import { ManualPaymentHistory } from "@/components/admin/manual-payment-history"
+import { InvoiceGenerator } from "@/components/admin/invoice-generator"
 
 interface ServiceRequestDetailProps {
   params: {
@@ -55,7 +56,7 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
 
   // Get payments separately
   let payments = []
-  const { data: paymentsData, error: paymentsError } = await supabase
+  const { data: paymentsData, error: paymentsError} = await supabase
     .from("payments")
     .select(`
       *,
@@ -70,6 +71,18 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
 
   if (!paymentsError && paymentsData) {
     payments = paymentsData
+  }
+
+  // Get invoices separately
+  let invoices = []
+  const { data: invoicesData, error: invoicesError } = await supabase
+    .from("invoices")
+    .select("*")
+    .eq("request_id", request.id)
+    .order("created_at", { ascending: false })
+
+  if (!invoicesError && invoicesData) {
+    invoices = invoicesData
   }
 
   const getStatusColor = (status: string) => {
@@ -460,6 +473,25 @@ export default async function ServiceRequestDetail({ params }: ServiceRequestDet
           {hasPayments && (
             <ManualPaymentHistory
               payments={payments}
+            />
+          )}
+
+          {/* Invoice Generator */}
+          {client && request.estimated_cost && request.estimated_cost > 0 && (
+            <InvoiceGenerator
+              requestId={request.id}
+              paymentId={payments.find((p: any) => p.payment_status === 'completed')?.id}
+              clientEmail={client.email}
+              clientName={client.name}
+              estimatedCost={request.estimated_cost}
+              existingInvoices={invoices.map((inv: any) => ({
+                id: inv.id,
+                invoice_number: inv.invoice_number,
+                status: inv.status,
+                pdf_url: inv.pdf_url,
+                total_amount: inv.total_amount,
+                created_at: inv.created_at
+              }))}
             />
           )}
 

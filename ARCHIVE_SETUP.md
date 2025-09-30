@@ -1,10 +1,14 @@
 # Client Archive Feature Setup
 
 ## Issue
-When archiving clients in the admin panel, the archive action doesn't work and clients don't update in the database.
+When archiving clients in the admin panel, the archive button works but doesn't update the database.
 
 ## Root Cause
-The database migration script `scripts/014_add_client_soft_delete.sql` exists but hasn't been executed in your Supabase database yet. This script creates:
+Two issues need to be addressed:
+1. The database migration script `scripts/014_add_client_soft_delete.sql` needs to be executed
+2. The `archived_by` column needs to allow NULL values (fixed in `015_fix_archived_by_nullable.sql`)
+
+The original migration creates:
 - Archive columns (`archived_at`, `archived_by`, `archive_reason`)
 - Database functions (`archive_client`, `restore_client`)
 - Views for active and archived clients
@@ -16,8 +20,17 @@ The database migration script `scripts/014_add_client_soft_delete.sql` exists bu
 2. Select your project (kamisoft-app)
 3. Click on "SQL Editor" in the left sidebar
 
-### Step 2: Execute the Migration
+### Step 2: Execute BOTH Migrations
+**First migration** (if not already run):
 Copy and paste the entire contents of `/scripts/014_add_client_soft_delete.sql` into the SQL editor and click "Run"
+
+**Second migration** (REQUIRED - fixes the archive issue):
+Copy and paste the entire contents of `/scripts/015_fix_archived_by_nullable.sql` into the SQL editor and click "Run"
+
+This second migration:
+- Makes `archived_by` nullable (allows NULL values)
+- Updates the database functions to accept NULL admin_id
+- Fixes the archive functionality
 
 **Or run this command if using Supabase CLI:**
 ```bash

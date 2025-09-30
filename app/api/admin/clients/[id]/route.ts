@@ -73,8 +73,14 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     const body = await request.json()
     const { reason = "Archived by admin" } = body || {}
 
-    // TODO: Extract admin ID from authenticated session
-    const adminId = "placeholder-admin-id"
+    // Try to get admin ID from authenticated session, otherwise use null
+    let adminId = null
+    try {
+      const { data: { user } } = await supabaseAdmin.auth.getUser()
+      adminId = user?.id || null
+    } catch (err) {
+      console.log('Could not get admin user, proceeding with null')
+    }
 
     // Use the archive_client function
     const { data, error } = await supabaseAdmin.rpc('archive_client', {
@@ -126,8 +132,14 @@ export async function POST(request: Request, { params }: RouteParams) {
     const { action } = body
 
     if (action === "restore") {
-      // TODO: Extract admin ID from authenticated session
-      const adminId = "placeholder-admin-id"
+      // Try to get admin ID from authenticated session, otherwise use null
+      let adminId = null
+      try {
+        const { data: { user } } = await supabaseAdmin.auth.getUser()
+        adminId = user?.id || null
+      } catch (err) {
+        console.log('Could not get admin user, proceeding with null')
+      }
 
       // Use the restore_client function
       const { data, error } = await supabaseAdmin.rpc('restore_client', {
