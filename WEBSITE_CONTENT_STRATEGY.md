@@ -109,7 +109,7 @@ export const organizationSchema = {
   "contactPoint": {
     "@type": "ContactPoint",
     "telephone": "+234-803-639-2157",
-    "email": "danielausten@kamisoft.online",
+    "email": "danielausten@kamisoftenterprises.online",
     "contactType": "Customer Service",
     "areaServed": ["NG", "AF", "Global"],
     "availableLanguage": "English"
@@ -298,7 +298,7 @@ Our team holds industry-recognized certifications:
 🔗 **Verified Online Presence**
 - GitHub: Active repositories with open-source contributions
 - LinkedIn: Professional company profile with team credentials
-- Contact Verification: danielausten@kamisoft.online | +234-803-639-2157
+- Contact Verification: danielausten@kamisoftenterprises.online | +234-803-639-2157
 
 🏆 **Awards & Recognition**
 - Top 50 Tech Companies in Lagos (2023)

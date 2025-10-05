@@ -4,7 +4,7 @@ import { requireAuth } from "@/lib/auth/server-auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Users, FileText, CreditCard, Briefcase, Clock, MessageSquare, UserCheck } from "lucide-react"
+import { Users, FileText, CreditCard, Briefcase, Clock, MessageSquare, UserCheck, BookOpen, Star, HelpCircle, UsersRound, FolderKanban } from "lucide-react"
 import Link from "next/link"
 import { formatDate } from "@/lib/utils/date-formatter"
 
@@ -218,7 +218,7 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
         {/* Quick Actions */}
         <Card>
           <CardHeader>
@@ -254,6 +254,46 @@ export default async function AdminDashboard() {
               <Link href="/admin/leadership">
                 <UserCheck className="mr-2 h-4 w-4" />
                 Leadership Management
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Content Management */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Content Management</CardTitle>
+            <CardDescription>Manage website content and media</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button asChild variant="outline" className="w-full justify-start bg-transparent">
+              <Link href="/admin/blog">
+                <BookOpen className="mr-2 h-4 w-4" />
+                Blog Posts
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full justify-start bg-transparent">
+              <Link href="/admin/testimonials">
+                <Star className="mr-2 h-4 w-4" />
+                Testimonials
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full justify-start bg-transparent">
+              <Link href="/admin/faq">
+                <HelpCircle className="mr-2 h-4 w-4" />
+                FAQs
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full justify-start bg-transparent">
+              <Link href="/admin/team">
+                <UsersRound className="mr-2 h-4 w-4" />
+                Team Members
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full justify-start bg-transparent">
+              <Link href="/admin/case-studies">
+                <FolderKanban className="mr-2 h-4 w-4" />
+                Case Studies
               </Link>
             </Button>
           </CardContent>
