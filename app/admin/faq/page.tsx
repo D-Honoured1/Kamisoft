@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { getAllFAQs, deleteFAQ } from "@/lib/queries/content"
+import { getAllFAQs, deleteFAQ } from "@/lib/queries/content-client"
 import type { FAQ } from "@/lib/types/database"
 import { Plus, Edit, Trash2, Search } from "lucide-react"
 

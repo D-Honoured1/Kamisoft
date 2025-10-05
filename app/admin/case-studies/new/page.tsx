@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select"
 import { RichTextEditor } from "@/components/rich-text-editor"
 import { ImageUpload } from "@/components/image-upload"
-import { createCaseStudy } from "@/lib/queries/content"
+import { createCaseStudy } from "@/lib/queries/content-client"
 import type { CaseStudyForm, ServiceCategory } from "@/lib/types/database"
 
 export default function NewCaseStudyPage() {

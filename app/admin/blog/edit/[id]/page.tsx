@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { RichTextEditor } from "@/components/rich-text-editor"
 import { ImageUpload } from "@/components/image-upload"
-import { getBlogPostById, updateBlogPost } from "@/lib/queries/content"
+import { getBlogPostById, updateBlogPost } from "@/lib/queries/content-client"
 import type { BlogPost } from "@/lib/types/database"
 
 export default function EditBlogPostPage() {

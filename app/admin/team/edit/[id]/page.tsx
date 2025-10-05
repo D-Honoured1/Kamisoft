@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ImageUpload } from "@/components/image-upload"
-import { getTeamMemberById, updateTeamMember } from "@/lib/queries/content"
+import { getTeamMemberById, updateTeamMember } from "@/lib/queries/content-client"
 import type { TeamMemberForm } from "@/lib/types/database"
 
 export default function EditTeamMemberPage({ params }: { params: { id: string } }) {

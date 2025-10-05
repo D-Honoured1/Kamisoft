@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { getAllBlogPosts, deleteBlogPost } from "@/lib/queries/content"
+import { getAllBlogPosts, deleteBlogPost } from "@/lib/queries/content-client"
 import type { BlogPost } from "@/lib/types/database"
 import { Plus, Edit, Trash2, Eye, Search } from "lucide-react"
 

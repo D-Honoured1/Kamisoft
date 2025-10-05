@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { ImageUpload } from "@/components/image-upload"
-import { createTeamMember } from "@/lib/queries/content"
+import { createTeamMember } from "@/lib/queries/content-client"
 import type { TeamMemberForm } from "@/lib/types/database"
 
 export default function NewTeamMemberPage() {

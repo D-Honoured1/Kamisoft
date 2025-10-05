@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { RichTextEditor } from "@/components/rich-text-editor"
-import { createFAQ } from "@/lib/queries/content"
+import { createFAQ } from "@/lib/queries/content-client"
 import type { FAQForm, FAQCategory } from "@/lib/types/database"
 
 export default function NewFAQPage() {

@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { ImageUpload } from "@/components/image-upload"
-import { createTestimonial } from "@/lib/queries/content"
+import { createTestimonial } from "@/lib/queries/content-client"
 import type { TestimonialForm, ServiceCategory } from "@/lib/types/database"
 
 export default function NewTestimonialPage() {
