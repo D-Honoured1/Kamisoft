@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase/client"
+import { createServerClient } from "@/lib/supabase/server"
 import type {
   BlogPost,
   BlogPostForm,
@@ -21,6 +21,7 @@ export async function getAllBlogPosts(options?: {
   limit?: number
   offset?: number
 }) {
+  const supabase = createServerClient()
   let query = supabase
     .from("blog_posts")
     .select("*, author:staff_profiles(first_name, last_name)")
@@ -45,6 +46,7 @@ export async function getAllBlogPosts(options?: {
 }
 
 export async function getBlogPostById(id: string) {
+  const supabase = createServerClient()
   const { data, error } = await supabase
     .from("blog_posts")
     .select("*, author:staff_profiles(first_name, last_name)")
@@ -56,6 +58,7 @@ export async function getBlogPostById(id: string) {
 }
 
 export async function getBlogPostBySlug(slug: string) {
+  const supabase = createServerClient()
   const { data, error } = await supabase
     .from("blog_posts")
     .select("*, author:staff_profiles(first_name, last_name)")
@@ -67,6 +70,7 @@ export async function getBlogPostBySlug(slug: string) {
 }
 
 export async function createBlogPost(post: BlogPostForm) {
+  const supabase = createServerClient()
   const { data, error } = await supabase
     .from("blog_posts")
     .insert([post])
@@ -78,6 +82,7 @@ export async function createBlogPost(post: BlogPostForm) {
 }
 
 export async function updateBlogPost(id: string, post: Partial<BlogPostForm>) {
+  const supabase = createServerClient()
   const { data, error } = await supabase
     .from("blog_posts")
     .update(post)
@@ -90,12 +95,14 @@ export async function updateBlogPost(id: string, post: Partial<BlogPostForm>) {
 }
 
 export async function deleteBlogPost(id: string) {
+  const supabase = createServerClient()
   const { error } = await supabase.from("blog_posts").delete().eq("id", id)
 
   if (error) throw error
 }
 
 export async function incrementBlogPostViews(id: string) {
+  const supabase = createServerClient()
   const { error } = await supabase.rpc("increment_view_count", {
     p_table_name: "blog_posts",
     p_record_id: id,
@@ -113,6 +120,7 @@ export async function getAllTestimonials(options?: {
   featured_only?: boolean
   limit?: number
 }) {
+  const supabase = createServerClient()
   let query = supabase
     .from("testimonials")
     .select("*")
@@ -137,6 +145,7 @@ export async function getAllTestimonials(options?: {
 }
 
 export async function getTestimonialById(id: string) {
+  const supabase = createServerClient()
   const { data, error } = await supabase.from("testimonials").select("*").eq("id", id).single()
 
   if (error) throw error
@@ -144,6 +153,7 @@ export async function getTestimonialById(id: string) {
 }
 
 export async function createTestimonial(testimonial: TestimonialForm) {
+  const supabase = createServerClient()
   const { data, error } = await supabase
     .from("testimonials")
     .insert([testimonial])
@@ -155,6 +165,7 @@ export async function createTestimonial(testimonial: TestimonialForm) {
 }
 
 export async function updateTestimonial(id: string, testimonial: Partial<TestimonialForm>) {
+  const supabase = createServerClient()
   const { data, error } = await supabase
     .from("testimonials")
     .update(testimonial)
@@ -167,12 +178,14 @@ export async function updateTestimonial(id: string, testimonial: Partial<Testimo
 }
 
 export async function deleteTestimonial(id: string) {
+  const supabase = createServerClient()
   const { error } = await supabase.from("testimonials").delete().eq("id", id)
 
   if (error) throw error
 }
 
 export async function verifyTestimonial(id: string, adminId: string) {
+  const supabase = createServerClient()
   const { data, error } = await supabase
     .from("testimonials")
     .update({
@@ -193,6 +206,7 @@ export async function verifyTestimonial(id: string, adminId: string) {
 // ============================================
 
 export async function getAllFAQs(options?: { published_only?: boolean; category?: string }) {
+  const supabase = createServerClient()
   let query = supabase
     .from("faqs")
     .select("*")
@@ -214,6 +228,7 @@ export async function getAllFAQs(options?: { published_only?: boolean; category?
 }
 
 export async function getFAQsByCategory() {
+  const supabase = createServerClient()
   const faqs = await getAllFAQs({ published_only: true })
 
   // Group by category
@@ -229,6 +244,7 @@ export async function getFAQsByCategory() {
 }
 
 export async function getFAQById(id: string) {
+  const supabase = createServerClient()
   const { data, error } = await supabase.from("faqs").select("*").eq("id", id).single()
 
   if (error) throw error
@@ -236,6 +252,7 @@ export async function getFAQById(id: string) {
 }
 
 export async function createFAQ(faq: FAQForm) {
+  const supabase = createServerClient()
   const { data, error } = await supabase.from("faqs").insert([faq]).select().single()
 
   if (error) throw error
@@ -243,6 +260,7 @@ export async function createFAQ(faq: FAQForm) {
 }
 
 export async function updateFAQ(id: string, faq: Partial<FAQForm>) {
+  const supabase = createServerClient()
   const { data, error} = await supabase.from("faqs").update(faq).eq("id", id).select().single()
 
   if (error) throw error
@@ -250,6 +268,7 @@ export async function updateFAQ(id: string, faq: Partial<FAQForm>) {
 }
 
 export async function deleteFAQ(id: string) {
+  const supabase = createServerClient()
   const { error } = await supabase.from("faqs").delete().eq("id", id)
 
   if (error) throw error
@@ -264,6 +283,7 @@ export async function getAllTeamMembers(options?: {
   team_type?: string
   active_only?: boolean
 }) {
+  const supabase = createServerClient()
   let query = supabase
     .from("team_members")
     .select("*")
@@ -288,6 +308,7 @@ export async function getAllTeamMembers(options?: {
 }
 
 export async function getTeamMemberById(id: string) {
+  const supabase = createServerClient()
   const { data, error } = await supabase.from("team_members").select("*").eq("id", id).single()
 
   if (error) throw error
@@ -295,6 +316,7 @@ export async function getTeamMemberById(id: string) {
 }
 
 export async function createTeamMember(member: TeamMemberForm) {
+  const supabase = createServerClient()
   const { data, error } = await supabase.from("team_members").insert([member]).select().single()
 
   if (error) throw error
@@ -302,6 +324,7 @@ export async function createTeamMember(member: TeamMemberForm) {
 }
 
 export async function updateTeamMember(id: string, member: Partial<TeamMemberForm>) {
+  const supabase = createServerClient()
   const { data, error } = await supabase
     .from("team_members")
     .update(member)
@@ -314,6 +337,7 @@ export async function updateTeamMember(id: string, member: Partial<TeamMemberFor
 }
 
 export async function deleteTeamMember(id: string) {
+  const supabase = createServerClient()
   const { error } = await supabase.from("team_members").delete().eq("id", id)
 
   if (error) throw error
@@ -329,6 +353,7 @@ export async function getAllCaseStudies(options?: {
   service_category?: string
   limit?: number
 }) {
+  const supabase = createServerClient()
   let query = supabase
     .from("case_studies")
     .select("*, testimonial:testimonials(*)")
@@ -357,6 +382,7 @@ export async function getAllCaseStudies(options?: {
 }
 
 export async function getCaseStudyById(id: string) {
+  const supabase = createServerClient()
   const { data, error } = await supabase
     .from("case_studies")
     .select("*, testimonial:testimonials(*)")
@@ -368,6 +394,7 @@ export async function getCaseStudyById(id: string) {
 }
 
 export async function getCaseStudyBySlug(slug: string) {
+  const supabase = createServerClient()
   const { data, error } = await supabase
     .from("case_studies")
     .select("*, testimonial:testimonials(*)")
@@ -379,6 +406,7 @@ export async function getCaseStudyBySlug(slug: string) {
 }
 
 export async function createCaseStudy(caseStudy: CaseStudyForm) {
+  const supabase = createServerClient()
   const { data, error } = await supabase
     .from("case_studies")
     .insert([caseStudy])
@@ -390,6 +418,7 @@ export async function createCaseStudy(caseStudy: CaseStudyForm) {
 }
 
 export async function updateCaseStudy(id: string, caseStudy: Partial<CaseStudyForm>) {
+  const supabase = createServerClient()
   const { data, error } = await supabase
     .from("case_studies")
     .update(caseStudy)
@@ -402,12 +431,14 @@ export async function updateCaseStudy(id: string, caseStudy: Partial<CaseStudyFo
 }
 
 export async function deleteCaseStudy(id: string) {
+  const supabase = createServerClient()
   const { error } = await supabase.from("case_studies").delete().eq("id", id)
 
   if (error) throw error
 }
 
 export async function incrementCaseStudyViews(id: string) {
+  const supabase = createServerClient()
   const { error } = await supabase.rpc("increment_view_count", {
     p_table_name: "case_studies",
     p_record_id: id,

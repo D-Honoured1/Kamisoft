@@ -13,44 +13,48 @@ export async function generateMetadata({
 }: {
   params: { slug: string }
 }): Promise<Metadata> {
-  const caseStudy = await getCaseStudyBySlug(params.slug)
+  try {
+    const caseStudy = await getCaseStudyBySlug(params.slug)
 
-  if (!caseStudy) {
+    if (!caseStudy || !caseStudy.is_published) {
+      return {
+        title: "Case Study Not Found",
+      }
+    }
+
+    return {
+      title: caseStudy.meta_title || `${caseStudy.title} - Case Study | Kamisoft Enterprises`,
+      description:
+        caseStudy.meta_description ||
+        caseStudy.description ||
+        "Case study showcasing our expertise",
+      openGraph: {
+        title: caseStudy.meta_title || caseStudy.title,
+        description: caseStudy.meta_description || caseStudy.description,
+        images: caseStudy.cover_image_url ? [{ url: caseStudy.cover_image_url }] : [],
+        type: "article",
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: caseStudy.meta_title || caseStudy.title,
+        description: caseStudy.meta_description || caseStudy.description,
+        images: caseStudy.cover_image_url ? [caseStudy.cover_image_url] : [],
+      },
+    }
+  } catch (error) {
     return {
       title: "Case Study Not Found",
     }
   }
-
-  return {
-    title: caseStudy.meta_title || `${caseStudy.title} - Case Study | Kamisoft Enterprises`,
-    description:
-      caseStudy.meta_description ||
-      caseStudy.description ||
-      "Case study showcasing our expertise",
-    openGraph: {
-      title: caseStudy.meta_title || caseStudy.title,
-      description: caseStudy.meta_description || caseStudy.description,
-      images: caseStudy.cover_image_url ? [{ url: caseStudy.cover_image_url }] : [],
-      type: "article",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: caseStudy.meta_title || caseStudy.title,
-      description: caseStudy.meta_description || caseStudy.description,
-      images: caseStudy.cover_image_url ? [caseStudy.cover_image_url] : [],
-    },
-  }
-}
-
-export async function generateStaticParams() {
-  const caseStudies = await getAllCaseStudies({ published_only: true })
-  return caseStudies.map((cs) => ({
-    slug: cs.slug,
-  }))
 }
 
 export default async function CaseStudyPage({ params }: { params: { slug: string } }) {
-  const caseStudy = await getCaseStudyBySlug(params.slug)
+  let caseStudy
+  try {
+    caseStudy = await getCaseStudyBySlug(params.slug)
+  } catch (error) {
+    notFound()
+  }
 
   if (!caseStudy || !caseStudy.is_published) {
     notFound()
