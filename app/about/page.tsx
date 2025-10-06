@@ -10,12 +10,12 @@ export default function AboutPage() {
     {
       year: "2015",
       title: "Company Founded",
-      description: "Kamisoft Enterprises established as a subsidiary of Amor Group",
+      description: "Started as a freelance development brand, focusing on software engineering and network solutions",
     },
     {
-      year: "2017",
-      title: "First Major Contract",
-      description: "Secured our first enterprise client and delivered a comprehensive banking solution",
+      year: "2018",
+      title: "Kamisoft Enterprises Formed",
+      description: "Officially registered as Kamisoft Enterprises under Amor Group, expanding service offerings",
     },
     {
       year: "2019",
@@ -24,18 +24,23 @@ export default function AboutPage() {
     },
     {
       year: "2021",
-      title: "International Recognition",
-      description: "Recognized as a leading technology provider in West Africa",
+      title: "Enterprise Contracts",
+      description: "Secured major contracts with banking and government organizations across West Africa",
     },
     {
-      year: "2023",
-      title: "AI Integration",
-      description: "Launched AI and automation services, helping clients modernize operations",
+      year: "2022",
+      title: "Fintech & Blockchain Focus",
+      description: "Specialized in regulated payment systems, digital wallets, and smart contract development",
     },
     {
       year: "2024",
-      title: "200+ Projects",
-      description: "Reached milestone of 200+ successful projects across multiple industries",
+      title: "200+ Projects Milestone",
+      description: "Reached milestone of 200+ successful projects across fintech, enterprise, and government sectors",
+    },
+    {
+      year: "2025",
+      title: "Digital Expansion",
+      description: "Launched official online presence at kamisoftenterprises.online to serve global clients",
     },
   ]
 
@@ -73,8 +78,9 @@ export default function AboutPage() {
             </h1>
 
             <p className="text-xl text-muted-foreground text-balance max-w-3xl mx-auto">
-              Since 2015, we've been at the forefront of technological innovation, delivering bespoke software solutions
-              that transform businesses across Africa and beyond.
+              After nearly a decade delivering fintech, blockchain, cloud infrastructure, AI automation, networking (CCNA),
+              and enterprise software through referrals and contracts, Kamisoft Enterprises is now online — ready to serve
+              a global audience with the same excellence that built our reputation.
             </p>
 
             <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
@@ -108,9 +114,9 @@ export default function AboutPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  To empower businesses with innovative technology solutions that drive growth, efficiency, and digital
-                  transformation. We bridge the gap between complex technical challenges and practical business
-                  solutions.
+                  We exist so businesses can leverage world-class tech without complexity. Our mission is to empower
+                  organizations with innovative solutions that drive measurable growth, efficiency, and digital transformation
+                  across Africa and beyond.
                 </p>
               </CardContent>
             </Card>

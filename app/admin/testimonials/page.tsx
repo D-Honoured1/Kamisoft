@@ -13,12 +13,30 @@ import { Plus, Edit, Trash2, CheckCircle, Search, Star } from "lucide-react"
 import { useAdminAuth } from "@/hooks/use-admin-auth"
 
 export default function AdminTestimonialsPage() {
+  const { user, loading: authLoading, isAuthenticated } = useAdminAuth()
   const [testimonials, setTestimonials] = useState<Testimonial[]>([])
   const [filteredTestimonials, setFilteredTestimonials] = useState<Testimonial[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
-  const { user } = useAdminAuth()
   const router = useRouter()
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push('/admin/login')
+    }
+  }, [authLoading, isAuthenticated, router])
+
+  if (authLoading) {
+    return (
+      <div className="p-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-muted-foreground">Loading...</div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) return null
 
   useEffect(() => {
     loadTestimonials()

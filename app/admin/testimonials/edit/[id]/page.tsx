@@ -20,7 +20,26 @@ import { getTestimonialById, updateTestimonial } from "@/lib/queries/content-cli
 import type { TestimonialForm, ServiceCategory } from "@/lib/types/database"
 
 export default function EditTestimonialPage({ params }: { params: { id: string } }) {
+  const { user, loading: authLoading, isAuthenticated } = useAdminAuth()
   const router = useRouter()
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push('/admin/login')
+    }
+  }, [authLoading, isAuthenticated, router])
+
+  if (authLoading) {
+    return (
+      <div className="p-8 max-w-4xl mx-auto">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-muted-foreground">Loading...</div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) return null
   const [loading, setLoading] = useState(false)
   const [loadingData, setLoadingData] = useState(true)
   const [formData, setFormData] = useState<TestimonialForm>({

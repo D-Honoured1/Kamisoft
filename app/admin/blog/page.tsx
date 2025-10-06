@@ -10,13 +10,33 @@ import { Input } from "@/components/ui/input"
 import { getAllBlogPosts, deleteBlogPost } from "@/lib/queries/content-client"
 import type { BlogPost } from "@/lib/types/database"
 import { Plus, Edit, Trash2, Eye, Search } from "lucide-react"
+import { useAdminAuth } from "@/hooks/use-admin-auth"
 
 export default function AdminBlogPage() {
+  const { user, loading: authLoading, isAuthenticated } = useAdminAuth()
   const [posts, setPosts] = useState<BlogPost[]>([])
   const [filteredPosts, setFilteredPosts] = useState<BlogPost[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const router = useRouter()
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push('/admin/login')
+    }
+  }, [authLoading, isAuthenticated, router])
+
+  if (authLoading) {
+    return (
+      <div className="p-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-muted-foreground">Loading...</div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) return null
 
   useEffect(() => {
     loadPosts()

@@ -15,9 +15,11 @@ export function Footer() {
               <Image src="/logo.svg" alt="Kamisoft Logo" width={24} height={24} className="h-6 w-6" />
               <span className="text-lg font-bold">Kamisoft Enterprises</span>
             </div>
-            <p className="text-sm text-muted-foreground">{COMPANY_INFO.description}</p>
             <p className="text-sm text-muted-foreground">
-              Founded {COMPANY_INFO.founded} • {COMPANY_INFO.location}
+              Trusted by clients across Africa since 2015. Full-spectrum technology solutions: Fintech • Blockchain • Cloud & DevOps • AI Automation • CCNA Networking • Web/Mobile Development • Consultancy.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Operating since {COMPANY_INFO.founded} • {COMPANY_INFO.location}
             </p>
           </div>
 
@@ -135,9 +137,9 @@ export function Footer() {
         <div className="border-t mt-8 pt-8 text-center text-sm text-muted-foreground">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p>
-              &copy; {new Date().getFullYear()} {COMPANY_INFO.name}. All rights reserved.
+              &copy; 2015–{new Date().getFullYear()} {COMPANY_INFO.name}. All rights reserved.
             </p>
-            <p>A subsidiary of {COMPANY_INFO.parentCompany}</p>
+            <p>A subsidiary of {COMPANY_INFO.parentCompany} • Operating since 2015</p>
           </div>
         </div>
       </div>

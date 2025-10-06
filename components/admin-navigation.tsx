@@ -89,6 +89,11 @@ export function AdminNavigation() {
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
+  // Don't show navigation on login/logout pages
+  if (pathname === '/admin/login' || pathname === '/admin/logout') {
+    return null
+  }
+
   return (
     <nav className="border-b bg-background">
       <div className="container mx-auto px-4">

@@ -35,26 +35,29 @@ export default function HomePage() {
         <div className="container">
           <div className="max-w-4xl mx-auto text-center space-y-8">
             <Badge variant="secondary" className="text-sm">
-              Established 2015 • A subsidiary of Amor Group
+              Operating since 2015 • Launched online 2025
             </Badge>
 
             <h1 className="text-4xl lg:text-6xl font-bold text-balance">
-              From Code to Connectivity—
-              <span className="text-primary">We Build It All</span>
+              Transform Your Vision Into
+              <span className="text-primary"> High-Impact Digital Products</span>
             </h1>
 
             <p className="text-xl text-muted-foreground text-balance max-w-2xl mx-auto">
-              {COMPANY_INFO.description} Trusted by enterprises, startups, and government organizations across Africa
-              and beyond.
+              From fintech & blockchain to cloud infrastructure, AI automation, CCNA networking & enterprise software — we deliver full-spectrum technology solutions that power growth across Africa and beyond.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" asChild>
                 <Link href="/request-service">
-                  Hire Us <ArrowRight className="ml-2 h-4 w-4" />
+                  Get a Free Project Audit <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
-              <PaymentButton variant="outline" size="lg" />
+              <Button size="lg" variant="outline" asChild>
+                <Link href="/contact">
+                  Talk to an Expert
+                </Link>
+              </Button>
             </div>
           </div>
         </div>
@@ -78,15 +81,15 @@ export default function HomePage() {
       <section className="py-20">
         <div className="container">
           <div className="text-center space-y-4 mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold">Our Core Services</h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              We specialize in cutting-edge technology solutions across multiple domains
+            <h2 className="text-3xl lg:text-4xl font-bold">What We Build</h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              From payment systems to blockchain innovation — we engineer digital solutions that drive measurable business results
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {featuredServices.map((category, index) => (
-              <ServiceCard 
+              <ServiceCard
                 key={category}
                 category={category}
                 showPaymentButton={true}
@@ -109,9 +112,9 @@ export default function HomePage() {
       <section className="py-20 bg-muted/30">
         <div className="container">
           <div className="text-center space-y-4 mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold">Why Choose Kamisoft?</h2>
+            <h2 className="text-3xl lg:text-4xl font-bold">Why Leading Businesses Partner with Us</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              We combine technical expertise with business acumen to deliver exceptional results
+              Proven track record + deep domain expertise + transparent execution
             </p>
           </div>
 
@@ -120,19 +123,19 @@ export default function HomePage() {
               <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
                 <Award className="h-8 w-8 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold">Proven Expertise</h3>
+              <h3 className="text-xl font-semibold">Proven Track Record</h3>
               <p className="text-muted-foreground">
-                9+ years of experience delivering complex technology solutions across multiple industries
+                Over 200 projects delivered across Africa since 2015, serving startups, enterprises, and government organizations
               </p>
             </div>
 
             <div className="text-center space-y-4">
               <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-                <Users className="h-8 w-8 text-primary" />
+                <Code className="h-8 w-8 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold">Dedicated Team</h3>
+              <h3 className="text-xl font-semibold">Comprehensive Domain Expertise</h3>
               <p className="text-muted-foreground">
-                16 skilled professionals including developers, designers, and project managers
+                Deep expertise across 8 technology domains: Fintech & Blockchain • Full-Stack & Mobile Development • Cloud & DevOps • AI & Automation • Networking (CCNA) • Technology Consultancy
               </p>
             </div>
 
@@ -140,22 +143,164 @@ export default function HomePage() {
               <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
                 <Shield className="h-8 w-8 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold">Quality Assurance</h3>
+              <h3 className="text-xl font-semibold">Security & Compliance Focused</h3>
               <p className="text-muted-foreground">
-                Rigorous testing and quality control processes ensure reliable, secure solutions
+                We build with data privacy, encryption, and compliance audits in mind from day one
+              </p>
+            </div>
+
+            <div className="text-center space-y-4">
+              <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+                <Users className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold">Full Lifecycle Partner</h3>
+              <p className="text-muted-foreground">
+                From concept and architecture to launch, maintenance, and scale — we're with you every step
+              </p>
+            </div>
+
+            <div className="text-center space-y-4">
+              <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+                <TrendingUp className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold">Transparent & Agile</h3>
+              <p className="text-muted-foreground">
+                Weekly demos, clear timelines, and open communication — no surprises, just results
+              </p>
+            </div>
+
+            <div className="text-center space-y-4">
+              <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+                <Smartphone className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold">Built for African Markets</h3>
+              <p className="text-muted-foreground">
+                Understanding local payment systems, regulations, and infrastructure challenges unique to Africa
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* Case Studies Preview */}
       <section className="py-20">
+        <div className="container">
+          <div className="text-center space-y-4 mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold">Our Work & Results</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Real projects. Real impact. See how we've helped businesses achieve their goals.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+            <Card className="group hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="aspect-video bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg mb-4 flex items-center justify-center">
+                  <Shield className="h-16 w-16 text-primary/40" />
+                </div>
+                <CardTitle>Fintech Payment Gateway</CardTitle>
+                <CardDescription>Leading Nigerian Payment Processor</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Built a secure, scalable payment gateway handling multi-currency transactions with KYC integration
+                </p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Transaction Success Rate</span>
+                    <span className="font-semibold text-primary">99.7%</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Monthly Processing</span>
+                    <span className="font-semibold text-primary">₦500M+</span>
+                  </div>
+                </div>
+                <Button variant="ghost" className="w-full group-hover:bg-primary/10" asChild>
+                  <Link href="/case-studies">
+                    View Case Study <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="group hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="aspect-video bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg mb-4 flex items-center justify-center">
+                  <Code className="h-16 w-16 text-primary/40" />
+                </div>
+                <CardTitle>Enterprise CRM Platform</CardTitle>
+                <CardDescription>Manufacturing & Distribution Company</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Custom CRM solution integrating inventory, sales tracking, and customer management
+                </p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Efficiency Gain</span>
+                    <span className="font-semibold text-primary">40%</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">User Adoption</span>
+                    <span className="font-semibold text-primary">95%</span>
+                  </div>
+                </div>
+                <Button variant="ghost" className="w-full group-hover:bg-primary/10" asChild>
+                  <Link href="/case-studies">
+                    View Case Study <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="group hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="aspect-video bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg mb-4 flex items-center justify-center">
+                  <Smartphone className="h-16 w-16 text-primary/40" />
+                </div>
+                <CardTitle>Mobile Banking App</CardTitle>
+                <CardDescription>Digital Bank Launch</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Full-stack mobile banking solution with biometric security and real-time notifications
+                </p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Active Users</span>
+                    <span className="font-semibold text-primary">50K+</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">App Rating</span>
+                    <span className="font-semibold text-primary">4.8/5</span>
+                  </div>
+                </div>
+                <Button variant="ghost" className="w-full group-hover:bg-primary/10" asChild>
+                  <Link href="/case-studies">
+                    View Case Study <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="text-center">
+            <Button size="lg" variant="outline" asChild>
+              <Link href="/case-studies">
+                View All Case Studies <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 bg-muted/30">
         <div className="container">
           <div className="max-w-3xl mx-auto text-center space-y-8">
             <h2 className="text-3xl lg:text-4xl font-bold">Ready to Transform Your Business?</h2>
             <p className="text-xl text-muted-foreground">
-              Let's discuss how we can help you achieve your technology goals with our comprehensive solutions
+              Let's discuss your project. We respond within 24 hours with a clear roadmap.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" asChild>
@@ -164,9 +309,12 @@ export default function HomePage() {
                 </Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link href="/portfolio">View Our Work</Link>
+                <Link href="/contact">Schedule a Call</Link>
               </Button>
             </div>
+            <p className="text-sm text-muted-foreground">
+              ✓ Free consultation · ✓ 24-hour response time · ✓ No obligation
+            </p>
           </div>
         </div>
       </section>

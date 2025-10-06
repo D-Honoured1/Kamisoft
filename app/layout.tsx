@@ -10,25 +10,25 @@ import { Suspense } from "react"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "Kamisoft Enterprises - From Code to Connectivity",
+  title: "Kamisoft Enterprises — Full-Spectrum Technology Solutions | Nigeria",
   description:
-    "Kamisoft Enterprises is a technology company offering bespoke solutions across fintech, gaming, and enterprise software. Founded in 2015, we build it all.",
-  keywords: "software development, fintech, blockchain, mobile apps, enterprise software, Nigeria, technology",
+    "Expert technology partner delivering fintech platforms, blockchain solutions, cloud & DevOps, AI automation, CCNA networking, mobile & web apps, and IT consultancy across Africa. 200+ projects since 2015.",
+  keywords: "fintech developers Nigeria, blockchain solutions Africa, web app development, mobile banking apps, payment gateway Nigeria, enterprise software, digital wallet development, smart contracts, CCNA networking Nigeria, cloud infrastructure AWS Azure, DevOps CI/CD, AI automation, machine learning Nigeria, chatbot development, technology consultancy Africa, digital transformation, network security, cloud migration, process automation, full stack development",
   authors: [{ name: "Kamisoft Enterprises" }],
   creator: "Kamisoft Enterprises",
   publisher: "Kamisoft Enterprises",
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://kamisoft.com",
-    title: "Kamisoft Enterprises - From Code to Connectivity",
-    description: "Technology company offering bespoke solutions across fintech, gaming, and enterprise software.",
+    url: "https://www.kamisoftenterprises.online",
+    title: "Kamisoft Enterprises — Full-Spectrum Technology Solutions in Nigeria",
+    description: "Fintech, Blockchain, Cloud & DevOps, AI Automation, CCNA Networking, Mobile & Web Development. 200+ successful projects since 2015.",
     siteName: "Kamisoft Enterprises",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Kamisoft Enterprises - From Code to Connectivity",
-    description: "Technology company offering bespoke solutions across fintech, gaming, and enterprise software.",
+    title: "Kamisoft Enterprises — Full-Spectrum Tech Solutions",
+    description: "Fintech • Blockchain • Cloud • AI • Networking • Web/Mobile Development. Operating since 2015 across Africa.",
     creator: "@kamisoft",
   },
   robots: {
@@ -42,7 +42,6 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
-  generator: "v0.app",
 }
 
 export default function RootLayout({
