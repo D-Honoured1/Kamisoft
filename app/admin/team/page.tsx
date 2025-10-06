@@ -1,103 +1,39 @@
-"use client"
+export const dynamic = "force-dynamic"
 
-import { useEffect, useState } from "react"
-import { useAdminAuth } from "@/hooks/use-admin-auth"
-import { useRouter } from "next/navigation"
+import { requireAuth } from "@/lib/auth/server-auth"
+import { createServerClient } from "@/lib/supabase/server"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { getAllTeamMembers, deleteTeamMember } from "@/lib/queries/content-client"
-import type { TeamMember } from "@/lib/types/database"
-import { Plus, Edit, Trash2, Search, Mail, Linkedin, Github } from "lucide-react"
+import { DashboardHomeButton } from "@/components/admin-navigation/dashboard-home-button"
+import { Plus, Edit, Mail, Linkedin, Github } from "lucide-react"
 import Image from "next/image"
+import { TeamActions } from "@/components/admin/team-actions"
 
-export default function AdminTeamPage() {
-  const { user, loading: authLoading, isAuthenticated } = useAdminAuth()
-  const [team, setTeam] = useState<TeamMember[]>([])
-  const [filteredTeam, setFilteredTeam] = useState<TeamMember[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const router = useRouter()
+export default async function AdminTeamPage() {
+  // Require authentication
+  await requireAuth()
 
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.push('/admin/login')
-    }
-  }, [authLoading, isAuthenticated, router])
+  const supabase = createServerClient()
 
-  if (authLoading) {
-    return (
-      <div className="p-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-muted-foreground">Loading...</div>
-        </div>
-      </div>
-    )
-  }
+  const { data: team, error } = await supabase
+    .from("team_members")
+    .select("*")
+    .order("display_order", { ascending: true })
 
-  if (!user) return null
-
-  useEffect(() => {
-    loadTeam()
-  }, [])
-
-  useEffect(() => {
-    if (searchTerm) {
-      const filtered = team.filter(
-        (member) =>
-          member.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          member.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          member.department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          member.bio?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-      setFilteredTeam(filtered)
-    } else {
-      setFilteredTeam(team)
-    }
-  }, [searchTerm, team])
-
-  async function loadTeam() {
-    try {
-      const data = await getAllTeamMembers()
-      setTeam(data)
-      setFilteredTeam(data)
-    } catch (error) {
-      console.error("Failed to load team:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function handleDelete(id: string, name: string) {
-    if (!confirm(`Are you sure you want to remove ${name} from the team?`)) return
-
-    try {
-      await deleteTeamMember(id)
-      setTeam(team.filter((member) => member.id !== id))
-    } catch (error) {
-      console.error("Failed to delete team member:", error)
-      alert("Failed to delete team member")
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="p-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-muted-foreground">Loading team...</div>
-        </div>
-      </div>
-    )
+  if (error) {
+    console.error("Failed to load team:", error)
   }
 
   return (
-    <div className="p-8">
+    <div className="container mx-auto px-4 py-8">
+      <DashboardHomeButton />
+
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold">Team Members</h1>
-          <p className="text-muted-foreground mt-1">{team.length} total members</p>
+          <p className="text-muted-foreground mt-1">{team?.length || 0} total members</p>
         </div>
         <Button asChild>
           <Link href="/admin/team/new">
@@ -107,20 +43,8 @@ export default function AdminTeamPage() {
         </Button>
       </div>
 
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search team members..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-      </div>
-
       <div className="grid gap-4">
-        {filteredTeam.map((member) => (
+        {team && team.length > 0 ? team.map((member: any) => (
           <Card key={member.id}>
             <CardHeader className="flex flex-row items-start justify-between space-y-0">
               <div className="flex gap-4 flex-1">
@@ -185,13 +109,7 @@ export default function AdminTeamPage() {
                     <Edit className="h-4 w-4" />
                   </Link>
                 </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => handleDelete(member.id, member.full_name)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <TeamActions memberId={member.id} memberName={member.full_name} />
               </div>
             </CardHeader>
             <CardContent>
@@ -207,14 +125,10 @@ export default function AdminTeamPage() {
               </div>
             </CardContent>
           </Card>
-        ))}
-
-        {filteredTeam.length === 0 && (
+        )) : (
           <Card>
             <CardContent className="p-8 text-center text-muted-foreground">
-              {searchTerm
-                ? "No team members found matching your search."
-                : "No team members found. Add your first one to get started."}
+              No team members found. Add your first one to get started.
             </CardContent>
           </Card>
         )}

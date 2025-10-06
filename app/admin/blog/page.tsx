@@ -1,101 +1,37 @@
-"use client"
+export const dynamic = "force-dynamic"
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { requireAuth } from "@/lib/auth/server-auth"
+import { createServerClient } from "@/lib/supabase/server"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { getAllBlogPosts, deleteBlogPost } from "@/lib/queries/content-client"
-import type { BlogPost } from "@/lib/types/database"
-import { Plus, Edit, Trash2, Eye, Search } from "lucide-react"
-import { useAdminAuth } from "@/hooks/use-admin-auth"
+import { DashboardHomeButton } from "@/components/admin-navigation/dashboard-home-button"
+import { Plus, Edit, Eye } from "lucide-react"
+import { BlogActions } from "@/components/admin/blog-actions"
 
-export default function AdminBlogPage() {
-  const { user, loading: authLoading, isAuthenticated } = useAdminAuth()
-  const [posts, setPosts] = useState<BlogPost[]>([])
-  const [filteredPosts, setFilteredPosts] = useState<BlogPost[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const router = useRouter()
+export default async function AdminBlogPage() {
+  await requireAuth()
 
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.push('/admin/login')
-    }
-  }, [authLoading, isAuthenticated, router])
+  const supabase = createServerClient()
 
-  if (authLoading) {
-    return (
-      <div className="p-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-muted-foreground">Loading...</div>
-        </div>
-      </div>
-    )
-  }
+  const { data: posts, error } = await supabase
+    .from("blog_posts")
+    .select("*")
+    .order("created_at", { ascending: false })
 
-  if (!user) return null
-
-  useEffect(() => {
-    loadPosts()
-  }, [])
-
-  useEffect(() => {
-    if (searchTerm) {
-      const filtered = posts.filter(
-        (post) =>
-          post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          post.excerpt?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          post.category?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-      setFilteredPosts(filtered)
-    } else {
-      setFilteredPosts(posts)
-    }
-  }, [searchTerm, posts])
-
-  async function loadPosts() {
-    try {
-      const data = await getAllBlogPosts()
-      setPosts(data)
-      setFilteredPosts(data)
-    } catch (error) {
-      console.error("Failed to load blog posts:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function handleDelete(id: string, title: string) {
-    if (!confirm(`Are you sure you want to delete "${title}"?`)) return
-
-    try {
-      await deleteBlogPost(id)
-      setPosts(posts.filter((p) => p.id !== id))
-    } catch (error) {
-      console.error("Failed to delete blog post:", error)
-      alert("Failed to delete blog post")
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="p-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-muted-foreground">Loading blog posts...</div>
-        </div>
-      </div>
-    )
+  if (error) {
+    console.error("Failed to load blog posts:", error)
   }
 
   return (
-    <div className="p-8">
+    <div className="container mx-auto px-4 py-8">
+      <DashboardHomeButton />
+
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold">Blog Posts</h1>
-          <p className="text-muted-foreground mt-1">{posts.length} total posts</p>
+          <p className="text-muted-foreground mt-1">{posts?.length || 0} total posts</p>
         </div>
         <Button asChild>
           <Link href="/admin/blog/new">
@@ -105,20 +41,8 @@ export default function AdminBlogPage() {
         </Button>
       </div>
 
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search blog posts..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-      </div>
-
       <div className="grid gap-4">
-        {filteredPosts.map((post) => (
+        {posts && posts.length > 0 ? posts.map((post: any) => (
           <Card key={post.id}>
             <CardHeader className="flex flex-row items-start justify-between space-y-0">
               <div className="flex-1">
@@ -144,19 +68,13 @@ export default function AdminBlogPage() {
                     <Edit className="h-4 w-4" />
                   </Link>
                 </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => handleDelete(post.id, post.title)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <BlogActions postId={post.id} postTitle={post.title} />
               </div>
             </CardHeader>
             <CardContent>
               {post.excerpt && <p className="text-sm text-muted-foreground mb-3">{post.excerpt}</p>}
               <div className="flex gap-4 text-xs text-muted-foreground">
-                <span>Views: {post.view_count}</span>
+                <span>Views: {post.view_count || 0}</span>
                 {post.author_name && <span>Author: {post.author_name}</span>}
                 <span>Created: {new Date(post.created_at).toLocaleDateString()}</span>
                 {post.published_at && (
@@ -165,14 +83,10 @@ export default function AdminBlogPage() {
               </div>
             </CardContent>
           </Card>
-        ))}
-
-        {filteredPosts.length === 0 && (
+        )) : (
           <Card>
             <CardContent className="p-8 text-center text-muted-foreground">
-              {searchTerm
-                ? "No blog posts found matching your search."
-                : "No blog posts found. Create your first post to get started."}
+              No blog posts found. Create your first post to get started.
             </CardContent>
           </Card>
         )}
