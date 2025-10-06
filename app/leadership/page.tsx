@@ -102,7 +102,7 @@ export default async function LeadershipPage() {
                           <img
                             src={leader.profile_image_url || "/placeholder.svg"}
                             alt={leader.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="w-full h-full object-cover "
                           />
                         </div>
                         <CardTitle className="text-xl">{leader.name}</CardTitle>
@@ -151,7 +151,7 @@ export default async function LeadershipPage() {
                             <img
                               src={leader.profile_image_url || "/placeholder.svg"}
                               alt={leader.name}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              className="w-full h-full object-cover "
                             />
                           </div>
                           <CardTitle className="text-xl">{leader.name}</CardTitle>
@@ -218,7 +218,7 @@ export default async function LeadershipPage() {
                           <img
                             src={member.profile_image_url || "/placeholder.svg"}
                             alt={member.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="w-full h-full object-cover "
                           />
                         </div>
                         <CardTitle className="text-lg">{member.name}</CardTitle>
@@ -269,7 +269,7 @@ export default async function LeadershipPage() {
                             <img
                               src={member.profile_image_url || "/placeholder.svg"}
                               alt={member.name}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              className="w-full h-full object-cover "
                             />
                           </div>
                           <CardTitle className="text-lg">{member.name}</CardTitle>

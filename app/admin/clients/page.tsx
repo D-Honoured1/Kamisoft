@@ -353,7 +353,7 @@ export default function ClientsManagement() {
             const detailUrl = getClientDetailUrl(client)
             
             return (
-              <Card key={client.id} className="hover:shadow-lg transition-shadow">
+              <Card key={client.id} className="">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">

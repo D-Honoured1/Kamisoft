@@ -10,6 +10,8 @@ import type {
   TeamMemberForm,
   CaseStudy,
   CaseStudyForm,
+  Product,
+  ProductForm,
 } from "@/lib/types/database"
 
 // ============================================
@@ -445,4 +447,52 @@ export async function incrementCaseStudyViews(id: string) {
   })
 
   if (error) console.error("Failed to increment views:", error)
+}
+
+// ============================================
+// PRODUCTS
+// ============================================
+
+export async function getAllProducts(options?: { active_only?: boolean }) {
+  const supabase = createServerClient()
+  let query = supabase.from("products").select("*").order("launch_date", { ascending: false })
+
+  if (options?.active_only) {
+    query = query.eq("is_active", true)
+  }
+
+  const { data, error } = await query
+  if (error) throw error
+  return data as Product[]
+}
+
+export async function getProductById(id: string) {
+  const supabase = createServerClient()
+  const { data, error } = await supabase.from("products").select("*").eq("id", id).single()
+
+  if (error) throw error
+  return data as Product
+}
+
+export async function createProduct(productData: ProductForm) {
+  const supabase = createServerClient()
+  const { data, error } = await supabase.from("products").insert([productData]).select().single()
+
+  if (error) throw error
+  return data as Product
+}
+
+export async function updateProduct(id: string, productData: Partial<ProductForm>) {
+  const supabase = createServerClient()
+  const { data, error } = await supabase.from("products").update(productData).eq("id", id).select().single()
+
+  if (error) throw error
+  return data as Product
+}
+
+export async function deleteProduct(id: string) {
+  const supabase = createServerClient()
+  const { error } = await supabase.from("products").delete().eq("id", id)
+
+  if (error) throw error
 }

@@ -112,7 +112,7 @@ export function AdminNavigation() {
                     <Button variant="ghost" className="gap-2">
                       <span>{item.title}</span>
                     </Button>
-                    <div className="absolute top-full left-0 mt-1 w-56 bg-popover border rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    <div className="absolute top-full left-0 mt-1 w-56 bg-popover border rounded-md shadow-lg opacity-0 invisible invisible opacity-0 group-hover:opacity-100 group-hover:visible z-50">
                       <div className="py-1">
                         {item.items.map((subItem) => {
                           const Icon = subItem.icon
@@ -122,7 +122,7 @@ export function AdminNavigation() {
                               key={subItem.href}
                               href={subItem.href}
                               className={cn(
-                                "flex items-center gap-2 px-4 py-2 text-sm hover:bg-muted transition-colors",
+                                "flex items-center gap-2 px-4 py-2 text-sm ",
                                 isActive && "bg-muted font-medium"
                               )}
                             >
@@ -194,7 +194,7 @@ export function AdminNavigation() {
                           href={subItem.href}
                           onClick={() => setIsMobileMenuOpen(false)}
                           className={cn(
-                            "flex items-center gap-2 px-6 py-2 text-sm hover:bg-muted transition-colors rounded-md",
+                            "flex items-center gap-2 px-6 py-2 text-sm  rounded-md",
                             isActive && "bg-muted font-medium"
                           )}
                         >
@@ -215,7 +215,7 @@ export function AdminNavigation() {
                   href={item.href}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors rounded-md",
+                    "flex items-center gap-2 px-3 py-2 text-sm  rounded-md",
                     isActive && "bg-muted font-medium"
                   )}
                 >
@@ -228,7 +228,7 @@ export function AdminNavigation() {
             <Link
               href="/admin/logout"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors rounded-md"
+              className="flex items-center gap-2 px-3 py-2 text-sm  rounded-md"
             >
               <LogOut className="h-4 w-4" />
               Logout

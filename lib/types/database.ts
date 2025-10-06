@@ -497,3 +497,17 @@ export interface CaseStudyForm {
   meta_title?: string
   meta_description?: string
 }
+
+export interface ProductForm {
+  name: string
+  description: string
+  category: string
+  features?: string[]
+  pricing_model?: string
+  price?: number
+  product_url?: string
+  documentation_url?: string
+  featured_image_url?: string
+  is_active: boolean
+  launch_date?: string
+}

@@ -11,13 +11,13 @@ interface CaseStudyCardProps {
 export function CaseStudyCard({ caseStudy }: CaseStudyCardProps) {
   return (
     <Link href={`/case-studies/${caseStudy.slug}`}>
-      <Card className="h-full hover:shadow-lg transition-shadow duration-300 group">
+      <Card className="h-full group">
         {caseStudy.featured_image_url && (
           <div className="overflow-hidden rounded-t-lg">
             <img
               src={caseStudy.featured_image_url}
               alt={caseStudy.featured_image_alt || caseStudy.title}
-              className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+              className="w-full h-48 object-cover "
             />
           </div>
         )}
@@ -26,7 +26,7 @@ export function CaseStudyCard({ caseStudy }: CaseStudyCardProps) {
             <Badge variant="secondary">{caseStudy.service_category.replace(/_/g, " ")}</Badge>
             {caseStudy.is_featured && <Badge variant="default">Featured</Badge>}
           </div>
-          <CardTitle className="line-clamp-2 group-hover:text-primary transition-colors">
+          <CardTitle className="line-clamp-2 ">
             {caseStudy.title}
           </CardTitle>
           {caseStudy.subtitle && (

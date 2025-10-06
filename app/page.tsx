@@ -193,7 +193,7 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-            <Card className="group hover:shadow-lg transition-shadow">
+            <Card className="group ">
               <CardHeader>
                 <div className="aspect-video bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg mb-4 flex items-center justify-center">
                   <Shield className="h-16 w-16 text-primary/40" />
@@ -215,7 +215,7 @@ export default function HomePage() {
                     <span className="font-semibold text-primary">₦500M+</span>
                   </div>
                 </div>
-                <Button variant="ghost" className="w-full group-hover:bg-primary/10" asChild>
+                <Button variant="ghost" className="w-full " asChild>
                   <Link href="/case-studies">
                     View Case Study <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
@@ -223,7 +223,7 @@ export default function HomePage() {
               </CardContent>
             </Card>
 
-            <Card className="group hover:shadow-lg transition-shadow">
+            <Card className="group ">
               <CardHeader>
                 <div className="aspect-video bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg mb-4 flex items-center justify-center">
                   <Code className="h-16 w-16 text-primary/40" />
@@ -245,7 +245,7 @@ export default function HomePage() {
                     <span className="font-semibold text-primary">95%</span>
                   </div>
                 </div>
-                <Button variant="ghost" className="w-full group-hover:bg-primary/10" asChild>
+                <Button variant="ghost" className="w-full " asChild>
                   <Link href="/case-studies">
                     View Case Study <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
@@ -253,7 +253,7 @@ export default function HomePage() {
               </CardContent>
             </Card>
 
-            <Card className="group hover:shadow-lg transition-shadow">
+            <Card className="group ">
               <CardHeader>
                 <div className="aspect-video bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg mb-4 flex items-center justify-center">
                   <Smartphone className="h-16 w-16 text-primary/40" />
@@ -275,7 +275,7 @@ export default function HomePage() {
                     <span className="font-semibold text-primary">4.8/5</span>
                   </div>
                 </div>
-                <Button variant="ghost" className="w-full group-hover:bg-primary/10" asChild>
+                <Button variant="ghost" className="w-full " asChild>
                   <Link href="/case-studies">
                     View Case Study <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>

@@ -449,7 +449,7 @@ export default function AdminPaymentManager() {
       <div className="space-y-4">
         {filteredPayments.length > 0 ? (
           filteredPayments.map((payment) => (
-            <Card key={payment.id} className="hover:shadow-lg transition-shadow">
+            <Card key={payment.id} className="">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">

@@ -173,7 +173,7 @@ const getStatusIcon = (status: string) => {
           {requests && requests.length > 0 ? (
             <div className="space-y-6">
               {requests.map((request: any) => (
-                <Card key={request.id} className="hover:shadow-lg transition-shadow">
+                <Card key={request.id} className="">
                   <CardContent className="p-4 sm:p-6">
                     <div className="space-y-3 mb-4">
                       {/* Title and primary badges */}

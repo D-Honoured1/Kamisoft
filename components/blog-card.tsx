@@ -11,13 +11,13 @@ interface BlogCardProps {
 export function BlogCard({ post }: BlogCardProps) {
   return (
     <Link href={`/blog/${post.slug}`}>
-      <Card className="h-full hover:shadow-lg transition-shadow duration-300 group">
+      <Card className="h-full group">
         {post.cover_image_url && (
           <div className="overflow-hidden rounded-t-lg">
             <img
               src={post.cover_image_url}
               alt={post.cover_image_alt || post.title}
-              className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+              className="w-full h-48 object-cover "
             />
           </div>
         )}
@@ -26,7 +26,7 @@ export function BlogCard({ post }: BlogCardProps) {
             {post.category && <Badge variant="secondary">{post.category}</Badge>}
             {post.is_featured && <Badge variant="default">Featured</Badge>}
           </div>
-          <CardTitle className="line-clamp-2 group-hover:text-primary transition-colors">
+          <CardTitle className="line-clamp-2 ">
             {post.title}
           </CardTitle>
         </CardHeader>

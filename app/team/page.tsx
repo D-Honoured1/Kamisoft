@@ -43,7 +43,7 @@ export default async function TeamPage() {
               {leadership.map((member) => (
                 <div
                   key={member.id}
-                  className="bg-card rounded-lg p-6 border hover:shadow-lg transition-shadow"
+                  className="bg-card rounded-lg p-6 border "
                 >
                   {member.profile_image_url && (
                     <div className="relative h-48 w-48 mx-auto mb-4 rounded-full overflow-hidden">
@@ -136,7 +136,7 @@ export default async function TeamPage() {
               {team.map((member) => (
                 <div
                   key={member.id}
-                  className="bg-card rounded-lg p-6 border hover:shadow-lg transition-shadow"
+                  className="bg-card rounded-lg p-6 border "
                 >
                   {member.profile_image_url && (
                     <div className="relative h-32 w-32 mx-auto mb-4 rounded-full overflow-hidden">

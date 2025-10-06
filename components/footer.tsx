@@ -28,22 +28,22 @@ export function Footer() {
             <h3 className="text-sm font-semibold">Quick Links</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/about" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link href="/about" className="text-muted-foreground">
                   About Us
                 </Link>
               </li>
               <li>
-                <Link href="/services" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link href="/services" className="text-muted-foreground">
                   Services
                 </Link>
               </li>
               <li>
-                <Link href="/portfolio" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link href="/portfolio" className="text-muted-foreground">
                   Portfolio
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link href="/contact" className="text-muted-foreground">
                   Contact
                 </Link>
               </li>
@@ -66,22 +66,22 @@ export function Footer() {
             <h3 className="text-sm font-semibold">Legal</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/legal/privacy-policy" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link href="/legal/privacy-policy" className="text-muted-foreground">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link href="/legal/terms-of-service" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link href="/legal/terms-of-service" className="text-muted-foreground">
                   Terms of Service
                 </Link>
               </li>
               <li>
-                <Link href="/legal/cookie-policy" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link href="/legal/cookie-policy" className="text-muted-foreground">
                   Cookie Policy
                 </Link>
               </li>
               <li>
-                <Link href="/legal" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link href="/legal" className="text-muted-foreground">
                   All Legal Documents
                 </Link>
               </li>
@@ -110,21 +110,21 @@ export function Footer() {
             <div className="flex justify-center md:justify-start space-x-4 pt-2">
               <Link
                 href={COMPANY_INFO.social.linkedin}
-                className="text-muted-foreground hover:text-primary transition-colors"
+                className="text-muted-foreground"
                 aria-label="LinkedIn"
               >
                 <Linkedin className="h-4 w-4" />
               </Link>
               <Link
                 href={COMPANY_INFO.social.twitter}
-                className="text-muted-foreground hover:text-primary transition-colors"
+                className="text-muted-foreground"
                 aria-label="Twitter"
               >
                 <Twitter className="h-4 w-4" />
               </Link>
               <Link
                 href={COMPANY_INFO.social.github}
-                className="text-muted-foreground hover:text-primary transition-colors"
+                className="text-muted-foreground"
                 aria-label="GitHub"
               >
                 <Github className="h-4 w-4" />

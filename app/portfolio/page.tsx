@@ -81,7 +81,7 @@ export default async function PortfolioPage() {
                     <img
                       src={project.featured_image_url || "/placeholder.svg"}
                       alt={project.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-cover "
                     />
                     <div className="absolute top-4 left-4">{getCategoryBadge(project.service_category)}</div>
                     <div className="absolute top-4 right-4">
@@ -208,7 +208,7 @@ export default async function PortfolioPage() {
                     <img
                       src={project.featured_image_url || "/placeholder.svg"}
                       alt={project.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-cover "
                     />
                     <div className="absolute top-3 left-3">{getCategoryBadge(project.service_category)}</div>
                   </div>

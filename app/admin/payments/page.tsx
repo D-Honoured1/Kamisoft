@@ -119,7 +119,7 @@ export default async function PaymentsPage() {
       {payments && payments.length > 0 ? (
         <div className="space-y-4">
           {payments.map((payment: any) => (
-            <Card key={payment.id} className="hover:shadow-lg transition-shadow">
+            <Card key={payment.id} className="">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="space-y-1">

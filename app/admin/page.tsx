@@ -198,7 +198,7 @@ export default async function AdminDashboard() {
         {stats.map((stat) => {
           const Icon = stat.icon
           return (
-            <Card key={stat.title} className="hover:shadow-lg transition-shadow cursor-pointer" asChild>
+            <Card key={stat.title} className=" cursor-pointer" asChild>
               <Link href={stat.href}>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">

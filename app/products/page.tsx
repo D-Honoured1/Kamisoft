@@ -3,99 +3,10 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ExternalLink, Calendar, Star } from "lucide-react"
 import Link from "next/link"
+import { getAllProducts } from "@/lib/queries/content"
 
-export default function ProductsPage() {
-  // This would normally come from the database
-  const products = [
-    {
-      id: "1",
-      name: "Forex Bot",
-      description: "Advanced automated trading bot for forex markets with AI-powered analysis and risk management.",
-      category: "Fintech",
-      features: [
-        "AI-powered trading signals",
-        "Risk management",
-        "Real-time market analysis",
-        "24/7 automated trading",
-        "Portfolio diversification",
-      ],
-      pricing_model: "subscription",
-      product_url: "https://forexbot.kamisoft.com",
-      is_active: true,
-      launch_date: "2023-06-15",
-      featured_image_url: "/forex-trading-dashboard.png",
-    },
-    {
-      id: "2",
-      name: "Brain-Clip",
-      description:
-        "Revolutionary gaming platform that combines entertainment with cognitive training and skill development.",
-      category: "Gaming",
-      features: [
-        "Cognitive training games",
-        "Skill assessment",
-        "Progress tracking",
-        "Multiplayer challenges",
-        "Leaderboards",
-      ],
-      pricing_model: "free",
-      product_url: "https://brainclip.kamisoft.com",
-      is_active: true,
-      launch_date: "2023-09-20",
-      featured_image_url: "/gaming-platform-interface.jpg",
-    },
-    {
-      id: "3",
-      name: "E-commerce Platform",
-      description:
-        "Comprehensive e-commerce solution similar to AliExpress, built for African markets with local payment integration.",
-      category: "E-commerce",
-      features: [
-        "Multi-vendor marketplace",
-        "Local payment gateways",
-        "Inventory management",
-        "Order tracking",
-        "Mobile-first design",
-      ],
-      pricing_model: "custom",
-      product_url: "https://marketplace.kamisoft.com",
-      is_active: true,
-      launch_date: "2024-01-10",
-      featured_image_url: "/e-commerce-marketplace.jpg",
-    },
-    {
-      id: "4",
-      name: "Enterprise CRM",
-      description:
-        "Customer relationship management system designed for growing businesses with advanced analytics and automation.",
-      category: "Enterprise Software",
-      features: ["Contact management", "Sales pipeline", "Email automation", "Analytics dashboard", "Integration APIs"],
-      pricing_model: "subscription",
-      product_url: "https://crm.kamisoft.com",
-      is_active: true,
-      launch_date: "2023-11-30",
-      featured_image_url: "/crm-dashboard-interface.png",
-    },
-    {
-      id: "5",
-      name: "Blockchain Identity",
-      description:
-        "Decentralized identity verification system using blockchain technology for secure and private authentication.",
-      category: "Blockchain",
-      features: [
-        "Decentralized identity",
-        "Biometric verification",
-        "Zero-knowledge proofs",
-        "Cross-platform compatibility",
-        "Privacy-first design",
-      ],
-      pricing_model: "custom",
-      product_url: "https://identity.kamisoft.com",
-      is_active: true,
-      launch_date: "2024-03-15",
-      featured_image_url: "/blockchain-identity.png",
-    },
-  ]
+export default async function ProductsPage() {
+  const products = await getAllProducts({ active_only: true })
 
   const getPricingBadge = (pricingModel: string) => {
     switch (pricingModel) {
@@ -139,13 +50,13 @@ export default function ProductsPage() {
             {products.map((product) => (
               <Card
                 key={product.id}
-                className="group hover:shadow-lg transition-all duration-300 border-0 bg-card/50 overflow-hidden"
+                className="group border-0 bg-card/50 overflow-hidden"
               >
                 <div className="aspect-video bg-muted/50 relative overflow-hidden">
                   <img
                     src={product.featured_image_url || "/placeholder.svg"}
                     alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover "
                   />
                   <div className="absolute top-4 left-4">
                     <Badge variant="secondary">{product.category}</Badge>

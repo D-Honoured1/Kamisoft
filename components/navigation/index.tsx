@@ -21,7 +21,7 @@ export function Navigation() {
       <div className="container flex h-16 items-center justify-between">
         <NavigationLogo />
         <NavigationMenu />
-        
+
         <div className="flex items-center space-x-4">
           <ThemeToggle />
           <div className="hidden md:block">

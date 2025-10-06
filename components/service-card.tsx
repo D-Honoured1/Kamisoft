@@ -19,7 +19,7 @@ export function ServiceCard({ category, showPaymentButton = false, featured = fa
   if (!service) return null
 
   return (
-    <Card className={`group hover:shadow-lg transition-all duration-300 border-0 bg-card/50 ${featured ? 'ring-2 ring-primary' : ''}`}>
+    <Card className={`group transition-all duration-300 border-0 bg-card/50 ${featured ? 'ring-2 ring-primary' : ''}`}>
       <CardHeader className="text-center pb-4">
         <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors text-2xl">
           {service.icon}
