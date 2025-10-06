@@ -5,25 +5,14 @@ import { cookies } from "next/headers"
 export async function POST() {
   try {
     const cookieStore = cookies()
-    
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict" as const,
-      path: "/",
-      expires: new Date(0),
-    }
-
-    const response = NextResponse.json({ 
-      success: true, 
-      message: "Logged out successfully" 
-    })
 
     // Clear the cookie
-    response.cookies.set("admin_token", "", cookieOptions)
-    response.cookies.delete("admin_token")
+    cookieStore.delete("admin_token")
 
-    return response
+    return NextResponse.json({
+      success: true,
+      message: "Logged out successfully"
+    })
   } catch (error) {
     console.error("Logout error:", error)
     return NextResponse.json(
@@ -33,7 +22,15 @@ export async function POST() {
   }
 }
 
-// Also handle GET requests for direct navigation
+// Also handle GET requests for direct navigation - redirect to home
 export async function GET() {
-  return POST()
+  try {
+    const cookieStore = cookies()
+    cookieStore.delete("admin_token")
+
+    return NextResponse.redirect(new URL("/", process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"))
+  } catch (error) {
+    console.error("Logout error:", error)
+    return NextResponse.redirect(new URL("/", process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"))
+  }
 }

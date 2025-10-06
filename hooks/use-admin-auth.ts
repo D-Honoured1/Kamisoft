@@ -14,13 +14,13 @@ export function useAdminAuth() {
 
   const checkAuth = useCallback(async () => {
     try {
-      const response = await fetch('/api/admin/verify', { 
+      const response = await fetch('/api/admin/verify', {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         }
       })
-      
+
       if (response.ok) {
         const data = await response.json()
         // Handle both old and new response formats
@@ -30,6 +30,10 @@ export function useAdminAuth() {
           setUser(null)
         }
       } else {
+        // Only log error if it's not a 401 (unauthorized is expected when not logged in)
+        if (response.status !== 401) {
+          console.error('Auth check failed with status:', response.status)
+        }
         setUser(null)
       }
     } catch (error) {
@@ -43,7 +47,6 @@ export function useAdminAuth() {
   useEffect(() => {
     if (mounted) {
       checkAuth()
-      const interval = setInterval(checkAuth, 30000) // Check every 30 seconds
 
       const handleStorageChange = (e: StorageEvent) => {
         if (e.key === 'admin_logout') {
@@ -54,7 +57,6 @@ export function useAdminAuth() {
       window.addEventListener('storage', handleStorageChange)
 
       return () => {
-        clearInterval(interval)
         window.removeEventListener('storage', handleStorageChange)
       }
     }

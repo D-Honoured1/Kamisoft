@@ -4,7 +4,7 @@ import { requireAuth } from "@/lib/auth/server-auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Users, FileText, CreditCard, Briefcase, Clock, MessageSquare, UserCheck, BookOpen, Star, HelpCircle, UsersRound, FolderKanban, LogOut } from "lucide-react"
+import { Users, FileText, CreditCard, Briefcase, Clock, MessageSquare, UserCheck, BookOpen, Star, HelpCircle, UsersRound, FolderKanban, LogOut, Package } from "lucide-react"
 import Link from "next/link"
 import { formatDate } from "@/lib/utils/date-formatter"
 
@@ -302,6 +302,12 @@ export default async function AdminDashboard() {
               <Link href="/admin/case-studies">
                 <FolderKanban className="mr-2 h-4 w-4" />
                 Case Studies
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full justify-start bg-transparent">
+              <Link href="/admin/products">
+                <Package className="mr-2 h-4 w-4" />
+                Products
               </Link>
             </Button>
           </CardContent>
