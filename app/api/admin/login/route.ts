@@ -67,16 +67,16 @@ export async function POST(req: Request) {
     if (updateError) {
     }
 
-    // Create JWT token
-    const jwtSecret = process.env.JWT_SECRET!
+    // Create JWT token using Supabase JWT secret
+    const jwtSecret = process.env.SUPABASE_JWT_SECRET!
     const token = jwt.sign(
-      { 
-        role: "admin", 
+      {
+        role: "admin",
         email: adminUser.email,
         id: adminUser.id,
         name: adminUser.name
-      }, 
-      jwtSecret, 
+      },
+      jwtSecret,
       { expiresIn: "24h" }
     )
 

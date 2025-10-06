@@ -14,8 +14,8 @@ export async function GET() {
       return NextResponse.json({ error: "No token provided" }, { status: 401 })
     }
 
-    const jwtSecret = process.env.JWT_SECRET!
-    
+    const jwtSecret = process.env.SUPABASE_JWT_SECRET!
+
     try {
       const decoded = jwt.verify(token, jwtSecret) as any
       

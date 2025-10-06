@@ -19,8 +19,8 @@ export async function getAdminUser(): Promise<AdminUser | null> {
       return null
     }
 
-    // Verify JWT token - must match the secret used in login
-    const jwtSecret = process.env.JWT_SECRET!
+    // Verify JWT token using Supabase JWT secret
+    const jwtSecret = process.env.SUPABASE_JWT_SECRET!
     const decoded = jwt.verify(token, jwtSecret) as any
 
     if (!decoded || decoded.role !== "admin") {
