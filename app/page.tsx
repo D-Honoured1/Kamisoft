@@ -1,18 +1,11 @@
-// Update app/page.tsx to hide hero section for logged-in admins
-"use client"
-
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { PaymentButton } from "@/components/payment-button"
 import { ServiceCard } from "@/components/service-card"
 import { ArrowRight, Code, Smartphone, Shield, TrendingUp, Users, Award } from "lucide-react"
-import { COMPANY_INFO } from "@/lib/constants/services"
-import { useAdminAuth } from "@/hooks/use-admin-auth"
 
 export default function HomePage() {
-  const { isAuthenticated: isAdminAuthenticated } = useAdminAuth()
 
   const featuredServices = [
     "full_stack_development",

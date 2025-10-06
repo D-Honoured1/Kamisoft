@@ -1,18 +1,27 @@
-// hooks/use-admin-auth.ts - COMPLETE FIXED VERSION
+// hooks/use-admin-auth.ts
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { usePathname } from "next/navigation"
 
 export function useAdminAuth() {
   const [user, setUser] = useState<{ name: string; email: string } | null>(null)
   const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
+  const pathname = usePathname()
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
   const checkAuth = useCallback(async () => {
+    // Only check auth if we're on an admin page (excluding login page)
+    if (!pathname || !pathname.startsWith('/admin') || pathname === '/admin/login') {
+      setLoading(false)
+      setUser(null)
+      return
+    }
+
     try {
       const response = await fetch('/api/admin/verify', {
         credentials: 'include',
@@ -42,7 +51,7 @@ export function useAdminAuth() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [pathname])
 
   useEffect(() => {
     if (mounted) {
