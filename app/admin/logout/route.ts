@@ -23,14 +23,21 @@ export async function POST() {
 }
 
 // Also handle GET requests for direct navigation - redirect to home
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const cookieStore = cookies()
     cookieStore.delete("admin_token")
 
-    return NextResponse.redirect(new URL("/", process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"))
+    // Use the request URL to determine the correct base URL
+    const url = new URL(request.url)
+    const baseUrl = `${url.protocol}//${url.host}`
+
+    return NextResponse.redirect(new URL("/", baseUrl))
   } catch (error) {
     console.error("Logout error:", error)
-    return NextResponse.redirect(new URL("/", process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"))
+    // Fallback to request origin if available
+    const url = new URL(request.url)
+    const baseUrl = `${url.protocol}//${url.host}`
+    return NextResponse.redirect(new URL("/", baseUrl))
   }
 }

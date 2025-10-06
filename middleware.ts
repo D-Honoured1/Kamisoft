@@ -9,11 +9,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Allow access to login page and auth endpoints
+  // Allow access to login page, auth endpoints, and API routes
   if (
-    url.pathname === "/admin/login" || 
+    url.pathname === "/admin/login" ||
     url.pathname.startsWith("/admin/logout") ||
-    url.pathname.startsWith("/admin/auth")
+    url.pathname.startsWith("/admin/auth") ||
+    url.pathname.startsWith("/api/admin")
   ) {
     return NextResponse.next()
   }

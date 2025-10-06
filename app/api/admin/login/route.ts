@@ -97,7 +97,7 @@ export async function POST(req: Request) {
       serialize("admin_token", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        sameSite: "lax",
         path: "/",
         maxAge: 60 * 60 * 24, // 24 hours
       })
