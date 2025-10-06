@@ -1,7 +1,7 @@
 // hooks/use-admin-auth.ts - COMPLETE FIXED VERSION
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 
 export function useAdminAuth() {
   const [user, setUser] = useState<{ name: string; email: string } | null>(null)
@@ -12,27 +12,7 @@ export function useAdminAuth() {
     setMounted(true)
   }, [])
 
-  useEffect(() => {
-    if (mounted) {
-      checkAuth()
-      const interval = setInterval(checkAuth, 30000) // Check every 30 seconds
-      
-      const handleStorageChange = (e: StorageEvent) => {
-        if (e.key === 'admin_logout') {
-          setUser(null)
-        }
-      }
-      
-      window.addEventListener('storage', handleStorageChange)
-      
-      return () => {
-        clearInterval(interval)
-        window.removeEventListener('storage', handleStorageChange)
-      }
-    }
-  }, [mounted])
-
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/verify', { 
         credentials: 'include',
@@ -58,7 +38,27 @@ export function useAdminAuth() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (mounted) {
+      checkAuth()
+      const interval = setInterval(checkAuth, 30000) // Check every 30 seconds
+
+      const handleStorageChange = (e: StorageEvent) => {
+        if (e.key === 'admin_logout') {
+          setUser(null)
+        }
+      }
+
+      window.addEventListener('storage', handleStorageChange)
+
+      return () => {
+        clearInterval(interval)
+        window.removeEventListener('storage', handleStorageChange)
+      }
+    }
+  }, [mounted, checkAuth])
 
   const logout = async () => {
     try {
