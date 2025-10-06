@@ -3,57 +3,26 @@
 export const dynamic = "force-dynamic"
 
 import type React from "react"
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useState } from "react"
+import { useAdminAuth } from "@/components/providers/admin-auth-provider"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Eye, EyeOff, Shield } from "lucide-react"
+import { Eye, EyeOff, Shield, Mail, Lock } from "lucide-react"
 import Link from "next/link"
 
 export default function AdminLogin() {
-  const router = useRouter()
+  const { login, isLoading: authLoading } = useAdminAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
-  const [mounted, setMounted] = useState(false)
 
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   })
-
-  // Ensure component is mounted before checking auth
-  useEffect(() => {
-    setMounted(true)
-    
-    // Clear any existing activity tracking when accessing login
-    localStorage.removeItem('lastActivity')
-  }, [])
-
-  // Check if user is already logged in
-  useEffect(() => {
-    if (!mounted) return
-
-    const checkAuth = async () => {
-      try {
-        const response = await fetch('/api/admin/verify', {
-          credentials: 'include'
-        })
-
-        if (response.ok) {
-          // User is already authenticated, redirect to dashboard
-          router.replace("/admin")
-        }
-      } catch (error) {
-        // Not authenticated, stay on login page
-      }
-    }
-
-    checkAuth()
-  }, [router, mounted])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -61,36 +30,16 @@ export default function AdminLogin() {
     setError("")
 
     try {
-      const res = await fetch("/api/admin/login", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Cache-Control": "no-cache"
-        },
-        body: JSON.stringify(formData),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        throw new Error(data.error || "Login failed")
-      }
-
-      // Set initial activity timestamp for the session
-      localStorage.setItem('lastActivity', Date.now().toString())
-
-      // Wait a moment for the cookie to be set, then redirect
-      setTimeout(() => {
-        window.location.replace("/admin")
-      }, 100)
-      
+      await login(formData.email, formData.password)
+      // Navigation happens in the login function
     } catch (error: any) {
       setError(error.message || "An error occurred during login")
+    } finally {
       setIsLoading(false)
     }
   }
 
-  if (!mounted) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -126,22 +75,27 @@ export default function AdminLogin() {
 
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="support@kamisoftenterprises.online"
-                  required
-                  disabled={isLoading}
-                />
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="support@kamisoftenterprises.online"
+                    className="pl-10"
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="password"
                     name="password"
@@ -150,6 +104,7 @@ export default function AdminLogin() {
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     placeholder="Enter your password"
+                    className="pl-10 pr-10"
                     required
                     disabled={isLoading}
                   />

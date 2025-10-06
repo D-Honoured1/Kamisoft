@@ -1,7 +1,9 @@
 // components/admin-navigation/admin-user-info.tsx
+"use client"
+
 import { Button } from "@/components/ui/button"
 import { LogOut } from "lucide-react"
-import { useAdminAuth } from "@/hooks/use-admin-auth"
+import { useAdminAuth } from "@/components/providers/admin-auth-provider"
 
 export function AdminUserInfo() {
   const { user, logout } = useAdminAuth()

@@ -1,4 +1,5 @@
 // app/admin/contact-submissions/[id]/edit/page.tsx - Update contact submission status
+import { useAdminAuth } from "@/components/providers/admin-auth-provider"
 "use client"
 
 import { useState, useEffect } from "react"

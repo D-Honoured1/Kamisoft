@@ -1,4 +1,5 @@
 "use client"
+import { useAdminAuth } from "@/components/providers/admin-auth-provider"
 
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"

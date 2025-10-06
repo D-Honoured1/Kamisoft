@@ -4,9 +4,10 @@ import { requireAuth } from "@/lib/auth/server-auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Users, FileText, CreditCard, Briefcase, Clock, MessageSquare, UserCheck, BookOpen, Star, HelpCircle, UsersRound, FolderKanban, LogOut, Package } from "lucide-react"
+import { Users, FileText, CreditCard, Briefcase, Clock, MessageSquare, UserCheck, BookOpen, Star, HelpCircle, UsersRound, FolderKanban, Package } from "lucide-react"
 import Link from "next/link"
 import { formatDate } from "@/lib/utils/date-formatter"
+import { LogoutButton } from "@/components/admin/logout-button"
 
 export const dynamic = "force-dynamic"
 
@@ -193,12 +194,7 @@ export default async function AdminDashboard() {
             Welcome back, {adminUser.name}! Here's what's happening at Kamisoft.
           </p>
         </div>
-        <Button variant="outline" asChild>
-          <Link href="/admin/logout">
-            <LogOut className="mr-2 h-4 w-4" />
-            Logout
-          </Link>
-        </Button>
+        <LogoutButton />
       </div>
 
       {/* Stats Grid */}

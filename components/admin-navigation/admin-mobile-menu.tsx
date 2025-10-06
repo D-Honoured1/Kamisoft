@@ -6,7 +6,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Menu, X, LogOut } from "lucide-react"
 import { usePathname } from "next/navigation"
-import { useAdminAuth } from "@/hooks/use-admin-auth"
+import { useAdminAuth } from "@/components/providers/admin-auth-provider"
 
 export function AdminMobileMenu() {
   const [isOpen, setIsOpen] = useState(false)

@@ -1,4 +1,5 @@
 // app/admin/portfolio/edit/[id]/page.tsx
+import { useAdminAuth } from "@/components/providers/admin-auth-provider"
 "use client"
 
 export const dynamic = "force-dynamic"
