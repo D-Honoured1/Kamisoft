@@ -32,20 +32,7 @@ export function useAdminAuth() {
     }
   }, [mounted])
 
-  const hasAdminToken = () => {
-    // Check if admin token exists in cookies before making API calls
-    if (typeof document === 'undefined') return false
-    return document.cookie.includes('admin_token=')
-  }
-
   const checkAuth = async () => {
-    // Only make API call if we have a token
-    if (!hasAdminToken()) {
-      setLoading(false)
-      setUser(null)
-      return
-    }
-
     try {
       const response = await fetch('/api/admin/verify', { 
         credentials: 'include',

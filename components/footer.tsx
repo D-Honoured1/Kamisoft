@@ -112,6 +112,8 @@ export function Footer() {
                 href={COMPANY_INFO.social.linkedin}
                 className="text-muted-foreground"
                 aria-label="LinkedIn"
+                target="_blank"
+                rel="noopener noreferrer"
               >
                 <Linkedin className="h-4 w-4" />
               </Link>
@@ -119,6 +121,8 @@ export function Footer() {
                 href={COMPANY_INFO.social.twitter}
                 className="text-muted-foreground"
                 aria-label="Twitter"
+                target="_blank"
+                rel="noopener noreferrer"
               >
                 <Twitter className="h-4 w-4" />
               </Link>
@@ -126,6 +130,8 @@ export function Footer() {
                 href={COMPANY_INFO.social.github}
                 className="text-muted-foreground"
                 aria-label="GitHub"
+                target="_blank"
+                rel="noopener noreferrer"
               >
                 <Github className="h-4 w-4" />
               </Link>

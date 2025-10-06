@@ -36,22 +36,23 @@ export default function AdminLogin() {
   // Check if user is already logged in
   useEffect(() => {
     if (!mounted) return
-    
-    const checkAuth = () => {
-      const token = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('admin_token='))
-        ?.split('=')[1];
-      
-      if (token) {
-        // Use replace instead of push to prevent back button issues
-        router.replace("/admin")
+
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/admin/verify', {
+          credentials: 'include'
+        })
+
+        if (response.ok) {
+          // User is already authenticated, redirect to dashboard
+          router.replace("/admin")
+        }
+      } catch (error) {
+        // Not authenticated, stay on login page
       }
     }
-    
-    // Small delay to ensure cookie is set
-    const timeoutId = setTimeout(checkAuth, 100)
-    return () => clearTimeout(timeoutId)
+
+    checkAuth()
   }, [router, mounted])
 
   const handleSubmit = async (e: React.FormEvent) => {
