@@ -68,7 +68,7 @@ export async function POST(req: Request) {
     }
 
     // Create JWT token
-    const jwtSecret = process.env.JWT_SECRET || "fallback-secret-key-change-in-production"
+    const jwtSecret = process.env.JWT_SECRET!
     const token = jwt.sign(
       { 
         role: "admin", 
