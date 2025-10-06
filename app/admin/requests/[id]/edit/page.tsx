@@ -1,5 +1,4 @@
 // app/admin/requests/[id]/edit/page.tsx - COMPLETE AND PROPERLY STRUCTURED
-import { useAdminAuth } from "@/components/providers/admin-auth-provider"
 "use client"
 
 import { useState, useEffect } from "react"
