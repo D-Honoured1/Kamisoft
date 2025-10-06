@@ -91,16 +91,24 @@ export async function POST(req: Request) {
       }
     })
 
-    // Set cookie with proper options
+    // Set cookie with proper options for production
+    const cookieOptions: any = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24, // 24 hours
+    }
+
+    // In production, set domain to allow cookie across subdomains
+    if (process.env.NODE_ENV === "production" && process.env.NEXT_PUBLIC_SITE_URL) {
+      const url = new URL(process.env.NEXT_PUBLIC_SITE_URL)
+      cookieOptions.domain = url.hostname
+    }
+
     response.headers.set(
       "Set-Cookie",
-      serialize("admin_token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/",
-        maxAge: 60 * 60 * 24, // 24 hours
-      })
+      serialize("admin_token", token, cookieOptions)
     )
 
     return response

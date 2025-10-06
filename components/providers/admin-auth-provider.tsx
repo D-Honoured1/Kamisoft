@@ -54,22 +54,25 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [pathname, router])
 
-  // Verify auth state when provider mounts or pathname changes
+  // Verify auth state ONLY when provider mounts (not on every route change)
   useEffect(() => {
+    const currentPath = window.location.pathname
+
     // Skip verification on login page
-    if (pathname === "/admin/login") {
+    if (currentPath === "/admin/login") {
       setIsLoading(false)
       return
     }
 
     // Only verify on admin routes
-    if (!pathname?.startsWith("/admin")) {
+    if (!currentPath?.startsWith("/admin")) {
       setIsLoading(false)
       return
     }
 
+    // Only verify once on mount
     verifyAuth()
-  }, [pathname, verifyAuth])
+  }, [verifyAuth]) // Only depends on verifyAuth, not pathname
 
   const login = async (email: string, password: string) => {
     const response = await fetch("/api/admin/login", {
