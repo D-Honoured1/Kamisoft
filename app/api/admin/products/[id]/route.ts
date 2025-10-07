@@ -22,6 +22,9 @@ export async function DELETE(
     console.log(`[DELETE] Authenticated as: ${adminUser.email}`)
 
     const supabase = createServerClient()
+<<<<<<< HEAD
+>>>>>>> parent of 3cfc1d3 (again)
+=======
 >>>>>>> parent of 3cfc1d3 (again)
 
     // Delete the product
