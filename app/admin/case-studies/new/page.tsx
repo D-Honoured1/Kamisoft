@@ -19,6 +19,7 @@ import { RichTextEditor } from "@/components/rich-text-editor"
 import { ImageUpload } from "@/components/image-upload"
 import { createCaseStudy } from "@/lib/queries/content-client"
 import type { CaseStudyForm, ServiceCategory } from "@/lib/types/database"
+import { ArrowLeft } from "lucide-react"
 
 export default function NewCaseStudyPage() {
   const router = useRouter()
@@ -49,6 +50,16 @@ export default function NewCaseStudyPage() {
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => router.back()}
+        className="mb-4"
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back
+      </Button>
+
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Add New Case Study</h1>
         <p className="text-muted-foreground mt-1">Showcase your successful project</p>

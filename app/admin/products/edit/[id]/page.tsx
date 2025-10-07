@@ -18,6 +18,8 @@ import {
 import { getProductById } from "@/lib/queries/content-client"
 import type { ProductForm } from "@/lib/types/database"
 import { useToast } from "@/components/ui/use-toast"
+import { ArrowLeft } from "lucide-react"
+import Link from "next/link"
 
 export default function EditProductPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -111,6 +113,16 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => router.back()}
+        className="mb-4"
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back
+      </Button>
+
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Edit Product</h1>
         <p className="text-muted-foreground mt-1">Update product information</p>

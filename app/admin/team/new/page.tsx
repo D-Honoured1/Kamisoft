@@ -18,6 +18,7 @@ import {
 import { ImageUpload } from "@/components/image-upload"
 import { createTeamMember } from "@/lib/queries/content-client"
 import type { TeamMemberForm } from "@/lib/types/database"
+import { ArrowLeft } from "lucide-react"
 
 export default function NewTeamMemberPage() {
   const router = useRouter()
@@ -47,6 +48,16 @@ export default function NewTeamMemberPage() {
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => router.back()}
+        className="mb-4"
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back
+      </Button>
+
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Add New Team Member</h1>
         <p className="text-muted-foreground mt-1">Add a new member to your team</p>

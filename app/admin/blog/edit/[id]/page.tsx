@@ -12,6 +12,7 @@ import { RichTextEditor } from "@/components/rich-text-editor"
 import { ImageUpload } from "@/components/image-upload"
 import { getBlogPostById, updateBlogPost } from "@/lib/queries/content-client"
 import type { BlogPost } from "@/lib/types/database"
+import { ArrowLeft } from "lucide-react"
 
 export default function EditBlogPostPage() {
   const params = useParams()
@@ -77,6 +78,16 @@ export default function EditBlogPostPage() {
 
   return (
     <div className="p-8 max-w-5xl mx-auto">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => router.back()}
+        className="mb-4"
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back
+      </Button>
+
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Edit Blog Post</h1>
         <p className="text-muted-foreground mt-1">Update your article</p>

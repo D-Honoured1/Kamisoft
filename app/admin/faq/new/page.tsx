@@ -18,6 +18,7 @@ import {
 import { RichTextEditor } from "@/components/rich-text-editor"
 import { createFAQ } from "@/lib/queries/content-client"
 import type { FAQForm, FAQCategory } from "@/lib/types/database"
+import { ArrowLeft } from "lucide-react"
 
 export default function NewFAQPage() {
   const router = useRouter()
@@ -46,6 +47,16 @@ export default function NewFAQPage() {
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => router.back()}
+        className="mb-4"
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back
+      </Button>
+
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Add New FAQ</h1>
         <p className="text-muted-foreground mt-1">Answer common questions</p>
