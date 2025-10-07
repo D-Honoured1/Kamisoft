@@ -2,7 +2,7 @@
 export const dynamic = "force-dynamic"
 
 import { NextResponse } from "next/server"
-import { createAdminClient } from "@/lib/supabase/admin"
+import { createServerClient } from "@/lib/supabase/server"
 import { getAdminUser } from "@/lib/auth/server-auth"
 
 export async function DELETE(
@@ -16,7 +16,13 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+<<<<<<< HEAD
     const supabase = createAdminClient()
+=======
+    console.log(`[DELETE] Authenticated as: ${adminUser.email}`)
+
+    const supabase = createServerClient()
+>>>>>>> parent of 3cfc1d3 (again)
 
     // Delete the product
     const { error, data } = await supabase
@@ -53,7 +59,7 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const supabase = createAdminClient()
+    const supabase = createServerClient()
 
     // Update the product
     const { data, error } = await supabase

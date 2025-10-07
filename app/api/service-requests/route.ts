@@ -134,11 +134,6 @@ export async function POST(req: Request) {
         .single()
 
       if (requestError) {
-          message: requestError.message,
-          code: requestError.code,
-          details: requestError.details,
-          hint: requestError.hint
-        })
         throw new Error(`Service request creation failed: ${requestError.message}`)
       }
 
@@ -192,10 +187,6 @@ export async function POST(req: Request) {
     }
 
   } catch (error: any) {
-      message: error.message,
-      stack: error.stack
-    })
-    
     return NextResponse.json(
       { error: error.message || "Internal server error" },
       { status: 500 }

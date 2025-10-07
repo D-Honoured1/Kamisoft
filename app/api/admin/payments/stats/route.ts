@@ -173,11 +173,6 @@ export async function GET() {
       }))
     }
 
-      totalPayments: stats.totalPayments,
-      totalRevenue: stats.totalRevenue,
-      pendingAmount: stats.pendingAmount
-    })
-
     return NextResponse.json({
       success: true,
       statistics: stats,

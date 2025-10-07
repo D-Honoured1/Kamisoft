@@ -2,7 +2,6 @@ export const dynamic = "force-dynamic"
 
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
-import { createAdminClient } from "@/lib/supabase/admin"
 import { getAdminUser } from "@/lib/auth/server-auth"
 import { cleanupLeadershipImages } from "@/lib/storage-cleanup"
 
@@ -63,7 +62,7 @@ export async function POST(req: Request) {
       )
     }
 
-    const supabase = createAdminClient()
+    const supabase = createServerClient()
 
     // Insert the new leadership member
     const { data: member, error } = await supabase
@@ -117,7 +116,7 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Member ID is required" }, { status: 400 })
     }
 
-    const supabase = createAdminClient()
+    const supabase = createServerClient()
 
     // Update the leadership member
     const { data: member, error } = await supabase
@@ -162,7 +161,7 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Member ID is required" }, { status: 400 })
     }
 
-    const supabase = createAdminClient()
+    const supabase = createServerClient()
 
     // Clean up associated images before deleting the record
     await cleanupLeadershipImages(memberId)
