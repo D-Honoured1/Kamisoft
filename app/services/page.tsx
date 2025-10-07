@@ -1,6 +1,9 @@
+'use client'
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
 import { ArrowRight, Check } from "lucide-react"
 import Link from "next/link"
 import { SERVICE_CATEGORIES } from "@/lib/constants/services"
@@ -29,41 +32,53 @@ export default function ServicesPage() {
         </div>
       </section>
 
-      {/* Services Grid */}
+      {/* Services Carousel */}
       <section className="py-20">
         <div className="container">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {Object.entries(SERVICE_CATEGORIES).map(([key, service]) => (
-              <Card key={key} className="group hover:shadow-lg transition-all duration-300 border-0 bg-card/50">
-                <CardHeader>
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center text-2xl group-hover:bg-primary/20 transition-colors">
-                      {service.icon}
-                    </div>
-                    <div>
-                      <CardTitle className="text-xl">{service.label}</CardTitle>
-                      <CardDescription className="text-sm mt-1">{service.description}</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                      Key Features
-                    </h4>
-                    <ul className="space-y-2">
-                      {service.features.map((feature, index) => (
-                        <li key={index} className="flex items-center gap-2 text-sm">
-                          <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <Carousel
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+            className="w-full max-w-7xl mx-auto"
+          >
+            <CarouselContent className="-ml-2 md:-ml-4">
+              {Object.entries(SERVICE_CATEGORIES).map(([key, service]) => (
+                <CarouselItem key={key} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/2">
+                  <Card className="group hover:shadow-lg transition-all duration-300 border-0 bg-card/50 h-full">
+                    <CardHeader>
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center text-2xl group-hover:bg-primary/20 transition-colors">
+                          {service.icon}
+                        </div>
+                        <div>
+                          <CardTitle className="text-xl">{service.label}</CardTitle>
+                          <CardDescription className="text-sm mt-1">{service.description}</CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                          Key Features
+                        </h4>
+                        <ul className="space-y-2">
+                          {service.features.map((feature, index) => (
+                            <li key={index} className="flex items-center gap-2 text-sm">
+                              <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                              <span>{feature}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious />
+            <CarouselNext />
+          </Carousel>
         </div>
       </section>
 
