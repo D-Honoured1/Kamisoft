@@ -19,21 +19,9 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-    console.log(`[DELETE] Authenticated as: ${adminUser.email}`)
-
->>>>>>> parent of d5918f5 (Let me breath)
-    const supabase = createAdminClient()
-=======
     console.log(`[DELETE] Authenticated as: ${adminUser.email}`)
 
     const supabase = createServerClient()
-<<<<<<< HEAD
->>>>>>> parent of 3cfc1d3 (again)
-
->>>>>>> parent of 3cfc1d3 (again)
 
     // Delete the product
     const { error, data } = await supabase

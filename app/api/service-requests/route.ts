@@ -214,15 +214,12 @@ export async function POST(req: Request) {
     }
 
   } catch (error: any) {
-<<<<<<< HEAD
-=======
     console.error("=== SERVICE REQUEST API ERROR ===")
     console.error("Error details:", {
       message: error.message,
       stack: error.stack
     })
-    
->>>>>>> parent of d5918f5 (Let me breath)
+
     return NextResponse.json(
       { error: error.message || "Internal server error" },
       { status: 500 }
