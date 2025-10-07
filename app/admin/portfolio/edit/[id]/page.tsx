@@ -84,7 +84,6 @@ export default function EditPortfolioProject() {
         })
         setTechnologies(project.technologies || [])
       } catch (error: any) {
-        console.error("Error loading project:", error)
         setError("Failed to load project data")
       } finally {
         setIsLoadingData(false)
@@ -131,7 +130,6 @@ export default function EditPortfolioProject() {
 
       router.push("/admin/portfolio")
     } catch (error: any) {
-      console.error("Error updating project:", error)
       setError(error.message || "An error occurred while updating the project")
     } finally {
       setIsLoading(false)

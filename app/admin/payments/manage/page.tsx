@@ -97,7 +97,6 @@ export default function AdminPaymentManager() {
         throw new Error('Failed to fetch payments')
       }
     } catch (error) {
-      console.error('Error fetching payments:', error)
       toast({
         title: "Error",
         description: "Failed to fetch payments",
@@ -155,7 +154,6 @@ export default function AdminPaymentManager() {
         throw new Error(errorData.error || 'Failed to clear payment')
       }
     } catch (error: any) {
-      console.error('Error clearing payment:', error)
       toast({
         title: "Error",
         description: error.message || "Failed to clear payment",
@@ -190,7 +188,6 @@ export default function AdminPaymentManager() {
         throw new Error(errorData.error || 'Failed to approve payment')
       }
     } catch (error: any) {
-      console.error('Error approving payment:', error)
       toast({
         title: "Error",
         description: error.message || "Failed to approve payment",
@@ -220,7 +217,6 @@ export default function AdminPaymentManager() {
         throw new Error(errorData.error || 'Failed to delete payment')
       }
     } catch (error: any) {
-      console.error('Error deleting payment:', error)
       toast({
         title: "Error",
         description: error.message || "Failed to delete payment",

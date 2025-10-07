@@ -1,12 +1,52 @@
+"use client"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel"
 import { ExternalLink, Calendar, Star } from "lucide-react"
 import Link from "next/link"
-import { getAllProducts } from "@/lib/queries/content"
+import { useState, useEffect } from "react"
 
-export default async function ProductsPage() {
-  const products = await getAllProducts({ active_only: true })
+interface Product {
+  id: string
+  name: string
+  description: string
+  category: string
+  pricing_model: string
+  featured_image_url?: string
+  launch_date: string
+  features: string[]
+  product_url: string
+  is_active: boolean
+}
+
+export default function ProductsPage() {
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchProducts() {
+      try {
+        const response = await fetch("/api/products")
+        if (response.ok) {
+          const data = await response.json()
+          setProducts(data.products || [])
+        }
+      } catch (error) {
+        // Handle error silently
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchProducts()
+  }, [])
 
   const getPricingBadge = (pricingModel: string) => {
     switch (pricingModel) {
@@ -43,80 +83,105 @@ export default async function ProductsPage() {
         </div>
       </section>
 
-      {/* Products Grid */}
+      {/* Products Carousel */}
       <section className="py-20">
         <div className="container">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {products.map((product) => (
-              <Card
-                key={product.id}
-                className="group border-0 bg-card/50 overflow-hidden"
-              >
-                <div className="aspect-video bg-muted/50 relative overflow-hidden">
-                  <img
-                    src={product.featured_image_url || "/placeholder.svg"}
-                    alt={product.name}
-                    className="w-full h-full object-cover "
-                  />
-                  <div className="absolute top-4 left-4">
-                    <Badge variant="secondary">{product.category}</Badge>
-                  </div>
-                  <div className="absolute top-4 right-4">{getPricingBadge(product.pricing_model)}</div>
-                </div>
-
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-2">
-                      <CardTitle className="text-xl">{product.name}</CardTitle>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
-                        <span>
-                          Launched{" "}
-                          {new Date(product.launch_date).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "long",
-                          })}
-                        </span>
+          {loading ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">Loading products...</p>
+            </div>
+          ) : products.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">No products available at the moment.</p>
+            </div>
+          ) : (
+            <Carousel
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+              className="w-full"
+            >
+              <CarouselContent className="-ml-4">
+                {products.map((product) => (
+                  <CarouselItem key={product.id} className="pl-4 md:basis-1/2 lg:basis-1/2">
+                    <Card className="group border-0 bg-card/50 overflow-hidden h-full">
+                      <div className="aspect-video bg-muted/50 relative overflow-hidden">
+                        {product.featured_image_url ? (
+                          <img
+                            src={product.featured_image_url}
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+                            <Star className="h-16 w-16 text-muted-foreground/20" />
+                          </div>
+                        )}
+                        <div className="absolute top-4 left-4">
+                          <Badge variant="secondary">{product.category}</Badge>
+                        </div>
+                        <div className="absolute top-4 right-4">{getPricingBadge(product.pricing_model)}</div>
                       </div>
-                    </div>
-                    <Star className="h-5 w-5 text-primary" />
-                  </div>
-                  <CardDescription className="text-sm leading-relaxed">{product.description}</CardDescription>
-                </CardHeader>
 
-                <CardContent className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-3">
-                      Key Features
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {product.features.slice(0, 3).map((feature, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {feature}
-                        </Badge>
-                      ))}
-                      {product.features.length > 3 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{product.features.length - 3} more
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-2">
+                            <CardTitle className="text-xl">{product.name}</CardTitle>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Calendar className="h-4 w-4" />
+                              <span>
+                                Launched{" "}
+                                {new Date(product.launch_date).toLocaleDateString("en-US", {
+                                  year: "numeric",
+                                  month: "long",
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                          <Star className="h-5 w-5 text-primary" />
+                        </div>
+                        <CardDescription className="text-sm leading-relaxed">{product.description}</CardDescription>
+                      </CardHeader>
 
-                  <div className="flex gap-3 pt-2">
-                    <Button size="sm" asChild>
-                      <Link href={product.product_url} target="_blank" rel="noopener noreferrer">
-                        Visit Product <ExternalLink className="ml-2 h-3 w-3" />
-                      </Link>
-                    </Button>
-                    <Button size="sm" variant="outline" asChild>
-                      <Link href="/contact">Learn More</Link>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                      <CardContent className="space-y-4">
+                        <div>
+                          <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-3">
+                            Key Features
+                          </h4>
+                          <div className="flex flex-wrap gap-2">
+                            {product.features.slice(0, 3).map((feature, index) => (
+                              <Badge key={index} variant="outline" className="text-xs">
+                                {feature}
+                              </Badge>
+                            ))}
+                            {product.features.length > 3 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{product.features.length - 3} more
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex gap-3 pt-2">
+                          <Button size="sm" asChild>
+                            <Link href={product.product_url} target="_blank" rel="noopener noreferrer">
+                              Visit Product <ExternalLink className="ml-2 h-3 w-3" />
+                            </Link>
+                          </Button>
+                          <Button size="sm" variant="outline" asChild>
+                            <Link href="/contact">Learn More</Link>
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="hidden md:flex -left-12" />
+              <CarouselNext className="hidden md:flex -right-12" />
+            </Carousel>
+          )}
         </div>
       </section>
 

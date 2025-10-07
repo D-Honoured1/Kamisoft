@@ -47,7 +47,6 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch (error) {
-      console.error("Auth verification failed:", error)
       setUser(null)
       if (pathname?.startsWith("/admin") && pathname !== "/admin/login") {
         router.push("/admin/login")
@@ -108,7 +107,6 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         credentials: "include",
       })
     } catch (error) {
-      console.error("Logout error:", error)
     } finally {
       setUser(null)
       router.push("/admin/login")
@@ -133,7 +131,6 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
     // Set new timer
     inactivityTimerRef.current = setTimeout(() => {
-      console.log('Session expired due to inactivity')
       logout()
     }, INACTIVITY_TIMEOUT)
   }, [user, pathname, logout])

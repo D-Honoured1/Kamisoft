@@ -39,7 +39,6 @@ export default function NewTeamMemberPage() {
       await createTeamMember(formData)
       router.push("/admin/team")
     } catch (error) {
-      console.error("Failed to create team member:", error)
       alert("Failed to create team member. Please try again.")
     } finally {
       setLoading(false)

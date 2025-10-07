@@ -22,7 +22,6 @@ export default async function PortfolioPage() {
     .order("created_at", { ascending: false })
 
   if (error) {
-    console.error("Error fetching portfolio projects:", error)
   }
 
   const publishedProjects = projects?.filter(p => p.is_published) || []

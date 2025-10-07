@@ -48,7 +48,6 @@ export default function EditFAQPage({ params }: { params: { id: string } }) {
         display_order: faq.display_order,
       })
     } catch (error) {
-      console.error("Failed to load FAQ:", error)
       alert("Failed to load FAQ")
       router.push("/admin/faq")
     } finally {
@@ -64,7 +63,6 @@ export default function EditFAQPage({ params }: { params: { id: string } }) {
       await updateFAQ(params.id, formData)
       router.push("/admin/faq")
     } catch (error) {
-      console.error("Failed to update FAQ:", error)
       alert("Failed to update FAQ. Please try again.")
     } finally {
       setLoading(false)

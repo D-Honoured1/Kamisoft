@@ -116,7 +116,6 @@ export function ManualPaymentEntry({
       }, 1000) // Give time for user to see success message
 
     } catch (error: any) {
-      console.error("Error recording manual payment:", error)
       setError(error.message || "Failed to record payment")
     } finally {
       setIsSubmitting(false)

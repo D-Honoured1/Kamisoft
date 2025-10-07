@@ -48,7 +48,6 @@ export async function GET() {
       .order("created_at", { ascending: false })
 
     if (error) {
-      console.error("Error fetching clients:", error)
       return NextResponse.json(
         { error: "Failed to fetch clients", details: error.message },
         { status: 500 }
@@ -61,7 +60,6 @@ export async function GET() {
       total: clients?.length || 0,
     })
   } catch (error) {
-    console.error("Clients API error:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -93,7 +91,6 @@ export async function DELETE(request: Request) {
     })
 
     if (error) {
-      console.error("Error archiving client:", error)
 
       // Handle specific error cases
       if (error.message.includes("not found") || error.message.includes("already archived")) {
@@ -122,7 +119,6 @@ export async function DELETE(request: Request) {
     })
 
   } catch (error) {
-    console.error("Delete client API error:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

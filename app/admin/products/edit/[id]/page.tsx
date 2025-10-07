@@ -60,7 +60,6 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         launch_date: product.launch_date || "",
       })
     } catch (error) {
-      console.error("Failed to load product:", error)
       alert("Failed to load product")
       router.push("/admin/products")
     } finally {
@@ -90,7 +89,6 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
 
       router.push("/admin/products")
     } catch (error) {
-      console.error("Failed to update product:", error)
       toast({
         title: "Error",
         description: "Failed to update product. Please try again.",

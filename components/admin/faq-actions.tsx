@@ -21,7 +21,6 @@ export function FAQActions({ faqId, faqQuestion }: { faqId: string; faqQuestion:
 
       router.refresh()
     } catch (error) {
-      console.error("Failed to delete FAQ:", error)
       alert("Failed to delete FAQ")
     }
   }

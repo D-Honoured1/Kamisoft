@@ -28,7 +28,6 @@ export async function POST() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    console.log("Starting payment cleanup process...")
 
     const results = {
       expiredPayments: 0,
@@ -47,9 +46,7 @@ export async function POST() {
       .lt("created_at", paymentExpiryTime.toISOString())
 
     if (paymentsError) {
-      console.error("Error fetching expired payments:", paymentsError)
     } else if (expiredPayments && expiredPayments.length > 0) {
-      console.log(`Found ${expiredPayments.length} expired pending payments`)
 
       // Update expired payments to cancelled
       const { error: updateError } = await supabaseAdmin
@@ -62,10 +59,8 @@ export async function POST() {
         .in("id", expiredPayments.map(p => p.id))
 
       if (updateError) {
-        console.error("Error updating expired payments:", updateError)
       } else {
         results.expiredPayments = expiredPayments.length
-        console.log(`Cancelled ${expiredPayments.length} expired payments`)
       }
     }
 
@@ -80,9 +75,7 @@ export async function POST() {
       .lt("payment_link_expiry", linkExpiryTime.toISOString())
 
     if (linksError) {
-      console.error("Error fetching expired payment links:", linksError)
     } else if (expiredLinks && expiredLinks.length > 0) {
-      console.log(`Found ${expiredLinks.length} expired payment links`)
 
       // Clear expired payment links
       const { error: clearLinksError } = await supabaseAdmin
@@ -94,14 +87,11 @@ export async function POST() {
         .in("id", expiredLinks.map(r => r.id))
 
       if (clearLinksError) {
-        console.error("Error clearing expired payment links:", clearLinksError)
       } else {
         results.expiredPaymentLinks = expiredLinks.length
-        console.log(`Cleared ${expiredLinks.length} expired payment links`)
       }
     }
 
-    console.log("Payment cleanup completed:", results)
 
     return NextResponse.json({
       success: true,
@@ -109,7 +99,6 @@ export async function POST() {
       results
     })
   } catch (error) {
-    console.error("Payment cleanup error:", error)
     return NextResponse.json(
       { error: "Payment cleanup failed" },
       { status: 500 }
@@ -158,7 +147,6 @@ export async function GET() {
       }
     })
   } catch (error) {
-    console.error("Error getting cleanup statistics:", error)
     return NextResponse.json(
       { error: "Failed to get cleanup statistics" },
       { status: 500 }

@@ -129,7 +129,6 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (paymentError) {
-      console.error("Error creating manual payment:", paymentError)
       return NextResponse.json(
         { error: "Failed to create payment record" },
         { status: 500 }
@@ -164,12 +163,10 @@ export async function POST(request: NextRequest) {
       .eq("id", requestId)
 
     if (updateError) {
-      console.error("Error updating service request totals:", updateError)
       // Don't fail the whole operation, as the payment was created successfully
     }
 
     // Log the manual payment for audit purposes
-    console.log(`Manual payment recorded: $${paymentAmount} for request ${requestId} by admin`)
 
     return NextResponse.json({
       success: true,
@@ -188,7 +185,6 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error("Manual payment API error:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

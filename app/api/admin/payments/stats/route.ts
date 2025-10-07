@@ -24,7 +24,6 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    console.log("Fetching payment statistics...")
 
     // Get all payments with basic info
     const { data: payments, error: paymentsError } = await supabaseAdmin
@@ -41,7 +40,6 @@ export async function GET() {
       .order("created_at", { ascending: false })
 
     if (paymentsError) {
-      console.error("Error fetching payments for stats:", paymentsError)
       return NextResponse.json({ error: "Failed to fetch payment statistics" }, { status: 500 })
     }
 
@@ -175,7 +173,6 @@ export async function GET() {
       }))
     }
 
-    console.log("Payment statistics calculated:", {
       totalPayments: stats.totalPayments,
       totalRevenue: stats.totalRevenue,
       pendingAmount: stats.pendingAmount
@@ -187,7 +184,6 @@ export async function GET() {
       lastUpdated: new Date().toISOString()
     })
   } catch (error: any) {
-    console.error("Payment statistics error:", error)
     return NextResponse.json({
       error: "Failed to generate payment statistics",
       details: error.message

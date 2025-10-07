@@ -48,7 +48,6 @@ export async function GET(request: Request) {
       .order("created_at", { ascending: false })
 
     if (error) {
-      console.error("Error fetching payments:", error)
       return NextResponse.json({ error: "Failed to fetch payments" }, { status: 500 })
     }
 
@@ -57,7 +56,6 @@ export async function GET(request: Request) {
       payments: payments || []
     })
   } catch (error) {
-    console.error("Payments API error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

@@ -52,7 +52,6 @@ export async function DELETE(request: NextRequest) {
       .remove([fileName])
 
     if (deleteError) {
-      console.error('Supabase delete error:', deleteError)
       return NextResponse.json(
         { error: "Failed to delete file from storage" },
         { status: 500 }
@@ -65,7 +64,6 @@ export async function DELETE(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Image delete error:', error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

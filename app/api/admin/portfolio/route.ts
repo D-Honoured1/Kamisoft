@@ -31,7 +31,6 @@ export async function GET(req: Request) {
       .single()
 
     if (error) {
-      console.error("Database error:", error)
       return NextResponse.json(
         { error: "Failed to fetch portfolio project", details: error.message },
         { status: 500 }
@@ -47,7 +46,6 @@ export async function GET(req: Request) {
       project,
     })
   } catch (error) {
-    console.error("Portfolio fetch error:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -115,7 +113,6 @@ export async function POST(req: Request) {
       .single()
 
     if (error) {
-      console.error("Database error:", error)
       return NextResponse.json(
         { error: "Failed to create portfolio project", details: error.message },
         { status: 500 }
@@ -128,7 +125,6 @@ export async function POST(req: Request) {
       project,
     })
   } catch (error) {
-    console.error("Portfolio creation error:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -162,7 +158,6 @@ export async function PUT(req: Request) {
       .single()
 
     if (error) {
-      console.error("Database error:", error)
       return NextResponse.json(
         { error: "Failed to update portfolio project", details: error.message },
         { status: 500 }
@@ -175,7 +170,6 @@ export async function PUT(req: Request) {
       project,
     })
   } catch (error) {
-    console.error("Portfolio update error:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -210,7 +204,6 @@ export async function DELETE(req: Request) {
       .eq("id", projectId)
 
     if (error) {
-      console.error("Database error:", error)
       return NextResponse.json(
         { error: "Failed to delete portfolio project", details: error.message },
         { status: 500 }
@@ -222,7 +215,6 @@ export async function DELETE(req: Request) {
       message: "Portfolio project deleted successfully",
     })
   } catch (error) {
-    console.error("Portfolio deletion error:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

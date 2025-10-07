@@ -79,7 +79,7 @@ export default async function PortfolioPage() {
                 >
                   <div className="aspect-video bg-muted/50 relative overflow-hidden">
                     <img
-                      src={project.featured_image_url || "/placeholder.svg"}
+                      src={project.featured_image_url || ""}
                       alt={project.title}
                       className="w-full h-full object-cover "
                     />
@@ -206,7 +206,7 @@ export default async function PortfolioPage() {
                 >
                   <div className="aspect-video bg-muted/50 relative overflow-hidden">
                     <img
-                      src={project.featured_image_url || "/placeholder.svg"}
+                      src={project.featured_image_url || ""}
                       alt={project.title}
                       className="w-full h-full object-cover "
                     />

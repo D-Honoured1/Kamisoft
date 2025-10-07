@@ -68,7 +68,6 @@ export default function EditLeadershipMemberPage({ params }: EditLeadershipMembe
         is_active: member.is_active ?? true,
       })
     } catch (error) {
-      console.error("Error fetching member:", error)
       setNotFound(true)
     } finally {
       setIsLoading(false)

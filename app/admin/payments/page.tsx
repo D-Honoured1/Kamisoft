@@ -33,7 +33,6 @@ export default async function PaymentsPage() {
     .order("created_at", { ascending: false })
 
   if (error) {
-    console.error("Error fetching payments:", error)
   }
 
   const getPaymentStatusColor = (status: string) => {

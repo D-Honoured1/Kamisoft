@@ -38,7 +38,6 @@ export default function ContactPage(): ReactElement {
     setSuccessMessage("")
 
     try {
-      console.log("Submitting contact form:", formData)
 
       const res = await fetch("/api/contact", {
         method: "POST",
@@ -49,16 +48,13 @@ export default function ContactPage(): ReactElement {
         body: JSON.stringify(formData),
       })
 
-      console.log("Response status:", res.status)
       
       if (!res.ok) {
         const errorData = await res.text()
-        console.error("Server error response:", errorData)
         throw new Error(`Server error: ${res.status} ${res.statusText}`)
       }
 
       const data = await res.json()
-      console.log("Success response:", data)
       
       setSuccessMessage("Your message has been sent successfully! We'll get back to you within 24 hours.")
       
@@ -73,7 +69,6 @@ export default function ContactPage(): ReactElement {
         message: "",
       })
     } catch (error: any) {
-      console.error("Contact form submission error:", error)
       setError(error.message || "An unexpected error occurred while sending your message.")
     } finally {
       setIsSubmitting(false)

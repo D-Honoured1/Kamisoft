@@ -29,7 +29,6 @@ export async function GET(req: Request) {
     const status = searchParams.get('status')
     const method = searchParams.get('method')
 
-    console.log(`📊 Admin ${adminUser.email} fetching all payments`)
 
     // Build query
     let query = supabaseAdmin
@@ -78,7 +77,6 @@ export async function GET(req: Request) {
     const { data: payments, error } = await query
 
     if (error) {
-      console.error("❌ Error fetching payments:", error)
       return NextResponse.json({
         error: "Failed to fetch payments",
         details: error.message
@@ -97,7 +95,6 @@ export async function GET(req: Request) {
         .reduce((sum, p) => sum + (p.amount || 0), 0) || 0
     }
 
-    console.log(`✅ Fetched ${payments?.length || 0} payments for admin dashboard`)
 
     return NextResponse.json({
       success: true,
@@ -115,7 +112,6 @@ export async function GET(req: Request) {
     })
 
   } catch (error: any) {
-    console.error("💥 Error in payments fetch:", error)
     return NextResponse.json({
       error: "Failed to fetch payments",
       details: error.message

@@ -14,7 +14,6 @@ export async function POST() {
       message: "Logged out successfully"
     })
   } catch (error) {
-    console.error("Logout error:", error)
     return NextResponse.json(
       { error: "Logout failed" },
       { status: 500 }
@@ -34,7 +33,6 @@ export async function GET(request: Request) {
 
     return NextResponse.redirect(new URL("/", baseUrl))
   } catch (error) {
-    console.error("Logout error:", error)
     // Fallback to request origin if available
     const url = new URL(request.url)
     const baseUrl = `${url.protocol}//${url.host}`

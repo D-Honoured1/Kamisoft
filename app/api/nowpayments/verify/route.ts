@@ -18,7 +18,6 @@ export async function POST(request: NextRequest) {
       customerNote
     } = await request.json()
 
-    console.log(`[${correlationId}] NOWPayments verification request:`, {
       paymentId,
       transactionHash: transactionHash?.substring(0, 16) + '...',
       payCurrency,
@@ -50,7 +49,6 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (paymentError || !payment) {
-      console.error(`[${correlationId}] Payment not found:`, paymentError)
       return NextResponse.json({ error: "Payment not found" }, { status: 404 })
     }
 
@@ -97,9 +95,7 @@ export async function POST(request: NextRequest) {
       try {
         const paymentStatus = await nowPaymentsService.getPaymentStatus(nowpaymentsId)
         nowpaymentsStatus = paymentStatus.payment_status
-        console.log(`[${correlationId}] NOWPayments status for ${nowpaymentsId}: ${nowpaymentsStatus}`)
       } catch (statusError: any) {
-        console.warn(`[${correlationId}] Failed to get NOWPayments status:`, statusError.message)
       }
     }
 
@@ -127,14 +123,12 @@ export async function POST(request: NextRequest) {
       .eq("id", paymentId)
 
     if (updateError) {
-      console.error(`[${correlationId}] Error updating payment:`, updateError)
       return NextResponse.json({
         error: "Failed to save transaction details",
         details: updateError.message
       }, { status: 500 })
     }
 
-    console.log(`[${correlationId}] Transaction hash submitted successfully:`, {
       paymentId,
       currency: payCurrency,
       transactionHash: transactionHash.substring(0, 16) + '...',
@@ -157,7 +151,6 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error(`[${correlationId}] Transaction verification error:`, error)
     return NextResponse.json({
       error: "Internal server error",
       details: error.message,

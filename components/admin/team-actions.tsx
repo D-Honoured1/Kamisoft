@@ -21,7 +21,6 @@ export function TeamActions({ memberId, memberName }: { memberId: string; member
 
       router.refresh()
     } catch (error) {
-      console.error("Failed to delete team member:", error)
       alert("Failed to delete team member")
     }
   }

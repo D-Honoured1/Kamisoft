@@ -68,7 +68,6 @@ export default function PaymentSuccessPage() {
       const data = await response.json()
       setPayment(data)
     } catch (err) {
-      console.error("Error fetching payment info:", err)
       setError("Unable to load payment information")
     } finally {
       setIsLoading(false)

@@ -28,7 +28,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     })
 
   } catch (error: any) {
-    console.error('Get invoice error:', error)
     return NextResponse.json(
       { error: "Failed to fetch invoice", details: error.message },
       { status: 500 }
@@ -71,7 +70,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     })
 
   } catch (error: any) {
-    console.error('Update invoice error:', error)
     return NextResponse.json(
       { error: "Failed to update invoice", details: error.message },
       { status: 500 }

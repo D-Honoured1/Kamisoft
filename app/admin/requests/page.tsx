@@ -30,7 +30,6 @@ export default async function RequestsPage() {
     .order("created_at", { ascending: false })
 
   if (error) {
-    console.error("Error fetching requests:", error)
   }
 
   // Updated Status Helper Functions - Replace in your components

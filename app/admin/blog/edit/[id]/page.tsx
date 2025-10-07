@@ -30,7 +30,6 @@ export default function EditBlogPostPage() {
       const post = await getBlogPostById(params.id as string)
       setFormData(post)
     } catch (error) {
-      console.error("Failed to load blog post:", error)
       alert("Failed to load blog post")
       router.push("/admin/blog")
     } finally {
@@ -48,7 +47,6 @@ export default function EditBlogPostPage() {
       await updateBlogPost(params.id as string, formData)
       router.push("/admin/blog")
     } catch (error) {
-      console.error("Failed to update blog post:", error)
       alert("Failed to update blog post. Please try again.")
     } finally {
       setSaving(false)

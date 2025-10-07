@@ -76,7 +76,6 @@ export function InvoiceGenerator({
       }, 1500)
 
     } catch (error: any) {
-      console.error('Invoice generation error:', error)
       toast({
         title: "Generation Failed",
         description: error.message || "Failed to generate invoice",

@@ -55,7 +55,6 @@ export function ImageUpload({ value, onChange, label, bucket = "content-images" 
       setPreview(publicUrl)
       onChange(publicUrl)
     } catch (error) {
-      console.error("Upload failed:", error)
       alert("Failed to upload image. Please try again.")
     } finally {
       setUploading(false)

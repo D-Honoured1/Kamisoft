@@ -21,7 +21,6 @@ export default async function AdminBlogPage() {
     .order("created_at", { ascending: false })
 
   if (error) {
-    console.error("Failed to load blog posts:", error)
   }
 
   return (

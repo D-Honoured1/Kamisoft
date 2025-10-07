@@ -69,7 +69,6 @@ export async function POST(request: NextRequest) {
         })
       )
     } catch (pdfError: any) {
-      console.error('PDF rendering failed:', pdfError)
       throw new Error(`PDF generation failed: ${pdfError.message}`)
     }
 
@@ -84,7 +83,6 @@ export async function POST(request: NextRequest) {
       })
 
     if (uploadError) {
-      console.error('Storage upload failed:', uploadError)
     }
 
     // Get public URL for the PDF
@@ -117,7 +115,6 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (invoiceError || !invoice) {
-      console.error('Failed to create invoice:', invoiceError)
       return NextResponse.json(
         { error: "Failed to create invoice record", details: invoiceError?.message },
         { status: 500 }
@@ -144,10 +141,8 @@ export async function POST(request: NextRequest) {
         })
 
         if (!emailResult.success) {
-          console.error('Email sending failed:', emailResult.error)
         }
       } catch (emailError: any) {
-        console.error('Failed to send invoice email:', emailError)
         // Don't fail the entire request if email fails
       }
     }
@@ -170,7 +165,6 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('Invoice generation error:', error)
     return NextResponse.json(
       {
         error: "Failed to generate invoice",

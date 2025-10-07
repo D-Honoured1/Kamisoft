@@ -70,7 +70,6 @@ export function ImageUpload({
       const { url } = await response.json()
       onImageUpload(url)
     } catch (error: any) {
-      console.error('Upload error:', error)
       setError(error.message || 'Failed to upload image')
     } finally {
       setIsUploading(false)
@@ -96,7 +95,6 @@ export function ImageUpload({
 
         if (!response.ok) {
           const errorData = await response.json()
-          console.warn('Delete warning:', errorData.error)
           // Continue with removal even if deletion fails (file might not exist)
         }
       }
@@ -106,7 +104,6 @@ export function ImageUpload({
         onImageRemove()
       }
     } catch (error: any) {
-      console.warn('Delete warning:', error.message)
       // Still remove from form even if delete failed
       if (onImageRemove) {
         onImageRemove()

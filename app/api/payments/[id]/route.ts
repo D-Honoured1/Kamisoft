@@ -58,7 +58,6 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       .single()
 
     if (error || !payment) {
-      console.error("Payment not found:", paymentId, error)
       return NextResponse.json({ error: "Payment not found" }, { status: 404 })
     }
 
@@ -79,7 +78,6 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     })
 
   } catch (error: any) {
-    console.error("Error fetching payment information:", error)
     return NextResponse.json({
       error: "Failed to fetch payment information",
       details: error.message

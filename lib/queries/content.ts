@@ -110,7 +110,6 @@ export async function incrementBlogPostViews(id: string) {
     p_record_id: id,
   })
 
-  if (error) console.error("Failed to increment views:", error)
 }
 
 // ============================================
@@ -446,7 +445,6 @@ export async function incrementCaseStudyViews(id: string) {
     p_record_id: id,
   })
 
-  if (error) console.error("Failed to increment views:", error)
 }
 
 // ============================================

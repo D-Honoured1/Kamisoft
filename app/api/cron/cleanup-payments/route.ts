@@ -29,7 +29,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    console.log("🧹 Starting automated payment cleanup...")
 
     const results = {
       timestamp: new Date().toISOString(),
@@ -68,7 +67,6 @@ export async function GET(request: Request) {
       }
 
       if (expiredPayments && expiredPayments.length > 0) {
-        console.log(`📋 Found ${expiredPayments.length} expired pending payments`)
 
         // Update payments to cancelled status
         const { error: updateError } = await supabaseAdmin
@@ -85,20 +83,17 @@ export async function GET(request: Request) {
         }
 
         results.expiredPayments = expiredPayments.length
-        console.log(`✅ Cancelled ${expiredPayments.length} expired payments`)
 
         // Optional: Send notification emails to clients about expired payments
         for (const payment of expiredPayments) {
           try {
             await sendPaymentExpiredNotification(payment)
           } catch (emailError) {
-            console.error("Failed to send expiry notification:", emailError)
             // Don't fail the entire process for email errors
           }
         }
       }
     } catch (error: any) {
-      console.error("❌ Error handling expired payments:", error)
       results.errors.push(`Payment cleanup: ${error.message}`)
     }
 
@@ -119,7 +114,6 @@ export async function GET(request: Request) {
       }
 
       if (expiredLinks && expiredLinks.length > 0) {
-        console.log(`🔗 Found ${expiredLinks.length} expired payment links`)
 
         // Clear the expired payment links
         const { error: clearError } = await supabaseAdmin
@@ -135,10 +129,8 @@ export async function GET(request: Request) {
         }
 
         results.expiredPaymentLinks = expiredLinks.length
-        console.log(`✅ Cleared ${expiredLinks.length} expired payment links`)
       }
     } catch (error: any) {
-      console.error("❌ Error handling expired payment links:", error)
       results.errors.push(`Link cleanup: ${error.message}`)
     }
 
@@ -154,14 +146,11 @@ export async function GET(request: Request) {
         .lt("created_at", oldFailedCutoff.toISOString())
 
       if (deleteOldError) {
-        console.log("Note: Could not clean old failed payments:", deleteOldError.message)
         // Don't treat this as a critical error
       } else {
-        console.log("🗑️  Cleaned up old failed payments")
       }
     } catch (error) {
       // Old payment cleanup is optional
-      console.log("Old payment cleanup skipped:", error)
     }
 
     const summary = `
@@ -172,7 +161,6 @@ export async function GET(request: Request) {
     📅 Timestamp: ${results.timestamp}
     `
 
-    console.log(summary)
 
     // Return results
     return NextResponse.json({
@@ -183,7 +171,6 @@ export async function GET(request: Request) {
     })
 
   } catch (error: any) {
-    console.error("💥 Automated cleanup failed:", error)
     
     return NextResponse.json({
       success: false,
@@ -198,7 +185,6 @@ export async function GET(request: Request) {
 async function sendPaymentExpiredNotification(payment: any) {
   try {
     // This is where you'd integrate with your email service
-    console.log(`📧 Would send payment expired notification to: ${payment.service_requests?.clients?.email}`)
     
     const emailData = {
       to: payment.service_requests?.clients?.email,
@@ -216,10 +202,8 @@ async function sendPaymentExpiredNotification(payment: any) {
     // Example with a hypothetical email service:
     // await emailService.send(emailData)
     
-    console.log("📧 Payment expired notification prepared:", emailData.subject)
     
   } catch (error) {
-    console.error("Failed to prepare payment expired notification:", error)
     throw error
   }
 }
