@@ -42,7 +42,11 @@ export function ProductActions({ productId }: { productId: string }) {
         description: "Product deleted successfully",
       })
 
-      router.refresh()
+      // Refresh the page to show updated list
+      setTimeout(() => {
+        router.push("/admin/products")
+        router.refresh()
+      }, 500)
     } catch (error) {
       console.error("Failed to delete product:", error)
       toast({
