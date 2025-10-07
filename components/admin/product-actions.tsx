@@ -28,10 +28,13 @@ export function ProductActions({ productId }: { productId: string }) {
     try {
       const response = await fetch(`/api/admin/products/${productId}`, {
         method: "DELETE",
+        credentials: "include",
       })
 
       if (!response.ok) {
-        throw new Error("Failed to delete")
+        const errorData = await response.json().catch(() => ({}))
+        console.error("Delete failed:", errorData)
+        throw new Error(errorData.error || "Failed to delete")
       }
 
       toast({
