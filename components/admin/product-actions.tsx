@@ -41,11 +41,7 @@ export function ProductActions({ productId }: { productId: string }) {
         description: "Product deleted successfully",
       })
 
-      // Refresh the page to show updated list
-      setTimeout(() => {
-        router.push("/admin/products")
-        router.refresh()
-      }, 500)
+      router.refresh()
     } catch (error) {
       toast({
         title: "Error",
