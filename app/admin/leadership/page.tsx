@@ -101,11 +101,17 @@ export default async function LeadershipPage() {
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-16 h-16 rounded-full overflow-hidden bg-muted/50">
-                      <img
-                        src={member.profile_image_url || "/placeholder.svg"}
-                        alt={member.name}
-                        className="w-full h-full object-cover"
-                      />
+                      {member.profile_image_url ? (
+                        <img
+                          src={member.profile_image_url}
+                          alt={member.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
+                          <span className="text-2xl text-muted-foreground">{member.name?.charAt(0) || '?'}</span>
+                        </div>
+                      )}
                     </div>
                     <div>
                       <CardTitle className="text-lg">{member.name}</CardTitle>

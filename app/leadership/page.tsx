@@ -100,7 +100,7 @@ export default async function LeadershipPage() {
                       <CardHeader className="pb-4">
                         <div className="mx-auto w-32 h-32 rounded-full overflow-hidden mb-6 bg-muted/50">
                           <img
-                            src={leader.profile_image_url || "/placeholder.svg"}
+                            src={leader.profile_image_url || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23e2e8f0' width='200' height='200'/%3E%3Ctext fill='%2394a3b8' font-family='sans-serif' font-size='80' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3E${leader.full_name?.charAt(0) || '?'}%3C/text%3E%3C/svg%3E`}
                             alt={leader.name}
                             className="w-full h-full object-cover "
                           />
@@ -149,7 +149,7 @@ export default async function LeadershipPage() {
                         <CardHeader className="pb-4">
                           <div className="mx-auto w-32 h-32 rounded-full overflow-hidden mb-6 bg-muted/50">
                             <img
-                              src={leader.profile_image_url || "/placeholder.svg"}
+                              src={leader.profile_image_url || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23e2e8f0' width='200' height='200'/%3E%3Ctext fill='%2394a3b8' font-family='sans-serif' font-size='80' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3E${leader.full_name?.charAt(0) || '?'}%3C/text%3E%3C/svg%3E`}
                               alt={leader.name}
                               className="w-full h-full object-cover "
                             />
@@ -216,7 +216,7 @@ export default async function LeadershipPage() {
                       <CardHeader className="pb-4">
                         <div className="mx-auto w-24 h-24 rounded-full overflow-hidden mb-4 bg-muted/50">
                           <img
-                            src={member.profile_image_url || "/placeholder.svg"}
+                            src={member.profile_image_url || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23e2e8f0' width='200' height='200'/%3E%3Ctext fill='%2394a3b8' font-family='sans-serif' font-size='80' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3E${member.full_name?.charAt(0) || '?'}%3C/text%3E%3C/svg%3E`}
                             alt={member.name}
                             className="w-full h-full object-cover "
                           />
@@ -267,7 +267,7 @@ export default async function LeadershipPage() {
                         <CardHeader className="pb-4">
                           <div className="mx-auto w-24 h-24 rounded-full overflow-hidden mb-4 bg-muted/50">
                             <img
-                              src={member.profile_image_url || "/placeholder.svg"}
+                              src={member.profile_image_url || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23e2e8f0' width='200' height='200'/%3E%3Ctext fill='%2394a3b8' font-family='sans-serif' font-size='80' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3E${member.full_name?.charAt(0) || '?'}%3C/text%3E%3C/svg%3E`}
                               alt={member.name}
                               className="w-full h-full object-cover "
                             />

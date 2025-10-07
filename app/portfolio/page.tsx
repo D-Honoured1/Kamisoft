@@ -78,11 +78,17 @@ export default async function PortfolioPage() {
                   className="group hover:shadow-lg transition-all duration-300 border-0 bg-card/50 overflow-hidden"
                 >
                   <div className="aspect-video bg-muted/50 relative overflow-hidden">
-                    <img
-                      src={project.featured_image_url || "/placeholder.svg"}
-                      alt={project.title}
-                      className="w-full h-full object-cover "
-                    />
+                    {project.featured_image_url ? (
+                      <img
+                        src={project.featured_image_url}
+                        alt={project.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
+                        <span className="text-5xl text-muted-foreground">{project.title?.charAt(0) || '?'}</span>
+                      </div>
+                    )}
                     <div className="absolute top-4 left-4">{getCategoryBadge(project.service_category)}</div>
                     <div className="absolute top-4 right-4">
                       <Star className="h-5 w-5 text-primary" />
@@ -205,11 +211,17 @@ export default async function PortfolioPage() {
                   className="group hover:shadow-lg transition-all duration-300 border-0 bg-background/50"
                 >
                   <div className="aspect-video bg-muted/50 relative overflow-hidden">
-                    <img
-                      src={project.featured_image_url || "/placeholder.svg"}
-                      alt={project.title}
-                      className="w-full h-full object-cover "
-                    />
+                    {project.featured_image_url ? (
+                      <img
+                        src={project.featured_image_url}
+                        alt={project.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
+                        <span className="text-5xl text-muted-foreground">{project.title?.charAt(0) || '?'}</span>
+                      </div>
+                    )}
                     <div className="absolute top-3 left-3">{getCategoryBadge(project.service_category)}</div>
                   </div>
 

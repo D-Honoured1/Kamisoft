@@ -50,11 +50,17 @@ export default function ProductsCarousel({ products }: ProductsCarouselProps) {
           <CarouselItem key={product.id} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/2">
             <Card className="group border-0 bg-card/50 overflow-hidden h-full">
               <div className="aspect-video bg-muted/50 relative overflow-hidden">
-                <img
-                  src={product.featured_image_url || "/placeholder.svg"}
-                  alt={product.name}
-                  className="w-full h-full object-cover"
-                />
+                {product.featured_image_url ? (
+                  <img
+                    src={product.featured_image_url}
+                    alt={product.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
+                    <span className="text-4xl text-muted-foreground">{product.name.charAt(0)}</span>
+                  </div>
+                )}
                 <div className="absolute top-4 left-4">
                   <Badge variant="secondary">{product.category}</Badge>
                 </div>
