@@ -35,6 +35,7 @@ export async function GET() {
       .order("created_at", { ascending: false })
 
     if (error) {
+      console.error("Error fetching contact submissions:", error)
       return NextResponse.json(
         { error: "Failed to fetch contact submissions" },
         { status: 500 }
@@ -47,6 +48,7 @@ export async function GET() {
       total: submissions?.length || 0,
     })
   } catch (error) {
+    console.error("Contact submissions API error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

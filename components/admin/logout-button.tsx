@@ -15,6 +15,7 @@ export function LogoutButton() {
     try {
       await logout()
     } catch (error) {
+      console.error("Logout failed:", error)
     } finally {
       setIsLoading(false)
     }

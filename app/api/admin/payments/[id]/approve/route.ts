@@ -33,6 +33,7 @@ export async function POST(req: Request, { params }: RouteParams) {
     const { id: paymentId } = params
     const { paymentStatus, paystackReference } = await req.json()
 
+    console.log(`✅ Admin ${adminUser.email} attempting to approve payment ${paymentId}`)
 
     // First, get the payment details
     const { data: payment, error: paymentError } = await supabaseAdmin
@@ -83,6 +84,7 @@ export async function POST(req: Request, { params }: RouteParams) {
       }, { status: 400 })
     }
 
+    console.log(`🔍 Payment to approve:`, {
       id: payment.id,
       status: payment.payment_status,
       amount: payment.amount,
@@ -104,12 +106,14 @@ export async function POST(req: Request, { params }: RouteParams) {
       .eq("id", paymentId)
 
     if (approveError) {
+      console.error("❌ Error approving payment:", approveError)
       return NextResponse.json({
         error: "Failed to approve payment",
         details: approveError.message
       }, { status: 500 })
     }
 
+    console.log(`✅ Payment approved successfully: ${paymentId}`)
 
     // Update service request status based on payment type
     if (payment.service_requests) {
@@ -148,8 +152,10 @@ export async function POST(req: Request, { params }: RouteParams) {
           .eq("id", payment.request_id)
 
         if (statusUpdateError) {
+          console.error("⚠️ Error updating service request status:", statusUpdateError)
           // Don't fail the payment approval for this
         } else {
+          console.log(`📝 Service request ${payment.request_id} status updated to: ${newRequestStatus}`)
         }
       }
     }
@@ -181,6 +187,7 @@ export async function POST(req: Request, { params }: RouteParams) {
 
       if (auditError) {
         // Audit table might not exist, log to console instead
+        console.log("📝 Payment approval audit log (table not available):", {
           admin_email: adminUser.email,
           action: "payment_approved",
           payment_id: paymentId,
@@ -189,7 +196,9 @@ export async function POST(req: Request, { params }: RouteParams) {
         })
       }
     } catch (auditError) {
+      console.error("⚠️ Audit log failed:", auditError)
       // Fallback console logging
+      console.log("📝 Fallback payment approval audit:", {
         admin_email: adminUser.email,
         action: "payment_approved",
         payment_id: paymentId,
@@ -200,6 +209,7 @@ export async function POST(req: Request, { params }: RouteParams) {
 
     // TODO: Send confirmation email to client
     // This would integrate with your email service
+    console.log("📧 Would send payment confirmation email to:", payment.service_requests?.clients?.email)
 
     return NextResponse.json({
       success: true,
@@ -215,6 +225,7 @@ export async function POST(req: Request, { params }: RouteParams) {
     })
 
   } catch (error: any) {
+    console.error("💥 Payment approval error:", error)
     return NextResponse.json({
       error: "Failed to approve payment",
       details: error.message
@@ -257,6 +268,7 @@ export async function GET(req: Request, { params }: RouteParams) {
     })
 
   } catch (error: any) {
+    console.error("Error checking payment approval eligibility:", error)
     return NextResponse.json({
       error: "Failed to check payment approval eligibility"
     }, { status: 500 })

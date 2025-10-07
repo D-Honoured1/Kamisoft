@@ -134,6 +134,7 @@ export default async function AdminDashboard() {
         recentRequests = recentServiceRequests
       }
     } catch (error) {
+      console.error("Error fetching recent service requests:", error)
     }
 
     try {
@@ -156,9 +157,11 @@ export default async function AdminDashboard() {
         recentContactInquiries = recentContacts
       }
     } catch (error) {
+      console.error("Error fetching recent contact inquiries:", error)
     }
 
   } catch (error) {
+    console.error("Critical dashboard error:", error)
     hasDataIssues = true
   }
 

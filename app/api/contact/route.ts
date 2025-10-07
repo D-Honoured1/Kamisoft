@@ -145,8 +145,11 @@ export async function POST(req: Request) {
           message
         })
 
+        console.log('Admin email result:', adminEmailResult)
+        console.log('Confirmation email result:', confirmationEmailResult)
 
       } catch (emailError: any) {
+        console.error('Email sending failed:', emailError)
         // Don't fail the entire request if email fails
       }
 

@@ -50,6 +50,7 @@ export default function EditTeamMemberPage({ params }: { params: { id: string } 
         display_order: member.display_order,
       })
     } catch (error) {
+      console.error("Failed to load team member:", error)
       alert("Failed to load team member")
       router.push("/admin/team")
     } finally {
@@ -65,6 +66,7 @@ export default function EditTeamMemberPage({ params }: { params: { id: string } 
       await updateTeamMember(params.id, formData)
       router.push("/admin/team")
     } catch (error) {
+      console.error("Failed to update team member:", error)
       alert("Failed to update team member. Please try again.")
     } finally {
       setLoading(false)

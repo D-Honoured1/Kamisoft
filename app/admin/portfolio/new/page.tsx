@@ -90,6 +90,7 @@ const [formData, setFormData] = useState({
 
       router.push("/admin/portfolio")
     } catch (error: any) {
+      console.error("Error creating project:", error)
       setError(error.message || "An error occurred while creating the project")
     } finally {
       setIsLoading(false)

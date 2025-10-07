@@ -23,6 +23,7 @@ export default async function AdminTeamPage() {
     .order("display_order", { ascending: true })
 
   if (error) {
+    console.error("Failed to load team:", error)
   }
 
   return (

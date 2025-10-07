@@ -443,7 +443,9 @@ async function createBankTransferInstructions(
           serviceTitle: payment.service_requests.title
         })
 
+        console.log('Bank transfer email sent to:', payment.service_requests.clients.email)
       } catch (emailError: any) {
+        console.error('Failed to send bank transfer email:', emailError)
         // Don't fail the entire request if email fails
       }
     }
@@ -455,6 +457,7 @@ async function createBankTransferInstructions(
       exchangeRate: exchangeRate
     }
   } catch (error: any) {
+    console.error('Error in createBankTransferInstructions:', error)
     throw new Error("Failed to generate bank transfer instructions")
   }
 }

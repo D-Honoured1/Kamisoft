@@ -156,6 +156,7 @@ async function handleChargeSuccess(data: any, webhookEventId: string) {
         // Send confirmation email with invoice
         await sendPaymentConfirmationEmail(data)
       } catch (notificationError: any) {
+        console.error('Notification/invoice error:', notificationError)
       }
     }
 
@@ -256,6 +257,7 @@ async function generateInvoiceForPayment(paymentId: string, requestId: string) {
       .single()
 
     if (existingInvoice) {
+      console.log('Invoice already exists for payment:', paymentId)
       return existingInvoice
     }
 
@@ -272,10 +274,12 @@ async function generateInvoiceForPayment(paymentId: string, requestId: string) {
     })
 
     if (!response.ok) {
+      console.error('Failed to generate invoice:', await response.text())
       return null
     }
 
     const result = await response.json()
+    console.log('Invoice generated:', result.invoice?.invoiceNumber)
 
     // Mark invoice as sent since we're sending it via email
     if (result.invoice?.id) {
@@ -287,6 +291,7 @@ async function generateInvoiceForPayment(paymentId: string, requestId: string) {
 
     return result.invoice
   } catch (error) {
+    console.error('Error generating invoice:', error)
     return null
   }
 }
@@ -408,12 +413,15 @@ async function sendPaymentConfirmationEmail(paystackData: any) {
           content: Buffer.from(pdfBuffer)
         }]
       } catch (pdfError) {
+        console.error('Could not attach PDF:', pdfError)
         // Continue sending email without PDF
       }
     }
 
     await emailService.sendEmail(emailOptions)
+    console.log('Payment confirmation email sent to:', payment.service_requests.clients.email)
 
   } catch (error) {
+    console.error('Error sending payment confirmation email:', error)
   }
 }

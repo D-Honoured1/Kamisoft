@@ -47,6 +47,7 @@ export function PortfolioImageManager({
       const imageUrl = await fetchProjectHomepageImage(projectUrl)
       setHomepageImageUrl(imageUrl)
     } catch (error: any) {
+      console.warn('Could not load homepage image:', error)
       setError("Could not load image from project homepage")
     } finally {
       setIsLoadingHomepage(false)

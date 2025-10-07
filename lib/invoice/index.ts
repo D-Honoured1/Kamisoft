@@ -50,6 +50,7 @@ export class InvoiceService {
       .limit(1)
 
     if (error) {
+      console.error('Error fetching invoices:', error)
     }
 
     let sequence = 1
@@ -85,6 +86,7 @@ export class InvoiceService {
       .single()
 
     if (error || !request) {
+      console.error('Error fetching service request:', error)
       return null
     }
 
@@ -162,6 +164,7 @@ export class InvoiceService {
       .single()
 
     if (error) {
+      console.error('Error creating invoice:', error)
       return null
     }
 
@@ -186,6 +189,7 @@ export class InvoiceService {
       .eq('id', invoiceId)
 
     if (error) {
+      console.error('Error updating invoice status:', error)
       return false
     }
 
@@ -212,6 +216,7 @@ export class InvoiceService {
       .single()
 
     if (error) {
+      console.error('Error fetching invoice:', error)
       return null
     }
 
@@ -231,6 +236,7 @@ export class InvoiceService {
       .order('created_at', { ascending: false })
 
     if (error) {
+      console.error('Error fetching invoices:', error)
       return []
     }
 
@@ -273,6 +279,7 @@ export class InvoiceService {
     const { data, error } = await query
 
     if (error) {
+      console.error('Error listing invoices:', error)
       return { invoices: [], total: 0 }
     }
 

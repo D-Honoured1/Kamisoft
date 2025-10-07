@@ -19,6 +19,8 @@ const supabaseAdmin = createClient(
 export async function POST(req: Request) {
   try {
     const body = await req.json()
+    console.log("=== SERVICE REQUEST SUBMISSION ===")
+    console.log("Received data:", JSON.stringify(body, null, 2))
 
     const {
       name,
@@ -42,6 +44,7 @@ export async function POST(req: Request) {
       if (!title) missingFields.push('title')
       if (!description) missingFields.push('description')
       
+      console.log("Missing required fields:", missingFields)
       return NextResponse.json(
         { error: `Missing required fields: ${missingFields.join(', ')}` },
         { status: 400 }
@@ -50,6 +53,7 @@ export async function POST(req: Request) {
 
     // Step 1: Create or update client
     let clientId: string
+    console.log("Step 1: Looking for existing client with email:", email.toLowerCase().trim())
     
     try {
       const { data: existingClient, error: clientSearchError } = await supabaseAdmin
@@ -59,10 +63,12 @@ export async function POST(req: Request) {
         .maybeSingle()
 
       if (clientSearchError) {
+        console.error("Error searching for client:", clientSearchError)
         throw new Error(`Client search failed: ${clientSearchError.message}`)
       }
 
       if (existingClient) {
+        console.log("Found existing client:", existingClient.id)
         clientId = existingClient.id
         
         // Update existing client
@@ -72,6 +78,7 @@ export async function POST(req: Request) {
           company: company || null,
           updated_at: new Date().toISOString(),
         }
+        console.log("Updating client with:", updateData)
         
         const { error: updateError } = await supabaseAdmin
           .from("clients")
@@ -79,9 +86,12 @@ export async function POST(req: Request) {
           .eq("id", clientId)
 
         if (updateError) {
+          console.error("Error updating client:", updateError)
           throw new Error(`Failed to update client: ${updateError.message}`)
         }
+        console.log("Client updated successfully")
       } else {
+        console.log("Creating new client")
         
         // Create new client
         const newClientData = {
@@ -90,6 +100,7 @@ export async function POST(req: Request) {
           phone: phone || null,
           company: company || null,
         }
+        console.log("Creating client with:", newClientData)
 
         const { data: newClient, error: clientError } = await supabaseAdmin
           .from("clients")
@@ -98,13 +109,16 @@ export async function POST(req: Request) {
           .single()
 
         if (clientError) {
+          console.error("Error creating client:", clientError)
           throw new Error(`Failed to create client: ${clientError.message}`)
         }
 
         clientId = newClient.id
+        console.log("New client created with ID:", clientId)
       }
 
     } catch (clientError: any) {
+      console.error("Client operation failed:", clientError)
       return NextResponse.json(
         { error: `Client operation failed: ${clientError.message}` },
         { status: 500 }
@@ -112,6 +126,7 @@ export async function POST(req: Request) {
     }
 
     // Step 2: Create service request
+    console.log("Step 2: Creating service request")
     
     const serviceRequestData = {
       client_id: clientId,
@@ -125,6 +140,7 @@ export async function POST(req: Request) {
       site_address: (request_type === "on_site" && site_address) ? site_address : null,
     }
 
+    console.log("Service request data to insert:", JSON.stringify(serviceRequestData, null, 2))
 
     try {
       const { data: request, error: requestError } = await supabaseAdmin
@@ -134,9 +150,16 @@ export async function POST(req: Request) {
         .single()
 
       if (requestError) {
+        console.error("Service request creation error:", {
+          message: requestError.message,
+          code: requestError.code,
+          details: requestError.details,
+          hint: requestError.hint
+        })
         throw new Error(`Service request creation failed: ${requestError.message}`)
       }
 
+      console.log("Service request created successfully:", request.id)
 
       // Step 3: Send email notifications
       try {
@@ -168,8 +191,11 @@ export async function POST(req: Request) {
           site_address
         })
 
+        console.log('Admin email result:', adminEmailResult)
+        console.log('Confirmation email result:', confirmationEmailResult)
 
       } catch (emailError: any) {
+        console.error('Email sending failed:', emailError)
         // Don't fail the entire request if email fails
       }
 
@@ -180,6 +206,7 @@ export async function POST(req: Request) {
       })
 
     } catch (requestCreationError: any) {
+      console.error("Service request creation failed:", requestCreationError)
       return NextResponse.json(
         { error: `Service request creation failed: ${requestCreationError.message}` },
         { status: 500 }
@@ -187,6 +214,15 @@ export async function POST(req: Request) {
     }
 
   } catch (error: any) {
+<<<<<<< HEAD
+=======
+    console.error("=== SERVICE REQUEST API ERROR ===")
+    console.error("Error details:", {
+      message: error.message,
+      stack: error.stack
+    })
+    
+>>>>>>> parent of d5918f5 (Let me breath)
     return NextResponse.json(
       { error: error.message || "Internal server error" },
       { status: 500 }

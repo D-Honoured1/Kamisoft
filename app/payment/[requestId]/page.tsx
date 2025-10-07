@@ -142,10 +142,12 @@ export default function PaymentPage() {
       if (data.success && data.usdToNgn) {
         setExchangeRate(data.usdToNgn)
         setExchangeRateSource(data.source || 'api')
+        console.log(`Exchange rate updated: 1 USD = ${data.usdToNgn} NGN (${data.source})`)
       } else {
         setExchangeRateSource('fallback')
       }
     } catch (error) {
+      console.error("Failed to fetch exchange rate:", error)
       setExchangeRateSource('error-fallback')
     }
   }
@@ -198,6 +200,7 @@ export default function PaymentPage() {
 
       setServiceRequest(data)
     } catch (error) {
+      console.error("Error fetching service request:", error)
       setError("Failed to load payment information. Please try again.")
     } finally {
       setIsLoading(false)
@@ -287,6 +290,7 @@ export default function PaymentPage() {
         alert(result.message)
       }
     } catch (error: any) {
+      console.error("Payment error:", error)
       setError(error.message || "Failed to process payment. Please try again.")
     } finally {
       setIsProcessing(false)

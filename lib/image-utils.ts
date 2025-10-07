@@ -10,6 +10,7 @@ export async function fetchProjectHomepageImage(projectUrl: string): Promise<str
     const response = await fetch(`/api/scrape/homepage-image?url=${encodeURIComponent(projectUrl)}`)
 
     if (!response.ok) {
+      console.log('Failed to fetch homepage image:', response.statusText)
       return null
     }
 
@@ -21,6 +22,7 @@ export async function fetchProjectHomepageImage(projectUrl: string): Promise<str
 
     return null
   } catch (error) {
+    console.log('Error fetching project homepage image:', error)
     return null
   }
 }

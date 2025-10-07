@@ -95,24 +95,30 @@ class EmailService {
     try {
       // Detailed configuration check with specific error messages
       if (!process.env.SMTP_HOST) {
+        console.error('SMTP_HOST environment variable not set')
         return {
           success: false,
           error: 'SMTP_HOST not configured'
         }
       }
       if (!process.env.SMTP_USER) {
+        console.error('SMTP_USER environment variable not set')
         return {
           success: false,
           error: 'SMTP_USER not configured'
         }
       }
       if (!process.env.SMTP_PASSWORD) {
+        console.error('SMTP_PASSWORD environment variable not set')
         return {
           success: false,
           error: 'SMTP_PASSWORD not configured'
         }
       }
 
+      console.log('Sending email to:', options.to)
+      console.log('Email subject:', options.subject)
+      console.log('SMTP Config:', {
         host: process.env.SMTP_HOST,
         port: process.env.SMTP_PORT,
         user: process.env.SMTP_USER,
@@ -130,11 +136,13 @@ class EmailService {
         attachments: options.attachments,
       })
 
+      console.log('Email sent successfully. Message ID:', info.messageId)
       return {
         success: true,
         messageId: info.messageId
       }
     } catch (error: any) {
+      console.error('❌ Email sending failed:', {
         error: error.message,
         code: error.code,
         command: error.command,
@@ -871,6 +879,7 @@ Lagos, Nigeria
       await this.transporter.verify()
       return { success: true }
     } catch (error: any) {
+      console.error('Email connection verification failed:', error)
       return {
         success: false,
         error: error.message || 'Failed to verify email connection'

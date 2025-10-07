@@ -22,6 +22,7 @@ export default async function AdminCaseStudiesPage() {
     .order("created_at", { ascending: false })
 
   if (error) {
+    console.error("Failed to load case studies:", error)
   }
 
   return (

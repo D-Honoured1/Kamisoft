@@ -49,6 +49,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
     return NextResponse.json(payment)
   } catch (error) {
+    console.error("Error fetching payment:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
@@ -95,6 +96,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       .single()
 
     if (error) {
+      console.error("Error updating payment:", error)
       return NextResponse.json({ error: "Failed to update payment" }, { status: 500 })
     }
 
@@ -122,6 +124,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
         // TODO: Generate invoice
         // TODO: Notify project team
       } catch (error) {
+        console.error("Error with post-confirmation actions:", error)
         // Don't fail the main request, just log the error
       }
     }
@@ -132,6 +135,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       payment
     })
   } catch (error) {
+    console.error("Payment update error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

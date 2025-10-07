@@ -24,6 +24,7 @@ interface RouteParams {
 export async function GET(request: NextRequest, context: RouteParams) {
   try {
     const { id } = context.params
+    console.log("Fetching service request with ID:", id)
     
     // FIXED: Use proper foreign key relationship syntax
     const { data: serviceRequest, error } = await supabaseAdmin
@@ -50,6 +51,7 @@ export async function GET(request: NextRequest, context: RouteParams) {
       .single()
 
     if (error) {
+      console.error("Supabase error:", error)
       return NextResponse.json(
         { error: "Service request not found", details: error.message }, 
         { status: 404 }
@@ -57,14 +59,17 @@ export async function GET(request: NextRequest, context: RouteParams) {
     }
 
     if (!serviceRequest) {
+      console.log("No service request found for ID:", id)
       return NextResponse.json(
         { error: "Service request not found" }, 
         { status: 404 }
       )
     }
 
+    console.log("Service request found:", serviceRequest.id)
     return NextResponse.json(serviceRequest)
   } catch (error: any) {
+    console.error("Error fetching service request:", error)
     return NextResponse.json(
       { error: "Internal server error", details: error.message }, 
       { status: 500 }
@@ -75,8 +80,10 @@ export async function GET(request: NextRequest, context: RouteParams) {
 export async function PATCH(request: NextRequest, context: RouteParams) {
   try {
     const { id } = context.params
+    console.log("Updating service request with ID:", id)
     
     const updates = await request.json()
+    console.log("Updates:", updates)
 
     // Validate status if provided
     if (updates.status) {
@@ -124,6 +131,7 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
       .single()
 
     if (error) {
+      console.error("Update error:", error)
       return NextResponse.json(
         { error: "Failed to update service request", details: error.message }, 
         { status: 500 }
@@ -137,12 +145,14 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
       )
     }
 
+    console.log("Service request updated successfully")
     return NextResponse.json({
       success: true,
       message: "Service request updated successfully",
       serviceRequest
     })
   } catch (error: any) {
+    console.error("Error updating service request:", error)
     return NextResponse.json(
       { error: "Internal server error", details: error.message }, 
       { status: 500 }

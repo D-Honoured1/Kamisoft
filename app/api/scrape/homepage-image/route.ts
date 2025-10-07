@@ -94,6 +94,7 @@ export async function GET(request: NextRequest) {
         }
       }
     } catch (error) {
+      console.log('Could not parse HTML for meta tags:', error)
     }
 
     // If we found a meta image, try it first
@@ -137,6 +138,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
+    console.error('Homepage image scraping error:', error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

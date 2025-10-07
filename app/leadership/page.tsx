@@ -17,6 +17,7 @@ export default async function LeadershipPage() {
     .order("display_order", { ascending: true })
 
   if (error) {
+    console.error("Error fetching leadership team:", error)
   }
 
   // Separate executive team (C-level positions) from regular team
@@ -99,7 +100,7 @@ export default async function LeadershipPage() {
                       <CardHeader className="pb-4">
                         <div className="mx-auto w-32 h-32 rounded-full overflow-hidden mb-6 bg-muted/50">
                           <img
-                            src={leader.profile_image_url || ""}
+                            src={leader.profile_image_url || "/placeholder.svg"}
                             alt={leader.name}
                             className="w-full h-full object-cover "
                           />
@@ -148,7 +149,7 @@ export default async function LeadershipPage() {
                         <CardHeader className="pb-4">
                           <div className="mx-auto w-32 h-32 rounded-full overflow-hidden mb-6 bg-muted/50">
                             <img
-                              src={leader.profile_image_url || ""}
+                              src={leader.profile_image_url || "/placeholder.svg"}
                               alt={leader.name}
                               className="w-full h-full object-cover "
                             />
@@ -215,7 +216,7 @@ export default async function LeadershipPage() {
                       <CardHeader className="pb-4">
                         <div className="mx-auto w-24 h-24 rounded-full overflow-hidden mb-4 bg-muted/50">
                           <img
-                            src={member.profile_image_url || ""}
+                            src={member.profile_image_url || "/placeholder.svg"}
                             alt={member.name}
                             className="w-full h-full object-cover "
                           />
@@ -266,7 +267,7 @@ export default async function LeadershipPage() {
                         <CardHeader className="pb-4">
                           <div className="mx-auto w-24 h-24 rounded-full overflow-hidden mb-4 bg-muted/50">
                             <img
-                              src={member.profile_image_url || ""}
+                              src={member.profile_image_url || "/placeholder.svg"}
                               alt={member.name}
                               className="w-full h-full object-cover "
                             />

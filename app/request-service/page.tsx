@@ -37,6 +37,7 @@ export default function RequestServicePage() {
   setError("")
 
   try {
+    console.log("Submitting form data:", formData)
 
     const res = await fetch("/api/service-requests", {
       method: "POST",
@@ -47,13 +48,16 @@ export default function RequestServicePage() {
       body: JSON.stringify(formData),
     })
 
+    console.log("Response status:", res.status)
     
     if (!res.ok) {
       const errorData = await res.text()
+      console.error("Server error response:", errorData)
       throw new Error(`Server error: ${res.status} ${res.statusText}`)
     }
 
     const data = await res.json()
+    console.log("Success response:", data)
     
     setIsSubmitted(true)
     
@@ -71,6 +75,7 @@ export default function RequestServicePage() {
       site_address: "",
     })
   } catch (error: any) {
+    console.error("Form submission error:", error)
     setError(error.message || "An unexpected error occurred while submitting your request.")
   } finally {
     setIsLoading(false)

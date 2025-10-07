@@ -34,6 +34,7 @@ export async function DELETE(req: Request, { params }: RouteParams) {
     const { searchParams } = new URL(req.url)
     const permanent = searchParams.get('permanent') === 'true'
 
+    console.log(`🗑️ Admin ${adminUser.email} attempting to ${permanent ? 'permanently delete' : 'soft delete'} payment ${paymentId}`)
 
     // First, get the payment details
     const { data: payment, error: paymentError } = await supabaseAdmin
@@ -70,6 +71,7 @@ export async function DELETE(req: Request, { params }: RouteParams) {
       }, { status: 400 })
     }
 
+    console.log(`🔍 Payment to delete:`, {
       id: payment.id,
       status: payment.payment_status,
       amount: payment.amount,
@@ -88,8 +90,10 @@ export async function DELETE(req: Request, { params }: RouteParams) {
         .eq("payment_id", paymentId)
 
       if (auditDeleteError) {
+        console.error("❌ Error deleting payment audit records:", auditDeleteError)
         // Continue anyway - table might not exist or be empty
       } else {
+        console.log(`🗑️ Deleted audit records for payment ${paymentId}`)
       }
 
       // Step 2: Physically delete the payment record
@@ -99,12 +103,14 @@ export async function DELETE(req: Request, { params }: RouteParams) {
         .eq("id", paymentId)
 
       if (deleteError) {
+        console.error("❌ Error permanently deleting payment:", deleteError)
         return NextResponse.json({
           error: "Failed to permanently delete payment",
           details: deleteError.message
         }, { status: 500 })
       }
 
+      console.log(`✅ Payment PERMANENTLY deleted: ${paymentId}`)
 
     } else {
       // SOFT DELETE: Update payment status to 'deleted' instead of actually deleting
@@ -121,12 +127,14 @@ export async function DELETE(req: Request, { params }: RouteParams) {
         .eq("id", paymentId)
 
       if (deleteError) {
+        console.error("❌ Error soft-deleting payment:", deleteError)
         return NextResponse.json({
           error: "Failed to delete payment",
           details: deleteError.message
         }, { status: 500 })
       }
 
+      console.log(`✅ Payment soft-deleted successfully: ${paymentId}`)
     }
 
     // Log the deletion for audit purposes
@@ -154,6 +162,7 @@ export async function DELETE(req: Request, { params }: RouteParams) {
 
       if (auditError) {
         // Audit table might not exist, log to console instead
+        console.log("📝 Payment deletion audit log (table not available):", {
           admin_email: adminUser.email,
           action: "payment_deleted",
           payment_id: paymentId,
@@ -162,7 +171,9 @@ export async function DELETE(req: Request, { params }: RouteParams) {
         })
       }
     } catch (auditError) {
+      console.error("⚠️ Audit log failed:", auditError)
       // Fallback console logging
+      console.log("📝 Fallback payment deletion audit:", {
         admin_email: adminUser.email,
         action: "payment_deleted",
         payment_id: paymentId,
@@ -184,6 +195,7 @@ export async function DELETE(req: Request, { params }: RouteParams) {
     })
 
   } catch (error: any) {
+    console.error("💥 Payment deletion error:", error)
     return NextResponse.json({
       error: "Failed to delete payment",
       details: error.message
@@ -226,6 +238,7 @@ export async function GET(req: Request, { params }: RouteParams) {
     })
 
   } catch (error: any) {
+    console.error("Error checking payment deletion eligibility:", error)
     return NextResponse.json({
       error: "Failed to check payment deletion eligibility"
     }, { status: 500 })

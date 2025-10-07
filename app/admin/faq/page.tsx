@@ -21,6 +21,7 @@ export default async function AdminFAQPage() {
     .order("display_order", { ascending: true })
 
   if (error) {
+    console.error("Failed to load FAQs:", error)
   }
 
   return (

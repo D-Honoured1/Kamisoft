@@ -57,6 +57,7 @@ export default function EditTestimonialPage({ params }: { params: { id: string }
         display_order: testimonial.display_order,
       })
     } catch (error) {
+      console.error("Failed to load testimonial:", error)
       alert("Failed to load testimonial")
       router.push("/admin/testimonials")
     } finally {
@@ -72,6 +73,7 @@ export default function EditTestimonialPage({ params }: { params: { id: string }
       await updateTestimonial(params.id, formData)
       router.push("/admin/testimonials")
     } catch (error) {
+      console.error("Failed to update testimonial:", error)
       alert("Failed to update testimonial. Please try again.")
     } finally {
       setLoading(false)

@@ -21,6 +21,7 @@ export function BlogActions({ postId, postTitle }: { postId: string; postTitle: 
 
       router.refresh()
     } catch (error) {
+      console.error("Failed to delete blog post:", error)
       alert("Failed to delete blog post")
     }
   }

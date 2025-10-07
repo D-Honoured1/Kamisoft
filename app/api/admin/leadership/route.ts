@@ -15,6 +15,7 @@ export async function GET() {
       .order("display_order", { ascending: true })
 
     if (error) {
+      console.error("Database error:", error)
       return NextResponse.json(
         { error: "Failed to fetch leadership team", details: error.message },
         { status: 500 }
@@ -26,6 +27,7 @@ export async function GET() {
       leadership: leadership || [],
     })
   } catch (error) {
+    console.error("Leadership fetch error:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -82,6 +84,7 @@ export async function POST(req: Request) {
       .single()
 
     if (error) {
+      console.error("Database error:", error)
       return NextResponse.json(
         { error: "Failed to create leadership member", details: error.message },
         { status: 500 }
@@ -94,6 +97,7 @@ export async function POST(req: Request) {
       member,
     })
   } catch (error) {
+    console.error("Leadership creation error:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -127,6 +131,7 @@ export async function PUT(req: Request) {
       .single()
 
     if (error) {
+      console.error("Database error:", error)
       return NextResponse.json(
         { error: "Failed to update leadership member", details: error.message },
         { status: 500 }
@@ -139,6 +144,7 @@ export async function PUT(req: Request) {
       member,
     })
   } catch (error) {
+    console.error("Leadership update error:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -173,6 +179,7 @@ export async function DELETE(req: Request) {
       .eq("id", memberId)
 
     if (error) {
+      console.error("Database error:", error)
       return NextResponse.json(
         { error: "Failed to delete leadership member", details: error.message },
         { status: 500 }
@@ -184,6 +191,7 @@ export async function DELETE(req: Request) {
       message: "Leadership member deleted successfully",
     })
   } catch (error) {
+    console.error("Leadership deletion error:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

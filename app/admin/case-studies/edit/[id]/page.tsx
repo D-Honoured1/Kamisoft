@@ -69,6 +69,7 @@ export default function EditCaseStudyPage({ params }: { params: { id: string } }
         display_order: caseStudy.display_order,
       })
     } catch (error) {
+      console.error("Failed to load case study:", error)
       alert("Failed to load case study")
       router.push("/admin/case-studies")
     } finally {
@@ -84,6 +85,7 @@ export default function EditCaseStudyPage({ params }: { params: { id: string } }
       await updateCaseStudy(params.id, formData)
       router.push("/admin/case-studies")
     } catch (error) {
+      console.error("Failed to update case study:", error)
       alert("Failed to update case study. Please try again.")
     } finally {
       setLoading(false)

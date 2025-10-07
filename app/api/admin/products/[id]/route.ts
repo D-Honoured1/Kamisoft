@@ -10,13 +10,21 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    console.log(`[DELETE] Attempting to delete product: ${params.id}`)
+
     // Check admin authentication
     const adminUser = await getAdminUser()
     if (!adminUser) {
+      console.log("[DELETE] Unauthorized - no admin user")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+    console.log(`[DELETE] Authenticated as: ${adminUser.email}`)
+
+>>>>>>> parent of d5918f5 (Let me breath)
     const supabase = createAdminClient()
 =======
     console.log(`[DELETE] Authenticated as: ${adminUser.email}`)
@@ -24,7 +32,7 @@ export async function DELETE(
     const supabase = createServerClient()
 <<<<<<< HEAD
 >>>>>>> parent of 3cfc1d3 (again)
-=======
+
 >>>>>>> parent of 3cfc1d3 (again)
 
     // Delete the product
@@ -35,14 +43,17 @@ export async function DELETE(
       .select()
 
     if (error) {
+      console.error("[DELETE] Supabase error:", error)
       return NextResponse.json(
         { error: "Failed to delete product", details: error.message },
         { status: 500 }
       )
     }
 
+    console.log("[DELETE] Delete successful:", data)
     return NextResponse.json({ success: true, deleted: data })
   } catch (error: any) {
+    console.error("[DELETE] Exception:", error)
     return NextResponse.json(
       { error: "Internal server error", details: error.message },
       { status: 500 }
@@ -88,6 +99,7 @@ export async function PATCH(
       .single()
 
     if (error) {
+      console.error("Error updating product:", error)
       return NextResponse.json(
         { error: "Failed to update product" },
         { status: 500 }
@@ -96,6 +108,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, data })
   } catch (error) {
+    console.error("Error in PATCH /api/admin/products/[id]:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -12,6 +12,7 @@ export async function deleteImageFromStorage(imageUrl: string, bucket: string): 
     const fileName = urlParts[urlParts.length - 1]
 
     if (!fileName) {
+      console.warn('Could not extract filename from URL:', imageUrl)
       return false
     }
 
@@ -23,11 +24,14 @@ export async function deleteImageFromStorage(imageUrl: string, bucket: string): 
       .remove([fileName])
 
     if (error) {
+      console.error('Storage cleanup error:', error)
       return false
     }
 
+    console.log('Successfully deleted image:', fileName)
     return true
   } catch (error) {
+    console.error('Storage cleanup error:', error)
     return false
   }
 }
@@ -47,6 +51,7 @@ export async function cleanupPortfolioImages(projectId: string): Promise<void> {
       await deleteImageFromStorage(project.featured_image_url, 'portfolio-images')
     }
   } catch (error) {
+    console.error('Portfolio image cleanup error:', error)
   }
 }
 
@@ -65,5 +70,6 @@ export async function cleanupLeadershipImages(memberId: string): Promise<void> {
       await deleteImageFromStorage(member.profile_image_url, 'leadership-images')
     }
   } catch (error) {
+    console.error('Leadership image cleanup error:', error)
   }
 }

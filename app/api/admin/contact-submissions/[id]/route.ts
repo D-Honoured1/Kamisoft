@@ -38,6 +38,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
     return NextResponse.json(submission)
   } catch (error) {
+    console.error("Error fetching contact submission:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
@@ -64,6 +65,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       .single()
 
     if (error) {
+      console.error("Error updating contact submission:", error)
       return NextResponse.json(
         { error: "Failed to update contact submission" },
         { status: 500 }
@@ -76,6 +78,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       submission,
     })
   } catch (error) {
+    console.error("Contact submission update error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

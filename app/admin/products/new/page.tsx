@@ -43,6 +43,7 @@ export default function NewProductPage() {
       await createProduct(formData)
       router.push("/admin/products")
     } catch (error) {
+      console.error("Failed to create product:", error)
       alert("Failed to create product. Please try again.")
     } finally {
       setLoading(false)

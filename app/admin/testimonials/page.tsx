@@ -21,6 +21,7 @@ export default async function AdminTestimonialsPage() {
     .order("created_at", { ascending: false })
 
   if (error) {
+    console.error("Failed to load testimonials:", error)
   }
 
   return (

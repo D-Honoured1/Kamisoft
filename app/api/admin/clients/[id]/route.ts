@@ -48,6 +48,7 @@ export async function GET(request: Request, { params }: RouteParams) {
       .single()
 
     if (error) {
+      console.error("Error fetching client:", error)
       return NextResponse.json(
         { error: "Client not found", details: error.message },
         { status: 404 }
@@ -59,6 +60,7 @@ export async function GET(request: Request, { params }: RouteParams) {
       client
     })
   } catch (error) {
+    console.error("Get client API error:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -77,6 +79,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       const { data: { user } } = await supabaseAdmin.auth.getUser()
       adminId = user?.id || null
     } catch (err) {
+      console.log('Could not get admin user, proceeding with null')
     }
 
     // Use the archive_client function
@@ -87,6 +90,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     })
 
     if (error) {
+      console.error("Error archiving client:", error)
 
       if (error.message.includes("not found") || error.message.includes("already archived")) {
         return NextResponse.json(
@@ -114,6 +118,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     })
 
   } catch (error) {
+    console.error("Archive client API error:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -133,6 +138,7 @@ export async function POST(request: Request, { params }: RouteParams) {
         const { data: { user } } = await supabaseAdmin.auth.getUser()
         adminId = user?.id || null
       } catch (err) {
+        console.log('Could not get admin user, proceeding with null')
       }
 
       // Use the restore_client function
@@ -142,6 +148,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       })
 
       if (error) {
+        console.error("Error restoring client:", error)
 
         if (error.message.includes("not found") || error.message.includes("not archived")) {
           return NextResponse.json(
@@ -175,6 +182,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     )
 
   } catch (error) {
+    console.error("Client action API error:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

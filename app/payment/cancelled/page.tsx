@@ -64,6 +64,7 @@ export default function PaymentCancelledPage() {
         setPayment(data)
       }
     } catch (err) {
+      console.error("Error fetching payment info:", err)
     } finally {
       setIsLoading(false)
     }

@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error: any) {
+    console.error('List invoices error:', error)
     return NextResponse.json(
       { error: "Failed to list invoices", details: error.message },
       { status: 500 }

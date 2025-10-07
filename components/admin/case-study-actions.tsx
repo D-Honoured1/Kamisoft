@@ -21,6 +21,7 @@ export function CaseStudyActions({ caseStudyId, caseStudyTitle }: { caseStudyId:
 
       router.refresh()
     } catch (error) {
+      console.error("Failed to delete case study:", error)
       alert("Failed to delete case study")
     }
   }

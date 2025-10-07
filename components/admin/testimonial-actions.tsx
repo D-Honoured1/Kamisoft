@@ -29,6 +29,7 @@ export function TestimonialActions({
 
       router.refresh()
     } catch (error) {
+      console.error("Failed to delete testimonial:", error)
       alert("Failed to delete testimonial")
     }
   }
@@ -45,6 +46,7 @@ export function TestimonialActions({
 
       router.refresh()
     } catch (error) {
+      console.error("Failed to verify testimonial:", error)
       alert("Failed to verify testimonial")
     }
   }

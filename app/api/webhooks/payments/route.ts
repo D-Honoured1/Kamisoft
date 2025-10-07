@@ -19,6 +19,7 @@ export async function POST(request: NextRequest) {
     if (paystackSignature) {
       paymentData = await handlePaystackWebhook(body, paystackSignature, jsonBody)
     } else {
+      console.error("Unknown webhook source - no valid signature found")
       return NextResponse.json({ error: "Unknown webhook source" }, { status: 400 })
     }
 
@@ -37,6 +38,7 @@ export async function POST(request: NextRequest) {
       .eq("id", paymentData.paymentId)
 
     if (updateError) {
+      console.error("Error updating payment:", updateError)
       return NextResponse.json({ error: "Failed to update payment" }, { status: 500 })
     }
 
@@ -50,6 +52,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
+    console.error("Webhook error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
@@ -60,15 +63,18 @@ async function handlePaystackWebhook(body: string, signature: string, jsonBody: 
     const webhookSecret = process.env.PAYSTACK_WEBHOOK_SECRET
 
     if (!webhookSecret) {
+      console.error("Paystack webhook secret not configured")
       return null
     }
 
     // Verify the webhook signature
     const hash = crypto.createHmac('sha512', webhookSecret).update(body).digest('hex')
     if (hash !== signature) {
+      console.error("Paystack webhook signature verification failed")
       return null
     }
 
+    console.log("Processing Paystack webhook:", jsonBody.event)
 
     switch (jsonBody.event) {
       case "charge.success":
@@ -92,9 +98,11 @@ async function handlePaystackWebhook(body: string, signature: string, jsonBody: 
         }
 
       default:
+        console.log(`Unhandled Paystack event type: ${jsonBody.event}`)
         return null
     }
   } catch (error) {
+    console.error("Error processing Paystack webhook:", error)
     return null
   }
 }
@@ -111,6 +119,7 @@ async function updateServiceRequestStatus(paymentId: string, status: string) {
       .single()
 
     if (paymentError || !payment) {
+      console.error("Error fetching payment for service request update:", paymentError)
       return
     }
 
@@ -124,9 +133,12 @@ async function updateServiceRequestStatus(paymentId: string, status: string) {
       .eq("id", payment.request_id)
 
     if (updateError) {
+      console.error("Error updating service request status:", updateError)
     } else {
+      console.log(`Service request ${payment.request_id} status updated to ${status}`)
     }
   } catch (error) {
+    console.error("Error updating service request status:", error)
   }
 }
 
@@ -148,6 +160,7 @@ async function generateInvoice(paymentId: string) {
       .single()
 
     if (paymentError || !payment) {
+      console.error("Error fetching payment for invoice:", paymentError)
       return
     }
 
@@ -172,6 +185,7 @@ async function generateInvoice(paymentId: string) {
       .single()
 
     if (invoiceError) {
+      console.error("Error creating invoice:", invoiceError)
       return
     }
 
@@ -192,13 +206,16 @@ async function generateInvoice(paymentId: string) {
       pdfUrl
     )
 
+    console.log("Invoice generated successfully:", invoice.invoice_number)
   } catch (error) {
+    console.error("Error generating invoice:", error)
   }
 }
 
 async function generateInvoicePDF(invoiceId: string, payment: any, invoiceNumber: string) {
   try {
     // TODO: Implement PDF generation using puppeteer or similar
+    console.log("Generating PDF for invoice:", invoiceId)
 
     // Mock implementation - would typically generate actual PDF
     // You could use libraries like:
@@ -208,6 +225,7 @@ async function generateInvoicePDF(invoiceId: string, payment: any, invoiceNumber
     
     return `https://invoices.kamisoft.com/${invoiceNumber}.pdf`
   } catch (error) {
+    console.error("Error generating invoice PDF:", error)
     return null
   }
 }
@@ -222,6 +240,7 @@ async function sendInvoiceEmail(
 ) {
   try {
     // TODO: Implement email sending with invoice attachment
+    console.log("Sending invoice email to:", email, "Invoice:", invoiceNumber)
 
     // This would typically use an email service like:
     // - SendGrid
@@ -243,10 +262,12 @@ async function sendInvoiceEmail(
       }
     }
     
+    console.log("Email data prepared:", emailData)
     
     // Example implementation with a hypothetical email service:
     // await emailService.send(emailData)
     
   } catch (error) {
+    console.error("Error sending invoice email:", error)
   }
 }

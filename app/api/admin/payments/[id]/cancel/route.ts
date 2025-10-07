@@ -29,6 +29,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
     const { reason } = await request.json()
 
+    console.log(`[${correlationId}] Admin cancel crypto payment request:`, {
       paymentId: params.id,
       adminEmail: adminUser.email,
       reason
@@ -53,6 +54,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       .single()
 
     if (paymentError || !payment) {
+      console.error(`[${correlationId}] Payment not found:`, paymentError)
       return NextResponse.json({ error: "Payment not found" }, { status: 404 })
     }
 
@@ -100,12 +102,14 @@ export async function POST(request: Request, { params }: { params: { id: string 
       .eq("id", params.id)
 
     if (updateError) {
+      console.error(`[${correlationId}] Error cancelling payment:`, updateError)
       return NextResponse.json({
         error: "Failed to cancel payment",
         details: updateError.message
       }, { status: 500 })
     }
 
+    console.log(`[${correlationId}] Crypto payment cancelled successfully:`, {
       paymentId: params.id,
       originalStatus: payment.payment_status,
       cancelledBy: adminUser.email,
@@ -126,6 +130,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     })
 
   } catch (error: any) {
+    console.error(`[${correlationId}] Cancel payment error:`, error)
     return NextResponse.json({
       error: "Internal server error",
       details: error.message,

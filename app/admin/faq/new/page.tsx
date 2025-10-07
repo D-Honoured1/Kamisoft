@@ -38,6 +38,7 @@ export default function NewFAQPage() {
       await createFAQ(formData)
       router.push("/admin/faq")
     } catch (error) {
+      console.error("Failed to create FAQ:", error)
       alert("Failed to create FAQ. Please try again.")
     } finally {
       setLoading(false)

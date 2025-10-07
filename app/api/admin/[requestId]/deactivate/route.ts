@@ -38,6 +38,7 @@ export async function PATCH(req: Request, { params }: RouteParams) {
       return NextResponse.json({ error: "Invalid action" }, { status: 400 })
     }
 
+    console.log(`🔐 Admin ${adminUser.email} deactivating payment link for request ${requestId}`)
 
     // First, verify the service request exists and belongs to an approved request
     const { data: serviceRequest, error: requestError } = await supabaseAdmin
@@ -88,6 +89,7 @@ export async function PATCH(req: Request, { params }: RouteParams) {
       .single()
 
     if (updateError) {
+      console.error("❌ Error deactivating payment link:", updateError)
       return NextResponse.json({ 
         error: "Failed to deactivate payment link" 
       }, { status: 500 })
@@ -101,6 +103,7 @@ export async function PATCH(req: Request, { params }: RouteParams) {
       .in("payment_status", ["pending", "processing"])
 
     if (!paymentsError && pendingPayments && pendingPayments.length > 0) {
+      console.log(`📋 Found ${pendingPayments.length} pending payments to cancel`)
 
       // Update payment status to cancelled
       const updateData: any = {
@@ -125,11 +128,14 @@ export async function PATCH(req: Request, { params }: RouteParams) {
         .in("id", pendingPayments.map(p => p.id))
 
       if (cancelError) {
+        console.error("⚠️ Warning: Failed to cancel pending payments:", cancelError)
         // Don't fail the main request, just log the warning
       } else {
+        console.log(`✅ Cancelled ${pendingPayments.length} pending payments`)
       }
     }
 
+    console.log(`✅ Payment link deactivated successfully for request ${requestId}`)
 
     // Log the deactivation for audit purposes (if audit table exists)
     try {
@@ -151,6 +157,7 @@ export async function PATCH(req: Request, { params }: RouteParams) {
 
       if (auditError) {
         // Audit table might not exist, log to console instead
+        console.log("📝 Audit log (table not available):", {
           admin_email: adminUser.email,
           action: "payment_link_deactivated",
           request_id: requestId,
@@ -159,7 +166,9 @@ export async function PATCH(req: Request, { params }: RouteParams) {
         })
       }
     } catch (auditError) {
+      console.error("⚠️ Audit log failed:", auditError)
       // Log to console as fallback
+      console.log("📝 Fallback audit log:", {
         admin_email: adminUser.email,
         action: "payment_link_deactivated",
         request_id: requestId,
@@ -180,6 +189,7 @@ export async function PATCH(req: Request, { params }: RouteParams) {
     })
 
   } catch (error: any) {
+    console.error("💥 Payment link deactivation error:", error)
     return NextResponse.json({
       error: "Failed to deactivate payment link",
       details: error.message
@@ -237,6 +247,7 @@ export async function GET(req: Request, { params }: RouteParams) {
     })
 
   } catch (error: any) {
+    console.error("Error checking payment link status:", error)
     return NextResponse.json({
       error: "Failed to check payment link status"
     }, { status: 500 })

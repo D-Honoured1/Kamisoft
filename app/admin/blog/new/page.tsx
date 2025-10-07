@@ -33,6 +33,7 @@ export default function NewBlogPostPage() {
       await createBlogPost(formData)
       router.push("/admin/blog")
     } catch (error) {
+      console.error("Failed to create blog post:", error)
       alert("Failed to create blog post. Please try again.")
     } finally {
       setLoading(false)

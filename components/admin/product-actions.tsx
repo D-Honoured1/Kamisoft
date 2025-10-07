@@ -33,6 +33,7 @@ export function ProductActions({ productId }: { productId: string }) {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
+        console.error("Delete failed:", errorData)
         throw new Error(errorData.error || "Failed to delete")
       }
 
@@ -43,6 +44,7 @@ export function ProductActions({ productId }: { productId: string }) {
 
       router.refresh()
     } catch (error) {
+      console.error("Failed to delete product:", error)
       toast({
         title: "Error",
         description: "Failed to delete product. Please try again.",

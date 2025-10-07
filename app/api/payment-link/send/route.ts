@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!emailResult.success) {
+      console.error('Email sending failed:', emailResult.error)
       return NextResponse.json(
         { error: emailResult.error || "Failed to send email" },
         { status: 500 }
@@ -74,6 +75,7 @@ export async function POST(request: NextRequest) {
           .eq('id', requestId)
       } catch (dbError) {
         // Don't fail if logging fails
+        console.error('Failed to log email sending:', dbError)
       }
     }
 
@@ -84,6 +86,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: any) {
+    console.error('Payment link send API error:', error)
     return NextResponse.json(
       { error: error.message || "Internal server error" },
       { status: 500 }

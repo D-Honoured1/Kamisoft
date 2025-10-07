@@ -51,6 +51,7 @@ export default function EditServiceRequest() {
         timeline: data.timeline || "",
       })
     } catch (error: any) {
+      console.error("Error fetching request:", error)
       setError(error.message)
     } finally {
       setIsLoading(false)
@@ -88,6 +89,7 @@ export default function EditServiceRequest() {
       }, 1500)
 
     } catch (error: any) {
+      console.error("Error updating request:", error)
       setError(error.message)
     } finally {
       setIsSaving(false)

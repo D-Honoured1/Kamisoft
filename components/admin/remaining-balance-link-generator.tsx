@@ -85,6 +85,7 @@ export function RemainingBalanceLinkGenerator({
     try {
       alert("Remaining balance payment link sent to client email (demo)")
     } catch (error) {
+      console.error("Error sending email:", error)
     }
   }
 

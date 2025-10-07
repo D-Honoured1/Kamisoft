@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
       })
 
     if (uploadError) {
+      console.error('Supabase upload error:', uploadError)
       return NextResponse.json(
         { error: "Failed to upload file to storage" },
         { status: 500 }
@@ -88,6 +89,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
+    console.error('Image upload error:', error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

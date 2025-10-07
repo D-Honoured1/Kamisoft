@@ -28,6 +28,7 @@ export default async function AdminProductsPage() {
     .order("created_at", { ascending: false })
 
   if (error) {
+    console.error("Failed to load products:", error)
   }
 
   return (
