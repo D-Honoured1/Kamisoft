@@ -2,7 +2,7 @@
 export const dynamic = "force-dynamic"
 
 import { NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { getAdminUser } from "@/lib/auth/server-auth"
 
 export async function DELETE(
@@ -21,7 +21,7 @@ export async function DELETE(
 
     console.log(`[DELETE] Authenticated as: ${adminUser.email}`)
 
-    const supabase = createServerClient()
+    const supabase = createAdminClient()
 
     // Delete the product
     const { error, data } = await supabase
@@ -61,7 +61,7 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const supabase = createServerClient()
+    const supabase = createAdminClient()
 
     // Update the product
     const { data, error } = await supabase
