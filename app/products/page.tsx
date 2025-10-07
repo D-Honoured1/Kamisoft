@@ -1,27 +1,11 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
-import { ExternalLink, Calendar, Star } from "lucide-react"
 import Link from "next/link"
 import { getAllProducts } from "@/lib/queries/content"
 import ProductsCarousel from "./products-carousel"
 
 export default async function ProductsPage() {
   const products = await getAllProducts({ active_only: true })
-
-  const getPricingBadge = (pricingModel: string) => {
-    switch (pricingModel) {
-      case "free":
-        return <Badge variant="secondary">Free</Badge>
-      case "subscription":
-        return <Badge variant="default">Subscription</Badge>
-      case "custom":
-        return <Badge variant="outline">Custom Pricing</Badge>
-      default:
-        return <Badge variant="outline">Contact Us</Badge>
-    }
-  }
 
   return (
     <div className="flex flex-col">
@@ -48,7 +32,7 @@ export default async function ProductsPage() {
       {/* Products Carousel */}
       <section className="py-20">
         <div className="container">
-          <ProductsCarousel products={products} getPricingBadge={getPricingBadge} />
+          <ProductsCarousel products={products} />
         </div>
       </section>
 

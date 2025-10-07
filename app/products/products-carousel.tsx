@@ -21,10 +21,22 @@ interface Product {
 
 interface ProductsCarouselProps {
   products: Product[]
-  getPricingBadge: (pricingModel: string) => JSX.Element
 }
 
-export default function ProductsCarousel({ products, getPricingBadge }: ProductsCarouselProps) {
+export default function ProductsCarousel({ products }: ProductsCarouselProps) {
+  const getPricingBadge = (pricingModel: string) => {
+    switch (pricingModel) {
+      case "free":
+        return <Badge variant="secondary">Free</Badge>
+      case "subscription":
+        return <Badge variant="default">Subscription</Badge>
+      case "custom":
+        return <Badge variant="outline">Custom Pricing</Badge>
+      default:
+        return <Badge variant="outline">Contact Us</Badge>
+    }
+  }
+
   return (
     <Carousel
       opts={{
