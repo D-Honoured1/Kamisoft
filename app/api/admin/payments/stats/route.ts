@@ -175,15 +175,12 @@ export async function GET() {
       }))
     }
 
-<<<<<<< HEAD
-=======
     console.log("Payment statistics calculated:", {
       totalPayments: stats.totalPayments,
       totalRevenue: stats.totalRevenue,
       pendingAmount: stats.pendingAmount
     })
 
->>>>>>> parent of d5918f5 (Let me breath)
     return NextResponse.json({
       success: true,
       statistics: stats,
