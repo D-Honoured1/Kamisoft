@@ -41,13 +41,15 @@ export function TestimonialActions({
       })
 
       if (!response.ok) {
-        throw new Error("Failed to verify")
+        const error = await response.json()
+        throw new Error(error.error || "Failed to verify")
       }
 
+      alert("Testimonial verified successfully!")
       router.refresh()
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to verify testimonial:", error)
-      alert("Failed to verify testimonial")
+      alert(`Failed to verify testimonial: ${error.message}`)
     }
   }
 

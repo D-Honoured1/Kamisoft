@@ -283,21 +283,15 @@ export default async function AdminDashboard() {
               </Link>
             </Button>
             <Button asChild variant="outline" className="w-full justify-start bg-transparent">
-              <Link href="/admin/faq">
-                <HelpCircle className="mr-2 h-4 w-4" />
-                FAQs
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="w-full justify-start bg-transparent">
-              <Link href="/admin/team">
-                <UsersRound className="mr-2 h-4 w-4" />
-                Team Members
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="w-full justify-start bg-transparent">
               <Link href="/admin/case-studies">
                 <FolderKanban className="mr-2 h-4 w-4" />
                 Case Studies
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full justify-start bg-transparent">
+              <Link href="/admin/faq">
+                <HelpCircle className="mr-2 h-4 w-4" />
+                FAQs
               </Link>
             </Button>
             <Button asChild variant="outline" className="w-full justify-start bg-transparent">
