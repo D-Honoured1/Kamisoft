@@ -38,9 +38,9 @@ export default function NewTestimonialPage() {
     try {
       await createTestimonial(formData)
       router.push("/admin/testimonials")
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to create testimonial:", error)
-      alert("Failed to create testimonial. Please try again.")
+      alert(`Failed to create testimonial: ${error.message || JSON.stringify(error)}`)
     } finally {
       setLoading(false)
     }

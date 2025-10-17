@@ -40,9 +40,9 @@ export default function NewCaseStudyPage() {
     try {
       await createCaseStudy(formData)
       router.push("/admin/case-studies")
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to create case study:", error)
-      alert("Failed to create case study. Please try again.")
+      alert(`Failed to create case study: ${error.message || JSON.stringify(error)}`)
     } finally {
       setLoading(false)
     }
