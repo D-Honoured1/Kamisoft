@@ -32,9 +32,9 @@ export default function NewBlogPostPage() {
     try {
       await createBlogPost(formData)
       router.push("/admin/blog")
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to create blog post:", error)
-      alert("Failed to create blog post. Please try again.")
+      alert(`Failed to create blog post: ${error.message || "Unknown error"}. Check console for details.`)
     } finally {
       setLoading(false)
     }
