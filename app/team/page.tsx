@@ -10,9 +10,9 @@ export const metadata = {
 }
 
 export default async function TeamPage() {
-  const allTeam = await getAllTeamMembers({ active_only: true })
-  const leadership = allTeam.filter((member) => member.is_leadership)
-  const team = allTeam.filter((member) => !member.is_leadership)
+  const allTeam = await getAllTeamMembers({ active_only: true, public_only: true })
+  const leadership = allTeam.filter((member) => member.team_type === 'leadership')
+  const team = allTeam.filter((member) => member.team_type !== 'leadership')
 
   return (
     <div className="flex flex-col">

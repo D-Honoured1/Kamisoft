@@ -3,9 +3,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ServiceCard } from "@/components/service-card"
-import { ArrowRight, Code, Smartphone, Shield, TrendingUp, Users, Award } from "lucide-react"
+import { ArrowRight, Code, Smartphone, Shield, TrendingUp, Users, Award, Star } from "lucide-react"
+import { getAllCaseStudies, getAllTestimonials, getAllBlogPosts } from "@/lib/queries/content"
 
-export default function HomePage() {
+export default async function HomePage() {
+  // Fetch real content from database
+  const caseStudies = await getAllCaseStudies({ published_only: true, featured_only: true, limit: 3 })
+  const testimonials = await getAllTestimonials({ published_only: true, featured_only: true, limit: 3 })
+  const blogPosts = await getAllBlogPosts({ published_only: true, limit: 3 })
 
   const featuredServices = [
     "full_stack_development",
@@ -175,117 +180,172 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Case Studies Preview */}
-      <section className="py-20">
-        <div className="container">
-          <div className="text-center space-y-4 mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold">Our Work & Results</h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Real projects. Real impact. See how we've helped businesses achieve their goals.
-            </p>
+      {/* Case Studies Preview - Real Data */}
+      {caseStudies.length > 0 && (
+        <section className="py-20">
+          <div className="container">
+            <div className="text-center space-y-4 mb-16">
+              <h2 className="text-3xl lg:text-4xl font-bold">Our Work & Results</h2>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                Real projects. Real impact. See how we've helped businesses achieve their goals.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+              {caseStudies.map((study) => (
+                <Card key={study.id} className="group">
+                  <CardHeader>
+                    {study.featured_image_url && (
+                      <div className="aspect-video bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg mb-4 overflow-hidden">
+                        <img src={study.featured_image_url} alt={study.title} className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <CardTitle>{study.title}</CardTitle>
+                    {study.subtitle && <CardDescription>{study.subtitle}</CardDescription>}
+                    {study.client_name && !study.is_client_confidential && (
+                      <CardDescription>{study.client_name}</CardDescription>
+                    )}
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {study.challenge && (
+                      <p className="text-sm text-muted-foreground line-clamp-3">
+                        {study.challenge}
+                      </p>
+                    )}
+                    {study.technologies && study.technologies.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {study.technologies.slice(0, 3).map((tech, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-xs">{tech}</Badge>
+                        ))}
+                      </div>
+                    )}
+                    <Button variant="ghost" className="w-full" asChild>
+                      <Link href={`/case-studies/${study.slug}`}>
+                        View Case Study <ArrowRight className="ml-2 h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <div className="text-center">
+              <Button size="lg" variant="outline" asChild>
+                <Link href="/case-studies">
+                  View All Case Studies <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
           </div>
+        </section>
+      )}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-            <Card className="group ">
-              <CardHeader>
-                <div className="aspect-video bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg mb-4 flex items-center justify-center">
-                  <Shield className="h-16 w-16 text-primary/40" />
-                </div>
-                <CardTitle>Fintech Payment Gateway</CardTitle>
-                <CardDescription>Leading Nigerian Payment Processor</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Built a secure, scalable payment gateway handling multi-currency transactions with KYC integration
-                </p>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Transaction Success Rate</span>
-                    <span className="font-semibold text-primary">99.7%</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Monthly Processing</span>
-                    <span className="font-semibold text-primary">₦500M+</span>
-                  </div>
-                </div>
-                <Button variant="ghost" className="w-full " asChild>
-                  <Link href="/case-studies">
-                    View Case Study <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
+      {/* Testimonials Section */}
+      {testimonials.length > 0 && (
+        <section className="py-20 bg-muted/30">
+          <div className="container">
+            <div className="text-center space-y-4 mb-16">
+              <h2 className="text-3xl lg:text-4xl font-bold">What Our Clients Say</h2>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                Don't just take our word for it — hear from businesses we've partnered with
+              </p>
+            </div>
 
-            <Card className="group ">
-              <CardHeader>
-                <div className="aspect-video bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg mb-4 flex items-center justify-center">
-                  <Code className="h-16 w-16 text-primary/40" />
-                </div>
-                <CardTitle>Enterprise CRM Platform</CardTitle>
-                <CardDescription>Manufacturing & Distribution Company</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Custom CRM solution integrating inventory, sales tracking, and customer management
-                </p>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Efficiency Gain</span>
-                    <span className="font-semibold text-primary">40%</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">User Adoption</span>
-                    <span className="font-semibold text-primary">95%</span>
-                  </div>
-                </div>
-                <Button variant="ghost" className="w-full " asChild>
-                  <Link href="/case-studies">
-                    View Case Study <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {testimonials.map((testimonial) => (
+                <Card key={testimonial.id}>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-1 mb-4">
+                      {[...Array(testimonial.rating || 5)].map((_, i) => (
+                        <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                      ))}
+                    </div>
+                    <p className="text-sm italic mb-4">&ldquo;{testimonial.message}&rdquo;</p>
+                    <div className="flex items-center gap-3">
+                      {testimonial.client_image_url && (
+                        <img
+                          src={testimonial.client_image_url}
+                          alt={testimonial.client_name}
+                          className="w-12 h-12 rounded-full object-cover"
+                        />
+                      )}
+                      <div>
+                        <p className="font-semibold">{testimonial.client_name}</p>
+                        {testimonial.client_position && testimonial.client_company && (
+                          <p className="text-sm text-muted-foreground">
+                            {testimonial.client_position} at {testimonial.client_company}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
-            <Card className="group ">
-              <CardHeader>
-                <div className="aspect-video bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg mb-4 flex items-center justify-center">
-                  <Smartphone className="h-16 w-16 text-primary/40" />
-                </div>
-                <CardTitle>Mobile Banking App</CardTitle>
-                <CardDescription>Digital Bank Launch</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Full-stack mobile banking solution with biometric security and real-time notifications
-                </p>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Active Users</span>
-                    <span className="font-semibold text-primary">50K+</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">App Rating</span>
-                    <span className="font-semibold text-primary">4.8/5</span>
-                  </div>
-                </div>
-                <Button variant="ghost" className="w-full " asChild>
-                  <Link href="/case-studies">
-                    View Case Study <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
+            <div className="text-center mt-12">
+              <Button size="lg" variant="outline" asChild>
+                <Link href="/testimonials">
+                  View All Testimonials <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
           </div>
+        </section>
+      )}
 
-          <div className="text-center">
-            <Button size="lg" variant="outline" asChild>
-              <Link href="/case-studies">
-                View All Case Studies <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
+      {/* Latest Blog Posts */}
+      {blogPosts.length > 0 && (
+        <section className="py-20">
+          <div className="container">
+            <div className="text-center space-y-4 mb-16">
+              <h2 className="text-3xl lg:text-4xl font-bold">Latest Insights</h2>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                Expert perspectives on technology, innovation, and business growth
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {blogPosts.map((post) => (
+                <Card key={post.id} className="group">
+                  <CardHeader>
+                    {post.cover_image_url && (
+                      <div className="aspect-video bg-muted rounded-lg mb-4 overflow-hidden">
+                        <img src={post.cover_image_url} alt={post.title} className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <div className="flex gap-2 mb-2">
+                      {post.category && <Badge variant="secondary">{post.category}</Badge>}
+                      {post.is_featured && <Badge>Featured</Badge>}
+                    </div>
+                    <CardTitle className="line-clamp-2">{post.title}</CardTitle>
+                    {post.excerpt && <CardDescription className="line-clamp-2">{post.excerpt}</CardDescription>}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
+                      {post.author_name && <span>By {post.author_name}</span>}
+                      {post.read_time_minutes && <span>{post.read_time_minutes} min read</span>}
+                    </div>
+                    <Button variant="ghost" className="w-full" asChild>
+                      <Link href={`/blog/${post.slug}`}>
+                        Read More <ArrowRight className="ml-2 h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <div className="text-center mt-12">
+              <Button size="lg" variant="outline" asChild>
+                <Link href="/blog">
+                  View All Articles <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* CTA Section */}
       <section className="py-20 bg-muted/30">
