@@ -20,9 +20,11 @@ export default function EditTeamMemberPage({ params }: { params: { id: string } 
   const [formData, setFormData] = useState<TeamMemberForm>({
     full_name: "",
     position: "",
-    is_active: true,
-    is_leadership: false,
+    team_type: "staff",
+    is_public: true,
+    is_featured: false,
     display_order: 0,
+    employment_status: "active",
   })
 
   useEffect(() => {
@@ -45,9 +47,11 @@ export default function EditTeamMemberPage({ params }: { params: { id: string } 
         linkedin_url: member.linkedin_url,
         github_url: member.github_url,
         twitter_url: member.twitter_url,
-        is_active: member.is_active,
-        is_leadership: member.is_leadership,
+        team_type: member.team_type,
+        is_public: member.is_public,
+        is_featured: member.is_featured,
         display_order: member.display_order,
+        employment_status: member.employment_status,
       })
     } catch (error) {
       console.error("Failed to load team member:", error)
@@ -287,27 +291,27 @@ export default function EditTeamMemberPage({ params }: { params: { id: string } 
 
             <div className="flex items-center space-x-2">
               <Checkbox
-                id="is_active"
-                checked={formData.is_active}
+                id="is_public"
+                checked={formData.is_public}
                 onCheckedChange={(checked) =>
-                  setFormData({ ...formData, is_active: checked as boolean })
+                  setFormData({ ...formData, is_public: checked as boolean })
                 }
               />
-              <Label htmlFor="is_active" className="cursor-pointer">
-                Active team member
+              <Label htmlFor="is_public" className="cursor-pointer">
+                Show on public team page
               </Label>
             </div>
 
             <div className="flex items-center space-x-2">
               <Checkbox
-                id="is_leadership"
-                checked={formData.is_leadership}
+                id="is_featured"
+                checked={formData.is_featured}
                 onCheckedChange={(checked) =>
-                  setFormData({ ...formData, is_leadership: checked as boolean })
+                  setFormData({ ...formData, is_featured: checked as boolean })
                 }
               />
-              <Label htmlFor="is_leadership" className="cursor-pointer">
-                Leadership team
+              <Label htmlFor="is_featured" className="cursor-pointer">
+                Featured team member
               </Label>
             </div>
           </CardContent>

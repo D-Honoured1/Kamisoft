@@ -62,12 +62,13 @@ export default async function AdminTeamPage() {
                   <CardTitle className="text-xl mb-2">{member.full_name}</CardTitle>
                   <p className="text-sm text-muted-foreground mb-2">{member.position}</p>
                   <div className="flex gap-2 flex-wrap mb-2">
-                    {member.is_active ? (
+                    {member.employment_status === 'active' ? (
                       <Badge variant="default">Active</Badge>
                     ) : (
-                      <Badge variant="secondary">Inactive</Badge>
+                      <Badge variant="secondary">{member.employment_status}</Badge>
                     )}
-                    {member.is_leadership && <Badge variant="outline">Leadership</Badge>}
+                    {member.is_public && <Badge variant="outline">Public</Badge>}
+                    {member.is_featured && <Badge variant="outline">Featured</Badge>}
                     {member.department && (
                       <Badge variant="outline" className="capitalize">
                         {member.department}

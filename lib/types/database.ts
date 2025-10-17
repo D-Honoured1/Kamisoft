@@ -458,10 +458,11 @@ export interface TeamMemberForm {
   twitter_url?: string
   portfolio_url?: string
   profile_image_url?: string
-  team_type: string
-  is_public: boolean
-  is_featured: boolean
-  employment_status: string
+  team_type?: string
+  is_public?: boolean
+  is_featured?: boolean
+  display_order?: number
+  employment_status?: string
   joined_date?: string
 }
 
@@ -469,31 +470,27 @@ export interface CaseStudyForm {
   title: string
   slug?: string
   subtitle?: string
+  description: string
+  content: string
   client_name?: string
-  client_industry?: string
-  client_size?: string
-  is_client_confidential: boolean
-  service_category: ServiceCategory
-  project_type?: string
-  challenge: string
-  solution: string
-  results: string
-  key_metrics?: Record<string, any>
-  technologies: string[]
-  tech_stack_frontend?: string[]
-  tech_stack_backend?: string[]
-  tech_stack_infrastructure?: string[]
-  project_duration_months?: number
+  industry?: string
+  service_category?: ServiceCategory
+  project_duration?: string
   team_size?: number
-  start_date?: string
   completion_date?: string
-  featured_image_url?: string
-  gallery_images?: Array<{ url: string; alt?: string; caption?: string }>
-  video_url?: string
+  technologies?: string[]
+  challenge?: string
+  solution?: string
+  results?: string
+  metrics?: Record<string, any>
+  cover_image_url?: string
   live_url?: string
   github_url?: string
+  gallery_images?: string[]
+  tags?: string[]
   is_published: boolean
   is_featured: boolean
+  display_order: number
   meta_title?: string
   meta_description?: string
 }
