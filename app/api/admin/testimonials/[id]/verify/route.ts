@@ -23,7 +23,6 @@ export async function POST(
       .update({
         is_verified: true,
         verified_at: new Date().toISOString(),
-        verified_by_admin_id: adminUser.id,
       })
       .eq("id", params.id)
       .select()

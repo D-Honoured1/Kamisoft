@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DashboardHomeButton } from "@/components/admin-navigation/dashboard-home-button"
 import { ImageUpload } from "@/components/ui/image-upload"
 import { ArrowLeft, Save } from "lucide-react"
@@ -27,6 +28,7 @@ export default function NewLeadershipMemberPage() {
     profile_image_url: "",
     display_order: 0,
     is_active: true,
+    role_type: "member",
   })
 
   const handleInputChange = (field: string, value: any) => {
@@ -195,6 +197,23 @@ export default function NewLeadershipMemberPage() {
             {/* Display Settings */}
             <div className="space-y-4 p-4 border-2 border-dashed rounded-lg">
               <h3 className="text-lg font-medium">Display Settings</h3>
+
+              <div className="space-y-2">
+                <Label htmlFor="role_type">Role Type *</Label>
+                <Select
+                  value={formData.role_type}
+                  onValueChange={(value) => handleInputChange("role_type", value)}
+                >
+                  <SelectTrigger className="border-2">
+                    <SelectValue placeholder="Select role type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="leader">Leader</SelectItem>
+                    <SelectItem value="member">Member</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground">Leaders appear in a separate section above members</p>
+              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="display_order">Display Order</Label>

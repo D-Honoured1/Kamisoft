@@ -12,19 +12,20 @@ export const metadata = {
 export default async function TeamPage() {
   const supabase = createServerClient()
 
-  // Get leadership from leadership_team table
-  const { data: leadership, error: leadershipError } = await supabase
+  // Get all team members from leadership_team table
+  const { data: allMembers, error: teamError } = await supabase
     .from("leadership_team")
     .select("*")
     .eq("is_active", true)
     .order("display_order", { ascending: true })
 
-  if (leadershipError) {
-    console.error("Error fetching leadership:", leadershipError)
+  if (teamError) {
+    console.error("Error fetching team:", teamError)
   }
 
-  const allTeam = leadership || []
-  const team: any[] = [] // No separate team members table anymore
+  // Separate leaders from regular members
+  const leadership = (allMembers || []).filter(member => member.role_type === 'leader')
+  const team = (allMembers || []).filter(member => member.role_type !== 'leader')
 
   return (
     <div className="flex flex-col">
@@ -47,12 +48,12 @@ export default async function TeamPage() {
         </div>
       </section>
 
-      {allTeam.length > 0 && (
-        <section className="py-20">
+      {leadership.length > 0 && (
+        <section className="py-20 bg-muted/30">
           <div className="container">
-            <h2 className="text-3xl font-bold mb-12 text-center">Our Team</h2>
+            <h2 className="text-3xl font-bold mb-12 text-center">Leadership</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
-              {allTeam.map((member) => (
+              {leadership.map((member) => (
                 <div
                   key={member.id}
                   className="bg-card rounded-lg p-6 border hover:shadow-lg transition-all"
@@ -112,8 +113,72 @@ export default async function TeamPage() {
         </section>
       )}
 
+      {team.length > 0 && (
+        <section className="py-20">
+          <div className="container">
+            <h2 className="text-3xl font-bold mb-12 text-center">Team Members</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
+              {team.map((member) => (
+                <div
+                  key={member.id}
+                  className="bg-card rounded-lg p-6 border hover:shadow-lg transition-all"
+                >
+                  {member.profile_image_url && (
+                    <div className="relative h-48 w-48 mx-auto mb-4 rounded-full overflow-hidden">
+                      <Image
+                        src={member.profile_image_url}
+                        alt={member.name}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  )}
 
-      {allTeam.length === 0 && (
+                  <div className="text-center">
+                    <h3 className="text-xl font-bold mb-1">{member.name}</h3>
+                    <p className="text-muted-foreground mb-2">{member.position}</p>
+
+                    {member.bio && <p className="text-sm text-muted-foreground mb-4">{member.bio}</p>}
+
+                    <div className="flex gap-3 justify-center text-muted-foreground">
+                      {member.email && (
+                        <a
+                          href={`mailto:${member.email}`}
+                          className="hover:text-primary transition-colors"
+                        >
+                          <Mail className="h-5 w-5" />
+                        </a>
+                      )}
+                      {member.linkedin_url && (
+                        <a
+                          href={member.linkedin_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-primary transition-colors"
+                        >
+                          <Linkedin className="h-5 w-5" />
+                        </a>
+                      )}
+                      {member.twitter_url && (
+                        <a
+                          href={member.twitter_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-primary transition-colors"
+                        >
+                          <Twitter className="h-5 w-5" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {leadership.length === 0 && team.length === 0 && (
         <section className="py-20">
           <div className="container">
             <div className="text-center py-12">
