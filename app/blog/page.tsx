@@ -1,15 +1,30 @@
-import { getAllBlogPosts } from "@/lib/queries/content"
+"use client"
+
+import { useEffect, useState } from "react"
 import { BlogCard } from "@/components/blog-card"
 import { Badge } from "@/components/ui/badge"
+import { InfiniteCarousel } from "@/components/ui/infinite-carousel"
 
-export const metadata = {
-  title: "Blog | Kamisoft Enterprises - Technology Insights & Tutorials",
-  description:
-    "Read the latest articles on software development, blockchain, fintech, and technology trends from Kamisoft Enterprises.",
-}
+export default function BlogPage() {
+  const [posts, setPosts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-export default async function BlogPage() {
-  const posts = await getAllBlogPosts({ published_only: true })
+  useEffect(() => {
+    async function loadPosts() {
+      try {
+        const response = await fetch('/api/admin/blog')
+        if (response.ok) {
+          const data = await response.json()
+          setPosts(data.posts?.filter((p: any) => p.is_published) || [])
+        }
+      } catch (error) {
+        console.error('Failed to load blog posts:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadPosts()
+  }, [])
 
   return (
     <div className="flex flex-col">
@@ -33,15 +48,19 @@ export default async function BlogPage() {
         </div>
       </section>
 
-      {/* Blog Posts Grid */}
+      {/* Blog Posts Carousel */}
       <section className="py-20">
         <div className="container">
-          {posts.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {loading ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">Loading blog posts...</p>
+            </div>
+          ) : posts.length > 0 ? (
+            <InfiniteCarousel>
               {posts.map((post) => (
                 <BlogCard key={post.id} post={post} />
               ))}
-            </div>
+            </InfiniteCarousel>
           ) : (
             <div className="text-center py-12">
               <p className="text-muted-foreground text-lg">

@@ -1,15 +1,30 @@
-import { getAllTestimonials } from "@/lib/queries/content"
+"use client"
+
+import { useEffect, useState } from "react"
 import { TestimonialCard } from "@/components/testimonial-card"
 import { Badge } from "@/components/ui/badge"
+import { InfiniteCarousel } from "@/components/ui/infinite-carousel"
 
-export const metadata = {
-  title: "Client Testimonials | Kamisoft Enterprises",
-  description:
-    "Read what our clients say about working with Kamisoft Enterprises. Verified testimonials from satisfied customers.",
-}
+export default function TestimonialsPage() {
+  const [testimonials, setTestimonials] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-export default async function TestimonialsPage() {
-  const testimonials = await getAllTestimonials({ published_only: true })
+  useEffect(() => {
+    async function loadTestimonials() {
+      try {
+        const response = await fetch('/api/admin/testimonials')
+        if (response.ok) {
+          const data = await response.json()
+          setTestimonials(data.testimonials?.filter((t: any) => t.is_published) || [])
+        }
+      } catch (error) {
+        console.error('Failed to load testimonials:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadTestimonials()
+  }, [])
 
   return (
     <div className="flex flex-col">
@@ -34,12 +49,16 @@ export default async function TestimonialsPage() {
 
       <section className="py-20">
         <div className="container">
-          {testimonials.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {loading ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">Loading testimonials...</p>
+            </div>
+          ) : testimonials.length > 0 ? (
+            <InfiniteCarousel>
               {testimonials.map((testimonial) => (
                 <TestimonialCard key={testimonial.id} testimonial={testimonial} />
               ))}
-            </div>
+            </InfiniteCarousel>
           ) : (
             <div className="text-center py-12">
               <p className="text-muted-foreground text-lg">

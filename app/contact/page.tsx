@@ -4,7 +4,7 @@
 import type React from "react"
 import type { ReactElement } from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -30,6 +30,25 @@ export default function ContactPage(): ReactElement {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [successMessage, setSuccessMessage] = useState("")
   const [error, setError] = useState("")
+  const [faqs, setFaqs] = useState<any[]>([])
+
+  // Fetch FAQs from database
+  useEffect(() => {
+    async function loadFAQs() {
+      try {
+        const response = await fetch('/api/admin/faq')
+        if (response.ok) {
+          const data = await response.json()
+          // Get first 4 published FAQs
+          const publishedFaqs = data.faqs?.filter((f: any) => f.is_published).slice(0, 4) || []
+          setFaqs(publishedFaqs)
+        }
+      } catch (error) {
+        console.error('Failed to load FAQs:', error)
+      }
+    }
+    loadFAQs()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -324,37 +343,25 @@ export default function ContactPage(): ReactElement {
           </div>
 
           <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
-            {[
-              {
-                question: "What's your typical project timeline?",
-                answer:
-                  "Project timelines vary based on complexity, but most projects range from 4-16 weeks. We provide detailed timelines during the planning phase.",
-              },
-              {
-                question: "Do you offer ongoing support?",
-                answer:
-                  "Yes, we provide comprehensive support and maintenance packages to ensure your solution continues to perform optimally.",
-              },
-              {
-                question: "Can you work with our existing team?",
-                answer:
-                  "We often collaborate with in-house teams and can adapt to your preferred workflow and communication methods.",
-              },
-              {
-                question: "What technologies do you specialize in?",
-                answer:
-                  "We work with modern technologies including React, Node.js, Python, blockchain platforms, and cloud services like AWS and Azure.",
-              },
-            ].map((faq, index) => (
-              <Card key={index} className="border-0 bg-background/50">
-                <CardHeader>
-                  <CardTitle className="text-lg">{faq.question}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{faq.answer}</p>
-                </CardContent>
-              </Card>
-            ))}
+            {faqs.length > 0 ? (
+              faqs.map((faq) => (
+                <Card key={faq.id} className="border-0 bg-background/50">
+                  <CardHeader>
+                    <CardTitle className="text-lg">{faq.question}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div
+                      className="text-sm text-muted-foreground leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: faq.answer }}
+                    />
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <div className="col-span-2 text-center py-8 text-muted-foreground">
+                <p>No FAQs available yet. Check our <a href="/faq" className="text-primary underline">FAQ page</a> for more information.</p>
+              </div>
+            )}
           </div>
         </div>
       </section>
