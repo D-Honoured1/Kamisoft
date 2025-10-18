@@ -13,6 +13,7 @@ import { ImageUpload } from "@/components/image-upload"
 import { createBlogPost } from "@/lib/queries/content-client"
 import type { BlogPostForm } from "@/lib/types/database"
 import { ArrowLeft } from "lucide-react"
+import { toast } from "sonner"
 
 export default function NewBlogPostPage() {
   const router = useRouter()
@@ -31,10 +32,11 @@ export default function NewBlogPostPage() {
 
     try {
       await createBlogPost(formData)
+      toast.success("Blog post created successfully!")
       router.push("/admin/blog")
     } catch (error: any) {
       console.error("Failed to create blog post:", error)
-      alert(`Failed to create blog post: ${error.message || "Unknown error"}. Check console for details.`)
+      toast.error(`Failed to create blog post: ${error.message || "Unknown error"}`)
     } finally {
       setLoading(false)
     }

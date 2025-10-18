@@ -20,6 +20,7 @@ import { ImageUpload } from "@/components/image-upload"
 import { createCaseStudy } from "@/lib/queries/content-client"
 import type { CaseStudyForm, ServiceCategory } from "@/lib/types/database"
 import { ArrowLeft } from "lucide-react"
+import { toast } from "sonner"
 
 export default function NewCaseStudyPage() {
   const router = useRouter()
@@ -42,7 +43,7 @@ export default function NewCaseStudyPage() {
       router.push("/admin/case-studies")
     } catch (error: any) {
       console.error("Failed to create case study:", error)
-      alert(`Failed to create case study: ${error.message || JSON.stringify(error)}`)
+      toast.error(`Failed to create case study: ${error.message || "Unknown error"}`)
     } finally {
       setLoading(false)
     }

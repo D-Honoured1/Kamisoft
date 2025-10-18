@@ -19,6 +19,7 @@ import { ImageUpload } from "@/components/image-upload"
 import { createTestimonial } from "@/lib/queries/content-client"
 import type { TestimonialForm, ServiceCategory } from "@/lib/types/database"
 import { ArrowLeft } from "lucide-react"
+import { toast } from "sonner"
 
 export default function NewTestimonialPage() {
   const router = useRouter()
@@ -40,7 +41,7 @@ export default function NewTestimonialPage() {
       router.push("/admin/testimonials")
     } catch (error: any) {
       console.error("Failed to create testimonial:", error)
-      alert(`Failed to create testimonial: ${error.message || JSON.stringify(error)}`)
+      toast.error(`Failed to create testimonial: ${error.message || "Unknown error"}`)
     } finally {
       setLoading(false)
     }

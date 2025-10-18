@@ -6,6 +6,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
+import { Toaster } from "sonner"
 import { Suspense } from "react"
 import "./globals.css"
 
@@ -60,6 +61,7 @@ export default function RootLayout({
               <Footer />
             </div>
           </Suspense>
+          <Toaster position="top-right" richColors />
         </ThemeProvider>
         <Analytics />
       </body>

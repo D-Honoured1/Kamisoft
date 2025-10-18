@@ -18,6 +18,7 @@ import {
 import { createProduct } from "@/lib/queries/content-client"
 import type { ProductForm } from "@/lib/types/database"
 import { ArrowLeft } from "lucide-react"
+import { toast } from "sonner"
 
 export default function NewProductPage() {
   const router = useRouter()
@@ -44,7 +45,7 @@ export default function NewProductPage() {
       router.push("/admin/products")
     } catch (error: any) {
       console.error("Failed to create product:", error)
-      alert(`Failed to create product: ${error.message || JSON.stringify(error)}`)
+      toast.error(`Failed to create product: ${error.message || "Unknown error"}`)
     } finally {
       setLoading(false)
     }

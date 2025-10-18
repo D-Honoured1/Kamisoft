@@ -19,6 +19,7 @@ import { RichTextEditor } from "@/components/rich-text-editor"
 import { createFAQ } from "@/lib/queries/content-client"
 import type { FAQForm, FAQCategory } from "@/lib/types/database"
 import { ArrowLeft } from "lucide-react"
+import { toast } from "sonner"
 
 export default function NewFAQPage() {
   const router = useRouter()
@@ -39,7 +40,7 @@ export default function NewFAQPage() {
       router.push("/admin/faq")
     } catch (error) {
       console.error("Failed to create FAQ:", error)
-      alert("Failed to create FAQ. Please try again.")
+      toast.error("Failed to create FAQ. Please try again.")
     } finally {
       setLoading(false)
     }

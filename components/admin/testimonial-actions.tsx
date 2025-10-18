@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Trash2, CheckCircle } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 export function TestimonialActions({
   testimonialId,
@@ -27,10 +28,11 @@ export function TestimonialActions({
         throw new Error("Failed to delete")
       }
 
+      toast.success("Testimonial deleted successfully")
       router.refresh()
     } catch (error) {
       console.error("Failed to delete testimonial:", error)
-      alert("Failed to delete testimonial")
+      toast.error("Failed to delete testimonial")
     }
   }
 
@@ -45,11 +47,11 @@ export function TestimonialActions({
         throw new Error(error.error || "Failed to verify")
       }
 
-      alert("Testimonial verified successfully!")
+      toast.success("Testimonial verified successfully!")
       router.refresh()
     } catch (error: any) {
       console.error("Failed to verify testimonial:", error)
-      alert(`Failed to verify testimonial: ${error.message}`)
+      toast.error(`Failed to verify testimonial: ${error.message}`)
     }
   }
 
